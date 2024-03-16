@@ -41,18 +41,6 @@ pub const CPU = struct {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
     }
 
-    pub fn print_state(self: CPU) void {
-        std.debug.print("\n----------------------------------------------------", .{});
-        std.debug.print("\nCPU STATE:", .{});
-
-        std.debug.print("\nPC: {b:0>16}", .{self.PC});
-        std.debug.print("    {x:0>4}", .{self.PC});
-        std.debug.print("\nSP:         {b:0>8}", .{self.SP});
-        std.debug.print("\nP:          {b:0>8}", .{self.status});
-        std.debug.print("\nA:          {b:0>8}", .{self.A});
-        std.debug.print("\n----------------------------------------------------\n", .{});
-    }
-
     pub fn get_status_flag(self: CPU, flag: StatusFlag) bool {
         return ((self.status >> @intFromEnum(flag)) & 1) == 1;
     }
@@ -64,5 +52,23 @@ pub const CPU = struct {
     pub fn clock_tick(self: *CPU) void {
         std.debug.print("Clock Tick!\n", .{});
         _ = self;
+    }
+
+    pub fn print_state(self: CPU) void {
+        std.debug.print("\n----------------------------------------------------", .{});
+        std.debug.print("\nCPU STATE:", .{});
+
+        std.debug.print("\nPC: {b:0>16}", .{self.PC});
+        std.debug.print("    {x:0>4}", .{self.PC});
+
+        std.debug.print("\nSP:         {b:0>8}", .{self.SP});
+        std.debug.print("    {x:0>4}", .{self.SP});
+
+        std.debug.print("\nP:          {b:0>8}", .{self.status});
+        std.debug.print("    {x:0>4}", .{self.status});
+
+        std.debug.print("\nA:          {b:0>8}", .{self.A});
+        std.debug.print("    {x:0>4}", .{self.A});
+        std.debug.print("\n----------------------------------------------------\n", .{});
     }
 };
