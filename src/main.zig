@@ -8,6 +8,7 @@ pub fn main() !void {
     var cpu = c.CPU.init(&bus);
     test_init(&bus);
     cpu.reset();
+    cpu.set_status_flag(c.StatusFlag.BREAK, 1);
     cpu.print_state();
 }
 
@@ -23,5 +24,25 @@ test "loading reset vector into pc" {
     var cpu = c.CPU.init(&bus);
     test_init(&bus);
     cpu.reset();
+
     assert(cpu.PC == 0x2010);
+}
+
+test "set status flag" {
+    const assert = std.debug.assert;
+    var bus = Bus{};
+    var cpu = c.CPU.init(&bus);
+    cpu.reset();
+
+    cpu.set_status_flag(c.StatusFlag.BREAK, 1);
+    assert(cpu.get_status_flag(c.StatusFlag.BREAK) == 1);
+
+    cpu.toggle_status_flag(c.StatusFlag.BREAK);
+    assert(cpu.get_status_flag(c.StatusFlag.BREAK) == 0);
+
+    cpu.toggle_status_flag(c.StatusFlag.BREAK);
+    assert(cpu.get_status_flag(c.StatusFlag.BREAK) == 1);
+
+    cpu.set_status_flag(c.StatusFlag.BREAK, 0);
+    assert(cpu.get_status_flag(c.StatusFlag.BREAK) == 0);
 }

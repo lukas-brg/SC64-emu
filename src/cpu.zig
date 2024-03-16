@@ -41,17 +41,28 @@ pub const CPU = struct {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
     }
 
-    pub fn get_status_flag(self: CPU, flag: StatusFlag) bool {
-        return ((self.status >> @intFromEnum(flag)) & 1) == 1;
+    pub fn get_status_flag(self: CPU, flag: StatusFlag) u1 {
+        return @intCast((self.status >> @intFromEnum(flag)) & 1);
     }
 
-    fn fetch_opcode(self: CPU) u8 {
-        return self.bus.read(self.PC);
+    pub fn set_status_flag(self: *CPU, flag: StatusFlag, val: u1) void {
+        const bit_index = @intFromEnum(flag);
+        self.status &= ~(@as(u8, 1) << bit_index); // clear bit
+        self.status |= (@as(u8, val) << bit_index);
+    }
+
+    pub fn toggle_status_flag(self: *CPU, flag: StatusFlag) void {
+        const bit_index = @intFromEnum(flag);
+        self.status ^= (@as(u8, 1) << bit_index);
     }
 
     pub fn clock_tick(self: *CPU) void {
         std.debug.print("Clock Tick!\n", .{});
         _ = self;
+    }
+
+    fn fetch_opcode(self: CPU) u8 {
+        return self.bus.read(self.PC);
     }
 
     pub fn print_state(self: CPU) void {
