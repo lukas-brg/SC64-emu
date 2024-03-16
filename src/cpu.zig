@@ -45,7 +45,7 @@ pub const CPU = struct {
         return ((self.status >> @intFromEnum(flag)) & 1) == 1;
     }
 
-    fn fetch(self: CPU) u8 {
+    fn fetch_opcode(self: CPU) u8 {
         return self.bus.read(self.PC);
     }
 
@@ -69,6 +69,13 @@ pub const CPU = struct {
 
         std.debug.print("\nA:          {b:0>8}", .{self.A});
         std.debug.print("    {x:0>4}", .{self.A});
+
+        std.debug.print("\nX:          {b:0>8}", .{self.X});
+        std.debug.print("    {x:0>4}", .{self.X});
+
+        std.debug.print("\nY:          {b:0>8}", .{self.Y});
+        std.debug.print("    {x:0>4}", .{self.Y});
+
         std.debug.print("\n----------------------------------------------------\n", .{});
     }
 };
