@@ -3,16 +3,25 @@ const c = @import("cpu.zig");
 const Bus = @import("bus.zig").Bus;
 
 pub fn main() !void {
-    std.debug.print("Hello, World!\n", .{});
+    var bus = Bus{};
 
+    var cpu = c.CPU.init(&bus);
+    test_init(&bus);
+    cpu.reset();
+    cpu.print_state();
+}
+
+fn test_init(bus: *Bus) void {
+    // Reset vector to 0x0000
+    bus.write(0xfffc, 0x10);
+    bus.write(0xfffd, 0x20);
+}
+
+test "loading reset vector into pc" {
+    const assert = std.debug.assert;
     var bus = Bus{};
     var cpu = c.CPU.init(&bus);
-    const flag = cpu.get_status_flag(c.StatusFlag.DECIMAL);
-
-    std.debug.print("Status flag {}", .{flag});
-    cpu.print_state();
-    bus.write(0, 255);
-
-    cpu.clock_tick();
-    std.debug.print("{}\n", .{bus.read(0)});
+    test_init(&bus);
+    cpu.reset();
+    assert(cpu.PC == 0x2010);
 }

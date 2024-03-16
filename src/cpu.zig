@@ -1,6 +1,8 @@
 const std = @import("std");
 const Bus = @import("bus.zig").Bus;
 
+const RESET_VECTOR = 0xFFFC;
+
 pub const StatusFlag = enum(u3) {
     CARRY,
     ZERO,
@@ -22,8 +24,8 @@ pub const CPU = struct {
     bus: *Bus,
 
     pub fn init(bus: *Bus) CPU {
-        return CPU{
-            .PC = 5,
+        const cpu = CPU{
+            .PC = 0,
             .SP = 0,
             .status = 0,
             .A = 0,
@@ -31,6 +33,12 @@ pub const CPU = struct {
             .Y = 0,
             .bus = bus,
         };
+
+        return cpu;
+    }
+
+    pub fn reset(self: *CPU) void {
+        self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
     }
 
     pub fn print_state(self: CPU) void {
@@ -38,11 +46,10 @@ pub const CPU = struct {
         std.debug.print("\nCPU STATE:", .{});
 
         std.debug.print("\nPC: {b:0>16}", .{self.PC});
+        std.debug.print("    {x:0>4}", .{self.PC});
         std.debug.print("\nSP:         {b:0>8}", .{self.SP});
         std.debug.print("\nP:          {b:0>8}", .{self.status});
         std.debug.print("\nA:          {b:0>8}", .{self.A});
-        std.debug.print("\nX:          {b:0>8}", .{self.X});
-        std.debug.print("\nY:          {b:0>8}", .{self.Y});
         std.debug.print("\n----------------------------------------------------\n", .{});
     }
 
@@ -50,7 +57,12 @@ pub const CPU = struct {
         return ((self.status >> @intFromEnum(flag)) & 1) == 1;
     }
 
+    fn fetch(self: CPU) u8 {
+        return self.bus.read(self.PC);
+    }
+
     pub fn clock_tick(self: *CPU) void {
-        std.debug.print("{}\n", .{self.bus.read(0)});
+        std.debug.print("Clock Tick!\n", .{});
+        _ = self;
     }
 };
