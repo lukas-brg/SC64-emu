@@ -86,7 +86,7 @@ pub const CPU = struct {
         const opcode = self.fetch_opcode();
         const instruction = decode_opcode(opcode);
 
-        instruction.print();
+        instruction.handler_fn(self, instruction);
 
         self.cycle_count += 1;
      
