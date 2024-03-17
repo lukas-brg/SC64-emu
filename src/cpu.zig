@@ -26,6 +26,7 @@ pub const CPU = struct {
     X: u8,
     Y: u8,
     bus: *Bus,
+    cycle_count: u32 = 0,
 
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
@@ -84,6 +85,8 @@ pub const CPU = struct {
         const opcode = self.fetch_opcode();
         const instruction = OPCODES[opcode];
         instruction.print();
+
+        self.cycle_count += 1;
      
     }
 

@@ -14,7 +14,7 @@ pub fn main() !void {
 }
 
 fn test_init_reset_vector(bus: *Bus) void {
-    // Reset vector to 0x0000
+    // Reset vector to 0x2010
     bus.write(0xfffc, 0x10);
     bus.write(0xfffd, 0x20);
 }
