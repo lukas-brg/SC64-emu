@@ -2,6 +2,7 @@ const std = @import("std");
 const Bus = @import("bus.zig").Bus;
 
 const RESET_VECTOR = 0xFFFC;
+const SP_OFFSET: u16 = 0x100;
 
 pub const StatusFlag = enum(u3) {
     CARRY,
@@ -15,6 +16,7 @@ pub const StatusFlag = enum(u3) {
 };
 
 pub const CPU = struct {
+    /// Implementation of the 6502 microprocessor
     PC: u16,
     SP: u8,
     status: u8,
@@ -26,7 +28,7 @@ pub const CPU = struct {
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
             .PC = 0,
-            .SP = 0,
+            .SP = 0xFF,
             .status = 0,
             .A = 0,
             .X = 0,
@@ -58,10 +60,22 @@ pub const CPU = struct {
 
     pub fn clock_tick(self: *CPU) void {
         std.debug.print("Clock Tick!\n", .{});
-        _ = self;
+        const opcode = self.fetch_byte();
+
+        switch (opcode) {}
     }
 
-    fn fetch_opcode(self: CPU) u8 {
+    pub fn pop(self: *CPU) u8 {
+        self.SP += 1;
+        return self.bus.read(SP_OFFSET + self.SP);
+    }
+
+    pub fn push(self: *CPU, val: u8) void {
+        self.bus.write(SP_OFFSET + self.SP, val);
+        self.SP -= 1;
+    }
+
+    fn fetch_byte(self: CPU) u8 {
         return self.bus.read(self.PC);
     }
 

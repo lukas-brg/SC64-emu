@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const MEM_SIZE: u16 = 0xFFFF;
+const MEM_SIZE: u17 = 0x10000;
 
 pub const Bus = struct {
     dummy_memory: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
