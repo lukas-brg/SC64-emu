@@ -1,8 +1,10 @@
+
 const std = @import("std");
 const Bus = @import("bus.zig").Bus;
+const OPCODES = @import("opcodes.zig").OPCODES;
 
 const RESET_VECTOR = 0xFFFC;
-const SP_OFFSET: u16 = 0x100;
+const STACK_BASE_POINTER: u16 = 0x100;
 
 pub const StatusFlag = enum(u3) {
     CARRY,
@@ -43,8 +45,12 @@ pub const CPU = struct {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
     }
 
+    fn get_status_bit(self: CPU, bit_index: u3) u1 {
+        return @intCast((self.status >> bit_index) & 1);
+    }
+
     pub fn get_status_flag(self: CPU, flag: StatusFlag) u1 {
-        return @intCast((self.status >> @intFromEnum(flag)) & 1);
+        return self.get_status_bit(@intFromEnum(flag));
     }
 
     pub fn set_status_flag(self: *CPU, flag: StatusFlag, val: u1) void {
@@ -58,25 +64,27 @@ pub const CPU = struct {
         self.status ^= (@as(u8, 1) << bit_index);
     }
 
-    pub fn clock_tick(self: *CPU) void {
-        std.debug.print("Clock Tick!\n", .{});
-        const opcode = self.fetch_byte();
-
-        switch (opcode) {}
-    }
 
     pub fn pop(self: *CPU) u8 {
         self.SP += 1;
-        return self.bus.read(SP_OFFSET + self.SP);
+        return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
 
     pub fn push(self: *CPU, val: u8) void {
-        self.bus.write(SP_OFFSET + self.SP, val);
+        self.bus.write(STACK_BASE_POINTER + self.SP, val);
         self.SP -= 1;
     }
 
-    fn fetch_byte(self: CPU) u8 {
+    fn fetch_opcode(self: CPU) u8 {
         return self.bus.read(self.PC);
+    }
+
+    pub fn clock_tick(self: *CPU) void {
+        std.debug.print("Clock Tick!\n", .{});
+        const opcode = self.fetch_opcode();
+        const instruction = OPCODES[opcode];
+        instruction.print();
+     
     }
 
     pub fn print_state(self: CPU) void {
@@ -100,6 +108,18 @@ pub const CPU = struct {
 
         std.debug.print("\nY:          {b:0>8}", .{self.Y});
         std.debug.print("    {x:0>4}", .{self.Y});
+
+        std.debug.print("\n\nSTATUS FLAGS:", .{});
+        std.debug.print("\nC Z I D B V N", .{});
+        std.debug.print("\n{} {} {} {} {} {} {} ", 
+            .{ self.get_status_bit(0), 
+                    self.get_status_bit(1), 
+                    self.get_status_bit(2), 
+                    self.get_status_bit(3), 
+                    self.get_status_bit(4), 
+                    self.get_status_bit(6), 
+                    self.get_status_bit(7) 
+                });
 
         std.debug.print("\n----------------------------------------------------\n", .{});
     }

@@ -9,6 +9,7 @@ pub fn main() !void {
     test_init_reset_vector(&bus);
     cpu.reset();
     cpu.set_status_flag(c.StatusFlag.BREAK, 1);
+    cpu.clock_tick();
     cpu.print_state();
 }
 

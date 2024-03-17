@@ -9,6 +9,11 @@ pub const Bus = struct {
         self.dummy_memory[addr] = val;
     }
 
+    pub fn write_continous(buffer: []u8, offset: u16) void {
+        _ = buffer;
+        _ = offset;
+    }
+
     pub fn read(self: Bus, addr: u16) u8 {
         return self.dummy_memory[addr];
     }
