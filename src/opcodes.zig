@@ -1,5 +1,22 @@
 const std = @import("std");
 
+
+const opcode_lookup_table: [256]InstructionStruct = init_opcodes();
+
+fn init_opcodes() [256]InstructionStruct {
+    var table: [256]InstructionStruct = undefined;
+    for (OPCODE_TABLE) |opcode_struct| {
+        table[opcode_struct.opcode] = opcode_struct;
+    }
+    return table;
+}
+
+
+pub inline fn decode_opcode(opcode: u8) InstructionStruct {
+    return opcode_lookup_table[opcode];
+}
+
+
 const AddressingMode = enum {
     ACCUMULATOR,
     ABSOLUTE,
@@ -17,21 +34,23 @@ const AddressingMode = enum {
 
 };
 
-const OpcodeStruct = struct {
+const InstructionStruct = struct {
     opcode: u8,
     op_name: []const u8,
     addressing_mode: AddressingMode,
     bytes: u3,
     cycles: u3,
 
-    pub fn print(self: OpcodeStruct) void {
+    pub fn print(self: InstructionStruct) void {
         std.debug.print("\nOpcode: {}, Name: {s}, Addressing Mode: {}, Bytes: {}, Cycles: {})\n",
             .{self.opcode, self.op_name, self.addressing_mode, self.bytes, self.cycles});
         }
 };
 
 
-pub const OPCODES = [_]OpcodeStruct{
+
+const OPCODE_TABLE = [_]InstructionStruct{
+    // Only the legal opcodes are implemented for now, ToDo?
     .{.opcode=0x69, .op_name="ADC", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2},
     .{.opcode=0x65, .op_name="ADC", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3},
     .{.opcode=0x75, .op_name="ADC", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 4},

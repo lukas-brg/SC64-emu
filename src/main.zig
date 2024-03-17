@@ -56,3 +56,14 @@ test "stack operations" {
     cpu.push(0x4D);
     assert(cpu.pop() == 0x4D);
 }
+
+test "test opcode lookup" {
+    const assert = std.debug.assert;
+    const decode_opcode = @import("opcodes.zig").decode_opcode;
+    var bus = Bus{};
+    var cpu = c.CPU.init(&bus);
+    cpu.reset();
+
+    const instruction = decode_opcode(0xEA);
+    assert(std.mem.eql(u8, instruction.op_name, "NOP"));
+}

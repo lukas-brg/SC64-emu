@@ -1,7 +1,8 @@
 
 const std = @import("std");
 const Bus = @import("bus.zig").Bus;
-const OPCODES = @import("opcodes.zig").OPCODES;
+
+const decode_opcode = @import("opcodes.zig").decode_opcode;
 
 const RESET_VECTOR = 0xFFFC;
 const STACK_BASE_POINTER: u16 = 0x100;
@@ -57,7 +58,7 @@ pub const CPU = struct {
     pub fn set_status_flag(self: *CPU, flag: StatusFlag, val: u1) void {
         const bit_index = @intFromEnum(flag);
         self.status &= ~(@as(u8, 1) << bit_index); // clear bit
-        self.status |= (@as(u8, val) << bit_index);
+        self.status |= (@as(u8, val) << bit_index); // set bit
     }
 
     pub fn toggle_status_flag(self: *CPU, flag: StatusFlag) void {
@@ -83,7 +84,8 @@ pub const CPU = struct {
     pub fn clock_tick(self: *CPU) void {
         std.debug.print("Clock Tick!\n", .{});
         const opcode = self.fetch_opcode();
-        const instruction = OPCODES[opcode];
+        const instruction = decode_opcode(opcode);
+
         instruction.print();
 
         self.cycle_count += 1;
