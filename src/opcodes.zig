@@ -21,7 +21,7 @@ pub inline fn decode_opcode(opcode: u8) InstructionStruct {
 }
 
 
-const AddressingMode = enum {
+pub const AddressingMode = enum {
     ACCUMULATOR,
     ABSOLUTE,
     ABSOLUTE_X,
@@ -35,8 +35,8 @@ const AddressingMode = enum {
     ZEROPAGE,
     ZEROPAGE_X,
     ZEROPAGE_Y,
-
 };
+
 
 pub const InstructionStruct = struct {
     opcode: u8,
@@ -47,7 +47,7 @@ pub const InstructionStruct = struct {
     handler_fn:  * const HandlerFn,
 
     pub fn print(self: InstructionStruct) void {
-        std.debug.print("\nOpcode: {}, Name: {s}, Addressing Mode: {}, Bytes: {}, Cycles: {})\n",
+        std.debug.print("\n(Opcode: {}, Name: {s}, Addressing Mode: {}, Bytes: {}, Cycles: {})\n",
             .{self.opcode, self.op_name, self.addressing_mode, self.bytes, self.cycles});
         }
 };

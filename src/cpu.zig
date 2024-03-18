@@ -77,13 +77,13 @@ pub const CPU = struct {
         self.SP -= 1;
     }
 
-    fn fetch_opcode(self: CPU) u8 {
+    fn fetch_byte(self: CPU) u8 {
         return self.bus.read(self.PC);
     }
 
     pub fn clock_tick(self: *CPU) void {
         std.debug.print("Clock Tick!\n", .{});
-        const opcode = self.fetch_opcode();
+        const opcode = self.fetch_byte();
         const instruction = decode_opcode(opcode);
 
         instruction.handler_fn(self, instruction);
