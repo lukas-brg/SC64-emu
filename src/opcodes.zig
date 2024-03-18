@@ -3,12 +3,12 @@ const CPU = @import("cpu.zig").CPU;
 const instructions = @import("instructions.zig");
 
 
-const HandlerFn = fn(*CPU, InstructionStruct) void;
+const HandlerFn = fn(*CPU, OpInfo) void;
 
-const opcode_lookup_table: [256]InstructionStruct = init_opcodes();
+const opcode_lookup_table: [256]OpInfo = init_opcodes();
 
-fn init_opcodes() [256]InstructionStruct {
-    var table: [256]InstructionStruct = undefined;
+fn init_opcodes() [256]OpInfo {
+    var table: [256]OpInfo = undefined;
     for (OPCODE_TABLE) |opcode_struct| {
         table[opcode_struct.opcode] = opcode_struct;
     }
@@ -16,7 +16,7 @@ fn init_opcodes() [256]InstructionStruct {
 }
 
 
-pub inline fn decode_opcode(opcode: u8) InstructionStruct {
+pub inline fn decode_opcode(opcode: u8) OpInfo {
     return opcode_lookup_table[opcode];
 }
 
@@ -38,7 +38,7 @@ pub const AddressingMode = enum {
 };
 
 
-pub const InstructionStruct = struct {
+pub const OpInfo = struct {
     opcode: u8,
     op_name: []const u8,
     addressing_mode: AddressingMode,
@@ -46,15 +46,15 @@ pub const InstructionStruct = struct {
     cycles: u3,
     handler_fn:  * const HandlerFn,
 
-    pub fn print(self: InstructionStruct) void {
-        std.debug.print("\n(Opcode: {}, Name: {s}, Addressing Mode: {}, Bytes: {}, Cycles: {})\n",
+    pub fn print(self: OpInfo) void {
+        std.debug.print("(Opcode: 0x{x}, Name: {s}, Addressing Mode: {}, Bytes: {}, Cycles: {})\n",
             .{self.opcode, self.op_name, self.addressing_mode, self.bytes, self.cycles});
-        }
+    }
 };
 
 
 
-const OPCODE_TABLE = [_]InstructionStruct{
+const OPCODE_TABLE = [_]OpInfo{
     // Only the legal opcodes are implemented for now, ToDo?
     .{.opcode=0x69, .op_name="ADC", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.adc},
     .{.opcode=0x65, .op_name="ADC", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.adc},
@@ -64,20 +64,23 @@ const OPCODE_TABLE = [_]InstructionStruct{
     .{.opcode=0x79, .op_name="ADC", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 4, .handler_fn = &instructions.adc},
     .{.opcode=0x61, .op_name="ADC", .addressing_mode=AddressingMode.INDIRECT_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.adc},
     .{.opcode=0x71, .op_name="ADC", .addressing_mode=AddressingMode.INDIRECT_Y, .bytes = 2, .cycles = 5, .handler_fn = &instructions.adc},
-    .{.opcode=0x29, .op_name="AND", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x25, .op_name="AND", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.dummy},
-    .{.opcode=0x35, .op_name="AND", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0x2D, .op_name="AND", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0x3D, .op_name="AND", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0x39, .op_name="AND", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0x21, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0x31, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_Y, .bytes = 2, .cycles = 5, .handler_fn = &instructions.dummy},
-    .{.opcode=0x0A, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x06, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 5, .handler_fn = &instructions.dummy},
-    .{.opcode=0x16, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 2, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0x0E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0x1E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 7, .handler_fn = &instructions.dummy},
-    .{.opcode=0x90, .op_name="BCC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
+
+    .{.opcode=0x29, .op_name="AND", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.and_fn},
+    .{.opcode=0x25, .op_name="AND", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.and_fn},
+    .{.opcode=0x35, .op_name="AND", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 4, .handler_fn = &instructions.and_fn},
+    .{.opcode=0x2D, .op_name="AND", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 4, .handler_fn = &instructions.and_fn},
+    .{.opcode=0x3D, .op_name="AND", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 4, .handler_fn = &instructions.and_fn},
+    .{.opcode=0x39, .op_name="AND", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 4, .handler_fn = &instructions.and_fn},
+    .{.opcode=0x21, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.and_fn},
+    .{.opcode=0x31, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_Y, .bytes = 2, .cycles = 5, .handler_fn = &instructions.and_fn},
+
+    .{.opcode=0x0A, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 1, .cycles = 2, .handler_fn = &instructions.asl},
+    .{.opcode=0x06, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 5, .handler_fn = &instructions.asl},
+    .{.opcode=0x16, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 2, .cycles = 6, .handler_fn = &instructions.asl},
+    .{.opcode=0x0E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 6, .handler_fn = &instructions.asl},
+    .{.opcode=0x1E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 7, .handler_fn = &instructions.asl},
+
+    .{.opcode=0x90, .op_name="BCC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bcc},
     .{.opcode=0xB0, .op_name="BCS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
     .{.opcode=0xF0, .op_name="BEQ", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
     .{.opcode=0x30, .op_name="BMI", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
@@ -86,6 +89,7 @@ const OPCODE_TABLE = [_]InstructionStruct{
     .{.opcode=0x50, .op_name="BVC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
     .{.opcode=0x70, .op_name="BVS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
     .{.opcode=0x00, .op_name="BRK", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 7, .handler_fn = &instructions.dummy},
+    
     .{.opcode=0x18, .op_name="CLC", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
     .{.opcode=0xD8, .op_name="CLD", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
     .{.opcode=0x58, .op_name="CLI", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},

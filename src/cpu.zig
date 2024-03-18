@@ -4,6 +4,9 @@ const Bus = @import("bus.zig").Bus;
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
 
+pub const DEBUG_CPU = true;
+
+
 const RESET_VECTOR = 0xFFFC;
 const STACK_BASE_POINTER: u16 = 0x100;
 
@@ -82,14 +85,23 @@ pub const CPU = struct {
     }
 
     pub fn clock_tick(self: *CPU) void {
-        std.debug.print("Clock Tick!\n", .{});
+        
+        if(DEBUG_CPU) {
+            std.debug.print("==========================================================================================================================\n", .{});
+            std.debug.print("Clock Tick!\n", .{});
+            std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
+        }
+        
         const opcode = self.fetch_byte();
         const instruction = decode_opcode(opcode);
 
         instruction.handler_fn(self, instruction);
 
         self.cycle_count += 1;
-     
+
+        if(DEBUG_CPU) {
+            self.print_state();   
+        }
     }
 
     pub fn print_state(self: CPU) void {
@@ -100,19 +112,19 @@ pub const CPU = struct {
         std.debug.print("    {x:0>4}", .{self.PC});
 
         std.debug.print("\nSP:         {b:0>8}", .{self.SP});
-        std.debug.print("    {x:0>4}", .{self.SP});
+        std.debug.print("      {x:0>2}", .{self.SP});
 
         std.debug.print("\nP:          {b:0>8}", .{self.status});
-        std.debug.print("    {x:0>4}", .{self.status});
+        std.debug.print("      {x:0>2}", .{self.status});
 
         std.debug.print("\nA:          {b:0>8}", .{self.A});
-        std.debug.print("    {x:0>4}", .{self.A});
+        std.debug.print("      {x:0>2}", .{self.A});
 
         std.debug.print("\nX:          {b:0>8}", .{self.X});
-        std.debug.print("    {x:0>4}", .{self.X});
+        std.debug.print("      {x:0>2}", .{self.X});
 
         std.debug.print("\nY:          {b:0>8}", .{self.Y});
-        std.debug.print("    {x:0>4}", .{self.Y});
+        std.debug.print("      {x:0>2}", .{self.Y});
 
         std.debug.print("\n\nSTATUS FLAGS:", .{});
         std.debug.print("\nC Z I D B V N", .{});
@@ -126,6 +138,6 @@ pub const CPU = struct {
                     self.get_status_bit(7) 
                 });
 
-        std.debug.print("\n----------------------------------------------------\n", .{});
+        std.debug.print("\n----------------------------------------------------\n\n", .{});
     }
 };
