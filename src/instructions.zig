@@ -64,16 +64,11 @@ pub fn adc(cpu: *CPU, instruction: InstructionStruct) void {
     const a_operand = cpu.A;                                                 
     const result = @addWithOverflow(cpu.A, operand + cpu.get_status_flag(StatusFlag.CARRY));
     cpu.A = result[0];
-    cpu.set_status_flag(StatusFlag.CARRY, result[1]);
     
-    if (cpu.A == 0) {
-        cpu.set_status_flag(StatusFlag.ZERO, 1);
-    } 
-    else {
-        cpu.set_status_flag(StatusFlag.ZERO, 0);
-    }
-
+    cpu.set_status_flag(StatusFlag.CARRY, result[1]);
+    cpu.set_status_flag(StatusFlag.ZERO, @intFromBool(cpu.A == 0));
     cpu.set_status_flag(StatusFlag.NEGATIVE, get_bit_at(cpu.A, 7));
+    
     const v_flag: u1  = @intCast((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80);
     cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
 

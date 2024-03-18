@@ -11,7 +11,7 @@ pub fn main() !void {
     bus.write(0x0, 0x69);
     bus.write(0x1, 0xFF);
     cpu.reset();
-    cpu.A = 0x10;
+    cpu.A = 0x01;
 
     cpu.clock_tick();
     cpu.print_state();
