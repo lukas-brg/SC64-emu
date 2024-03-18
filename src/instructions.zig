@@ -46,10 +46,7 @@ fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
         .ACCUMULATOR => undefined,
    
     };
-
-
     return address;
-    
 }
 
 const OperandInfo = struct {
@@ -89,9 +86,9 @@ fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {
             const cycles = instruction.cycles + @intFromBool(page_crossed); // If a page cross happens instructions take one cycle more to execute
 
             break :blk .{.operand=operand, .address=address, .page_crossed=page_crossed, .cycles=cycles};
-            
         }
     };
+
     cpu.PC += op_info.cycles;
 
     if (DEBUG_CPU) {
@@ -159,6 +156,7 @@ pub fn asl(cpu: *CPU, instruction: OpInfo) void {
     set_zero(cpu, result);
 }
 
+
 pub fn bcc(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
         cpu.PC += instruction.bytes;   
@@ -168,8 +166,7 @@ pub fn bcc(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn dummy(cpu: *CPU, instruction: OpInfo) void {
     // This function is called for every instruction that is not implemented yet
-   
-    std.debug.print("dummy called\n", .{});
-    instruction.print();
-    _ = cpu;
+    const operand_info = get_operand(cpu, instruction);
+
+    _ = operand_info;
 }

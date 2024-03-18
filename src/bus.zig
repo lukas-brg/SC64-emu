@@ -9,6 +9,7 @@ pub const Bus = struct {
         self.memory[addr] = val;
     }
 
+
     pub fn write_continous(self: *Bus, buffer: []const u8, offset: u16) void {
         if (buffer.len + offset > self.memory.len) {
             const errorMessage = std.fmt.allocPrint("Buffer is too large to fit in memory at offset {}.", .{offset});
@@ -21,9 +22,24 @@ pub const Bus = struct {
         );
     }
 
-    
-
     pub fn read(self: Bus, addr: u16) u8 {
         return self.memory[addr];
+    }
+
+
+    pub fn print_mem(self: *Bus, start: u16, len: u16) void {
+
+        for (self.memory[start..start+len], 0..len) |byte, count| {
+            const addr = count+start;
+            if (count % 16 == 0) {
+                std.debug.print("\n{x:0>4}:  ", .{addr});
+            }
+            else if (count % 8 == 0) {
+                std.debug.print(" ", .{});
+            }
+            std.debug.print("{x:0>2} ", .{byte});
+        }
+
+        std.debug.print("\n\n", .{});
     }
 };
