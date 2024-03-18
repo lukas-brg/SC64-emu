@@ -6,9 +6,13 @@ pub fn main() !void {
     var bus = Bus{};
 
     var cpu = c.CPU.init(&bus);
-    test_init_reset_vector(&bus);
+    bus.write(0xfffc, 0);
+    bus.write(0xfffd, 0);
+    bus.write(0x0, 0x69);
+    bus.write(0x1, 0xFF);
     cpu.reset();
-    cpu.set_status_flag(c.StatusFlag.BREAK, 1);
+    cpu.A = 0x10;
+
     cpu.clock_tick();
     cpu.print_state();
 }

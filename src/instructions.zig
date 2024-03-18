@@ -8,6 +8,10 @@ inline fn combine_bytes(low: u8, high: u8) u16 {
     return low | (@as(u16, high) << 8);
 }
 
+inline fn get_bit_at(byte: u8, bit_index: u3) u1 {
+    return @intCast((byte >> bit_index) & 1);
+}
+
 pub fn get_operand(cpu: *CPU, instruction: InstructionStruct) u8 {
 
     const address: u16 = switch (instruction.addressing_mode) {
@@ -56,16 +60,28 @@ pub fn get_operand(cpu: *CPU, instruction: InstructionStruct) u8 {
 
 
 pub fn adc(cpu: *CPU, instruction: InstructionStruct) void {
-    const addr = get_operand(cpu, instruction);
-    std.debug.print("adc called\n", .{});
-    instruction.print();
-    std.debug.print("operand address {x}\n", .{addr});
-
+    const operand = get_operand(cpu, instruction);
+    const a_operand = cpu.A;                                                 
+    const result = @addWithOverflow(cpu.A, operand + cpu.get_status_flag(StatusFlag.CARRY));
+    cpu.A = result[0];
+    cpu.set_status_flag(StatusFlag.CARRY, result[1]);
     
+    if (cpu.A == 0) {
+        cpu.set_status_flag(StatusFlag.ZERO, 1);
+    } 
+    else {
+        cpu.set_status_flag(StatusFlag.ZERO, 0);
+    }
+
+    cpu.set_status_flag(StatusFlag.NEGATIVE, get_bit_at(cpu.A, 7));
+    const v_flag: u1  = @intCast((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80);
+    cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+
 }
 
 
 pub fn dummy(cpu: *CPU, instruction: InstructionStruct) void {
+    // This function is called for every instruction that is not implemented yet
     const operand = get_operand(cpu, instruction);
     std.debug.print("dummy called\n", .{});
     instruction.print();
