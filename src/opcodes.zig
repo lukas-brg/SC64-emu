@@ -47,8 +47,8 @@ pub const OpInfo = struct {
     handler_fn:  * const HandlerFn,
 
     pub fn print(self: OpInfo) void {
-        std.debug.print("(Opcode: 0x{x}, Name: {s}, Addressing Mode: {}, Bytes: {}, Cycles: {})\n",
-            .{self.opcode, self.op_name, self.addressing_mode, self.bytes, self.cycles});
+        std.debug.print("(Opcode: 0x{x:0>2}, Name: {s}, Addressing Mode: {s}, Bytes: {}, Cycles: {})\n",
+            .{self.opcode, self.op_name, @tagName(self.addressing_mode), self.bytes, self.cycles});
     }
 };
 

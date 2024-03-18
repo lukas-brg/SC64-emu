@@ -6,14 +6,6 @@ const AddressingMode = @import("opcodes.zig").AddressingMode;
 const DEBUG_CPU = @import("cpu.zig").DEBUG_CPU;
 
 
-inline fn combine_bytes(low: u8, high: u8) u16 {
-    return low | (@as(u16, high) << 8);
-}
-
-inline fn get_bit_at(byte: u8, bit_index: u3) u1 {
-    return @intCast((byte >> bit_index) & 1);
-}
-
 
 fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
 
@@ -54,6 +46,11 @@ const OperandInfo = struct {
     address: u16,
     page_crossed: bool,
     cycles: u3, // There can be additional cycles if a page boundary was crossed, so this parameter is used again
+
+    pub fn print(self: OperandInfo) void {
+        std.debug.print("(Operand: {x:0>4}, Address: {x:0>2}, Page Crossed: {}, Cycles: {})\n",
+        .{self.operand, self.address, self.page_crossed, self.cycles});
+    }
   
 };
 
@@ -89,15 +86,24 @@ fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {
         }
     };
 
-    cpu.PC += op_info.cycles;
+   
 
     if (DEBUG_CPU) {
         std.debug.print("Instruction fetched ", .{});
         instruction.print();
-        std.debug.print("Operand {}", .{op_info});
+        op_info.print();
     } 
    
     return op_info;
+}
+
+
+inline fn combine_bytes(low: u8, high: u8) u16 {
+    return low | (@as(u16, high) << 8);
+}
+
+inline fn get_bit_at(byte: u8, bit_index: u3) u1 {
+    return @intCast((byte >> bit_index) & 1);
 }
 
 
@@ -127,14 +133,17 @@ pub fn adc(cpu: *CPU, instruction: OpInfo) void {
     set_negative(cpu, cpu.A);
     const v_flag: u1  = @intCast((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80);
     cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+    cpu.PC += instruction.bytes;
 }
 
 
+// Zig won't let me use 'and' as a function name, hence the inconsistent naming
 pub fn and_fn(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
     cpu.A &= operand_info.operand;
     set_negative(cpu, cpu.A);
     set_zero(cpu, cpu.A);
+    cpu.PC += instruction.bytes;
 }
 
 
@@ -154,6 +163,7 @@ pub fn asl(cpu: *CPU, instruction: OpInfo) void {
 
     set_negative(cpu, result);
     set_zero(cpu, result);
+    cpu.PC += instruction.bytes;
 }
 
 
