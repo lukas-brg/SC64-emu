@@ -81,14 +81,15 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x1E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 7, .handler_fn = &instructions.asl},
 
     .{.opcode=0x90, .op_name="BCC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bcc},
-    .{.opcode=0xB0, .op_name="BCS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0xF0, .op_name="BEQ", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x30, .op_name="BMI", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0xD0, .op_name="BNE", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x10, .op_name="BPL", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x50, .op_name="BVC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x70, .op_name="BVS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x00, .op_name="BRK", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 7, .handler_fn = &instructions.dummy},
+    .{.opcode=0xB0, .op_name="BCS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bcs},
+    .{.opcode=0xF0, .op_name="BEQ", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.beq},
+    .{.opcode=0x30, .op_name="BMI", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bmi},
+    .{.opcode=0xD0, .op_name="BNE", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bne},
+    .{.opcode=0x10, .op_name="BPL", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bpl},
+    .{.opcode=0x50, .op_name="BVC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bvc},
+    .{.opcode=0x70, .op_name="BVS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bvs},
+    
+    .{.opcode=0x00, .op_name="BRK", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 7, .handler_fn = &instructions.brk},
     
     .{.opcode=0x18, .op_name="CLC", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
     .{.opcode=0xD8, .op_name="CLD", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},

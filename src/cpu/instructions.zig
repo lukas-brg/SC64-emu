@@ -51,7 +51,6 @@ const OperandInfo = struct {
         std.debug.print("(Operand: {x:0>4}, Address: {x:0>2}, Page Crossed: {}, Cycles: {})\n",
         .{self.operand, self.address, self.page_crossed, self.cycles});
     }
-  
 };
 
 fn page_boundary_crossed(cpu: *CPU, addr: u16) bool {
@@ -134,6 +133,8 @@ pub fn adc(cpu: *CPU, instruction: OpInfo) void {
     const v_flag: u1  = @intCast((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80);
     cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
     cpu.PC += instruction.bytes;
+
+    cpu._wait_cycles += operand_info.cycles;
 }
 
 
@@ -144,6 +145,8 @@ pub fn and_fn(cpu: *CPU, instruction: OpInfo) void {
     set_negative(cpu, cpu.A);
     set_zero(cpu, cpu.A);
     cpu.PC += instruction.bytes;
+
+    cpu._wait_cycles += operand_info.cycles;
 }
 
 
@@ -153,11 +156,13 @@ pub fn asl(cpu: *CPU, instruction: OpInfo) void {
         .ACCUMULATOR => {
             result = cpu.A << 1;
             cpu.A = result;
+            cpu._wait_cycles += instruction.cycles;
         },
         else  => {
             const operand_info = get_operand(cpu, instruction);
             result = operand_info.operand << 1;
             cpu.bus.write(operand_info.address, result);
+            cpu._wait_cycles += operand_info.cycles;
         }
     }
 
@@ -168,10 +173,121 @@ pub fn asl(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn bcc(cpu: *CPU, instruction: OpInfo) void {
-    if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
-        cpu.PC += instruction.bytes;   
-    }   
+    if (cpu.get_status_flag(StatusFlag.CARRY) == 1) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
 }
+
+
+pub fn bcs(cpu: *CPU, instruction: OpInfo) void {
+    if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
+}
+
+pub fn beq(cpu: *CPU, instruction: OpInfo) void {
+    if (cpu.get_status_flag(StatusFlag.ZERO) == 1) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
+}
+
+pub fn bmi(cpu: *CPU, instruction: OpInfo) void {
+    if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 1) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
+}
+
+pub fn bne(cpu: *CPU, instruction: OpInfo) void {
+    if (cpu.get_status_flag(StatusFlag.ZERO) == 0) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
+}
+
+pub fn bpl(cpu: *CPU, instruction: OpInfo) void {
+    if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 0) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
+}
+
+
+pub fn bvc(cpu: *CPU, instruction: OpInfo) void {
+    if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 0) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
+}
+
+
+pub fn bvs(cpu: *CPU, instruction: OpInfo) void {
+    if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 1) {
+        const operand = get_operand(cpu, instruction);
+        cpu.PC = operand.address;
+        cpu._wait_cycles += operand.cycles;
+    }
+    else {
+        cpu.PC += instruction.bytes;
+        cpu._wait_cycles += instruction.cycles;
+    }
+}
+
+
+pub fn brk(cpu: *CPU, instruction: OpInfo) void {
+    const pc_plus_2 = cpu.PC + 2;
+    
+    const high_byte: u8 = @intCast(pc_plus_2 >> 8);
+    cpu.push(high_byte);
+
+    const low_byte: u8 = @intCast(pc_plus_2 & 0xFF);
+    cpu.push(low_byte);
+    
+    cpu._wait_cycles += instruction.cycles;
+
+    cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
+}
+
+
+
 
 
 pub fn dummy(cpu: *CPU, instruction: OpInfo) void {

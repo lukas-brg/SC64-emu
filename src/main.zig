@@ -1,6 +1,6 @@
 const std = @import("std");
-const c = @import("cpu.zig");
-const Bus = @import("bus.zig").Bus;
+const c = @import("cpu/cpu.zig");
+const Bus = @import("cpu/bus.zig").Bus;
 
 pub fn main() !void {
     var bus = Bus{};
@@ -14,7 +14,7 @@ pub fn main() !void {
     cpu.clock_tick();
     cpu.bus.print_mem(0, 100);
     cpu.clock_tick();
-    
+   
 }
 
 fn test_init_reset_vector(bus: *Bus) void {
@@ -63,7 +63,7 @@ test "stack operations" {
 
 test "test opcode lookup" {
     const assert = std.debug.assert;
-    const decode_opcode = @import("opcodes.zig").decode_opcode;
+    const decode_opcode = @import("cpu/opcodes.zig").decode_opcode;
     var bus = Bus{};
     var cpu = c.CPU.init(&bus);
     cpu.reset();

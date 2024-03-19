@@ -31,6 +31,7 @@ pub const CPU = struct {
     Y: u8,
     bus: *Bus,
     cycle_count: u32 = 0,
+    _wait_cycles: usize = 0,
 
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
