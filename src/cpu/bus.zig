@@ -12,13 +12,12 @@ pub const Bus = struct {
 
     pub fn write_continous(self: *Bus, buffer: []const u8, offset: u16) void {
         if (buffer.len + offset > self.memory.len) {
-            const errorMessage = std.fmt.allocPrint("Buffer is too large to fit in memory at offset {}.", .{offset});
-            std.debug.panic(errorMessage);
+            std.debug.panic("Buffer is too large to fit in memory at offset {}.", .{offset});
         }
        
         @memcpy(
             self.memory[offset..].ptr,
-            buffer.ptr
+            buffer
         );
     }
 

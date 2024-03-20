@@ -29,7 +29,7 @@ pub fn adc(cpu: *CPU, instruction: OpInfo) void {
     cpu.update_zero(cpu.A);
     cpu.update_negative(cpu.A);
     
-    const v_flag: u1  = @intCast((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80);
+    const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
     cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
     cpu.PC += instruction.bytes;
 
