@@ -3,7 +3,7 @@ const std = @import("std");
 const Bus = @import("bus.zig").Bus;
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
-
+const get_bit_at = @import("bitutils.zig").get_bit_at;
 pub const DEBUG_CPU = true;
 
 
@@ -65,6 +65,15 @@ pub const CPU = struct {
         self.status |= (@as(u8, val) << bit_index); // set bit
     }
 
+    pub inline fn update_negative(self: *CPU, result: u8) void {
+        self.set_status_flag(StatusFlag.NEGATIVE, get_bit_at(result, 7));
+    }
+
+    pub inline fn update_zero(self: *CPU, result: u8) void {
+        self.set_status_flag(StatusFlag.ZERO, @intFromBool(result == 0));
+    }
+
+
     pub fn toggle_status_flag(self: *CPU, flag: StatusFlag) void {
         const bit_index = @intFromEnum(flag);
         self.status ^= (@as(u8, 1) << bit_index);
@@ -79,6 +88,14 @@ pub const CPU = struct {
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
         self.SP -= 1;
+    }
+
+    pub fn push_16(self: *CPU, val: u16) void {
+        const high_byte: u8 = @intCast(val >> 8);
+        self.push(high_byte);
+
+        const low_byte: u8 = @intCast(val & 0xFF);
+        self.push(low_byte);
     }
 
     fn fetch_byte(self: CPU) u8 {
