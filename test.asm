@@ -1,2 +1,4 @@
-LDA #$22
-ADC #$20
+LDA #$20
+STA $10
+LDA #$30
+ADC $10

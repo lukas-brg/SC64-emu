@@ -5,9 +5,7 @@ const Bus = @import("cpu/bus.zig").Bus;
 
 
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
-
     const rom_data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
-    std.debug.print("{s}\n", .{rom_data});
     return rom_data;
 }
 
@@ -17,15 +15,22 @@ pub fn main() !void {
     var cpu = c.CPU.init(&bus);
     
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
     const allocator = gpa.allocator();
     const rom_data = try load_rom_data("test.o65", allocator);
 
     bus.write_continous(rom_data, 0);
     
     cpu.reset();
+    cpu.bus.print_mem(0, 100);
     cpu.clock_tick();
     cpu.bus.print_mem(0, 100);
     cpu.clock_tick();
+    cpu.bus.print_mem(0, 100);
+    cpu.clock_tick();
+    cpu.bus.print_mem(0, 100);
+    cpu.clock_tick();
+    
 
 
     allocator.free(rom_data);

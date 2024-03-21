@@ -6,6 +6,7 @@ const AddressingMode = @import("opcodes.zig").AddressingMode;
 const get_operand = @import("operand.zig").get_operand;
 const combine_bytes = @import("bitutils.zig").combine_bytes;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
+const set_bit_at = @import("bitutils.zig").set_bit_at;
 
 const DEBUG_CPU = @import("cpu.zig").DEBUG_CPU;
 
@@ -397,6 +398,67 @@ pub fn ora(cpu: *CPU, instruction: OpInfo) void {
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn pha(cpu: *CPU, instruction: OpInfo) void {
+    const accumulator = cpu.A;
+    cpu.push(accumulator);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+pub fn php(cpu: *CPU, instruction: OpInfo) void {
+    var status = cpu.status;
+
+    status = set_bit_at(status, @intFromEnum(StatusFlag.BREAK), 1);
+    status = set_bit_at(status, 5, 1);
+    cpu.push(status);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn pla(cpu: *CPU, instruction: OpInfo) void {
+    cpu.status = cpu.pop();
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn plp(cpu: *CPU, instruction: OpInfo) void {
+    cpu.A = cpu.pop();
+
+    cpu.update_negative(cpu.A);
+    cpu.update_zero(cpu.A);
+
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn sta(cpu: *CPU, instruction: OpInfo) void {  
+    const operand_info = get_operand(cpu, instruction);
+    cpu.bus.write(operand_info.address, cpu.A);
+    
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += operand_info.cycles;
+}
+
+pub fn stx(cpu: *CPU, instruction: OpInfo) void {  
+    const operand_info = get_operand(cpu, instruction);
+    cpu.bus.write(operand_info.address, cpu.X);
+    
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += operand_info.cycles;
+}
+
+pub fn sty(cpu: *CPU, instruction: OpInfo) void {  
+    const operand_info = get_operand(cpu, instruction);
+    cpu.bus.write(operand_info.address, cpu.Y);
+    
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += operand_info.cycles;
 }
 
 
