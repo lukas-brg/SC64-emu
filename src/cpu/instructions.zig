@@ -7,7 +7,7 @@ const get_operand = @import("operand.zig").get_operand;
 const combine_bytes = @import("bitutils.zig").combine_bytes;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
 const set_bit_at = @import("bitutils.zig").set_bit_at;
-
+const bitutils = @import("bitutils.zig");
 const DEBUG_CPU = @import("cpu.zig").DEBUG_CPU;
 
 
@@ -182,6 +182,8 @@ pub fn brk(cpu: *CPU, instruction: OpInfo) void {
     cpu._wait_cycles += instruction.cycles;
 
     cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
+
+    cpu.halt = true;
 }
 
 
@@ -437,6 +439,41 @@ pub fn plp(cpu: *CPU, instruction: OpInfo) void {
 }
 
 
+pub fn ror(cpu: *CPU, instruction: OpInfo) void {  
+    const operand_info = get_operand(cpu, instruction);
+    const result = bitutils.rotate_right(operand_info.operand, 1);
+
+    cpu.update_negative(result);
+    cpu.update_zero(result);
+    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(result, 0));
+    
+    switch (instruction.addressing_mode) {
+        .ACCUMULATOR => cpu.A = result,
+        else => cpu.bus.write(operand_info.address, result)
+    }
+    
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += operand_info.cycles;
+}
+
+pub fn rol(cpu: *CPU, instruction: OpInfo) void {  
+    const operand_info = get_operand(cpu, instruction);
+    const result = bitutils.rotate_left(operand_info.operand, 1);
+
+    cpu.update_negative(result);
+    cpu.update_zero(result);
+    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(result, 0));
+    
+    switch (instruction.addressing_mode) {
+        .ACCUMULATOR => cpu.A = result,
+        else => cpu.bus.write(operand_info.address, result)
+    }
+    
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += operand_info.cycles;
+}
+
+
 pub fn sta(cpu: *CPU, instruction: OpInfo) void {  
     const operand_info = get_operand(cpu, instruction);
     cpu.bus.write(operand_info.address, cpu.A);
@@ -452,6 +489,8 @@ pub fn stx(cpu: *CPU, instruction: OpInfo) void {
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += operand_info.cycles;
 }
+
+
 
 pub fn sty(cpu: *CPU, instruction: OpInfo) void {  
     const operand_info = get_operand(cpu, instruction);

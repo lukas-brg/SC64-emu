@@ -1,4 +1,8 @@
 LDA #$20
-STA $10
+STA $40
 LDA #$30
-ADC $10
+ADC $40
+LDA #$F0
+ROL
+LDA #$F0
+ROR

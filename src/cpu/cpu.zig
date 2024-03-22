@@ -32,6 +32,7 @@ pub const CPU = struct {
     bus: *Bus,
     cycle_count: u32 = 0,
     _wait_cycles: usize = 0,
+    halt: bool = false,
 
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
@@ -103,22 +104,37 @@ pub const CPU = struct {
     }
 
     pub fn clock_tick(self: *CPU) void {
+      
         
         if(DEBUG_CPU) {
             std.debug.print("==========================================================================================================================\n", .{});
             std.debug.print("Clock Tick!\n", .{});
             std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
         }
+
         
         const opcode = self.fetch_byte();
         const instruction = decode_opcode(opcode);
-
+        
+        if(DEBUG_CPU) {
+            std.debug.print("Loaded opcode 0x{x:0>2}\n", .{opcode});
+            std.debug.print("Instruction fetched ", .{});
+            instruction.print();
+        }
+        
         instruction.handler_fn(self, instruction);
-
+        
         self.cycle_count += 1;
 
         if(DEBUG_CPU) {
             self.print_state();   
+        }
+
+        if(self.halt) {
+            if(DEBUG_CPU) {
+                std.debug.print("HALT!\n", .{});
+            }
+            return;
         }
     }
 

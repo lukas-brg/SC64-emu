@@ -13,3 +13,14 @@ pub fn set_bit_at(byte: u8, bit_index: u3, val: u1) u8 {
     result |= (@as(u8, val) << bit_index); // set bit
     return result;
 }
+
+
+pub fn rotate_left(byte: u8, n: u8) u8 {
+    const x: u8 = @intCast(8 - n);
+    return ((byte << @intCast(n)) | ((byte >> @intCast(x)) & 0x0f));
+}
+
+pub fn rotate_right(byte: u8, n: u8) u8 {
+    const x: u8 = @intCast(8 - n);
+    return ((byte >> @intCast(n)) | ((byte << @intCast(x)) & 0x0f));
+}

@@ -61,7 +61,8 @@ fn page_boundary_crossed(cpu: *CPU, addr: u16) bool {
 }
 
 pub fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {
-    const op_info: OperandInfo = switch (instruction.addressing_mode) {
+
+    const operand_info: OperandInfo = switch (instruction.addressing_mode) {
         .ACCUMULATOR => .{
             .operand = cpu.A,
             .address = undefined,
@@ -86,13 +87,9 @@ pub fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {
         }
     };
 
-   
-
     if (DEBUG_CPU) {
-        std.debug.print("Instruction fetched ", .{});
-        instruction.print();
-        op_info.print();
-    } 
+        operand_info.print();
+    }
    
-    return op_info;
+    return operand_info;
 }

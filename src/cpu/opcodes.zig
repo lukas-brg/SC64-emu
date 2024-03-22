@@ -185,11 +185,18 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x68, .op_name="PLA", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 4, .handler_fn = &instructions.pla},
     .{.opcode=0x28, .op_name="PLP", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 4, .handler_fn = &instructions.plp},
 
-    .{.opcode=0x6A, .op_name="ROR", .addressing_mode=AddressingMode.ACCUMULATOR,.bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x66, .op_name="ROR", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 5, .handler_fn = &instructions.dummy},
-    .{.opcode=0x76, .op_name="ROR", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0x6E, .op_name="ROR", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0x7E, .op_name="ROR", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 7, .handler_fn = &instructions.dummy},
+    .{.opcode=0x6A, .op_name="ROR", .addressing_mode=AddressingMode.ACCUMULATOR,.bytes = 1, .cycles = 2, .handler_fn = &instructions.ror},
+    .{.opcode=0x66, .op_name="ROR", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 5, .handler_fn = &instructions.ror},
+    .{.opcode=0x76, .op_name="ROR", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.ror},
+    .{.opcode=0x6E, .op_name="ROR", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 6, .handler_fn = &instructions.ror},
+    .{.opcode=0x7E, .op_name="ROR", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 7, .handler_fn = &instructions.ror},
+       
+    .{.opcode=0x2A, .op_name="ROL", .addressing_mode=AddressingMode.ACCUMULATOR,.bytes = 1, .cycles = 2, .handler_fn = &instructions.rol},
+    .{.opcode=0x26, .op_name="ROL", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 5, .handler_fn = &instructions.rol},
+    .{.opcode=0x36, .op_name="ROL", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.rol},
+    .{.opcode=0x2E, .op_name="ROL", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 6, .handler_fn = &instructions.rol},
+    .{.opcode=0x3E, .op_name="ROL", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 7, .handler_fn = &instructions.rol},
+    
     .{.opcode=0x40, .op_name="RTI", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 6, .handler_fn = &instructions.dummy},
     .{.opcode=0x60, .op_name="RTS", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 6, .handler_fn = &instructions.dummy},
     .{.opcode=0xE9, .op_name="SBC", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},

@@ -11,7 +11,8 @@ pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 
 pub fn main() !void {
     var bus = Bus{};
-
+    const v = bus.read(0xa);
+    _ = v;
     var cpu = c.CPU.init(&bus);
     
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -22,16 +23,11 @@ pub fn main() !void {
     bus.write_continous(rom_data, 0);
     
     cpu.reset();
-    cpu.bus.print_mem(0, 100);
-    cpu.clock_tick();
-    cpu.bus.print_mem(0, 100);
-    cpu.clock_tick();
-    cpu.bus.print_mem(0, 100);
-    cpu.clock_tick();
-    cpu.bus.print_mem(0, 100);
-    cpu.clock_tick();
     
-
+    while (!cpu.halt) {
+        cpu.bus.print_mem(0, 100);
+        cpu.clock_tick();
+    }
 
     allocator.free(rom_data);
 }
