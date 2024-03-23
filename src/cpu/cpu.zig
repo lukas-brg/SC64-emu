@@ -132,7 +132,7 @@ pub const CPU = struct {
 
         if(self.halt) {
             if(DEBUG_CPU) {
-                std.debug.print("HALT!\n", .{});
+                std.debug.print("HALT0!\n", .{});
             }
             return;
         }

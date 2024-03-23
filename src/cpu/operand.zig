@@ -39,6 +39,7 @@ pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
         .ACCUMULATOR => undefined,
    
     };
+   
     return address;
 }
 

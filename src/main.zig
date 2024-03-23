@@ -9,6 +9,10 @@ pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     return rom_data;
 }
 
+
+
+
+
 pub fn main() !void {
     var bus = Bus{};
     const v = bus.read(0xa);
@@ -17,8 +21,22 @@ pub fn main() !void {
     
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-    const rom_data = try load_rom_data("test.o65", allocator);
+   
+        
+    const args_allocator = gpa.allocator();
+    
+    const args = try std.process.argsAlloc(args_allocator);
+    defer std.process.argsFree(args_allocator, args);
+    var rom_path: []const u8 = "test.o65";
+    
+    if (args.len > 1){
+        rom_path = args[1];
+    }
+    
+
+    const file_allocator = gpa.allocator();
+    
+    const rom_data = try load_rom_data(rom_path, file_allocator);
 
     bus.write_continous(rom_data, 0);
     
@@ -29,7 +47,7 @@ pub fn main() !void {
         cpu.clock_tick();
     }
 
-    allocator.free(rom_data);
+    file_allocator.free(rom_data);
 }
 
 fn test_init_reset_vector(bus: *Bus) void {
