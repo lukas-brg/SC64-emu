@@ -77,9 +77,9 @@ pub fn asl(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn bcc(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.CARRY) == 1) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -90,9 +90,9 @@ pub fn bcc(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn bcs(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -102,9 +102,9 @@ pub fn bcs(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn beq(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.ZERO) == 1) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -112,11 +112,12 @@ pub fn beq(cpu: *CPU, instruction: OpInfo) void {
     }
 }
 
+
 pub fn bmi(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 1) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -126,9 +127,9 @@ pub fn bmi(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn bne(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.ZERO) == 0) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -138,9 +139,9 @@ pub fn bne(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn bpl(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 0) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -151,9 +152,9 @@ pub fn bpl(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn bvc(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 0) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -164,9 +165,9 @@ pub fn bvc(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn bvs(cpu: *CPU, instruction: OpInfo) void {
     if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 1) {
-        const operand = get_operand(cpu, instruction);
-        cpu.PC = operand.address;
-        cpu._wait_cycles += operand.cycles;
+        const operand_info = get_operand(cpu, instruction);
+        cpu.PC = operand_info.address;
+        cpu._wait_cycles += operand_info.cycles;
     }
     else {
         cpu.PC += instruction.bytes;
@@ -185,6 +186,18 @@ pub fn brk(cpu: *CPU, instruction: OpInfo) void {
 
     cpu.halt = true;
 }
+
+pub fn bit(cpu: *CPU, instruction: OpInfo) void {
+    const operand_info = get_operand(cpu, instruction);
+    const operand = operand_info.operand;
+    cpu.set_status_flag(StatusFlag.NEGATIVE, bitutils.get_bit_at(operand, 7));
+    cpu.set_status_flag(StatusFlag.OVERFLOW, bitutils.get_bit_at(operand, 6));
+    cpu.A &= operand;
+    cpu.update_zero(cpu.A);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
 
 
 pub fn clc(cpu: *CPU, instruction: OpInfo) void {
@@ -473,6 +486,65 @@ pub fn rol(cpu: *CPU, instruction: OpInfo) void {
     cpu._wait_cycles += operand_info.cycles;
 }
 
+pub fn rti(cpu: *CPU, instruction: OpInfo) void {  
+    var status = cpu.pop();
+    
+    // Break and unused bit are supposed to be ignored, so they are set to the previous state of the cpu
+    status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.BREAK), get_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK)));
+    status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.UNUSED), get_bit_at(cpu.status, @intFromEnum(StatusFlag.UNUSED)));
+    cpu.status = status;
+    
+    cpu.PC = cpu.pop_16();
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn rts(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.PC = cpu.pop_16() + 1;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn sbc(cpu: *CPU, instruction: OpInfo) void {
+    const operand_info = get_operand(cpu, instruction);
+    const operand = operand_info.operand;
+    
+    const a_operand = cpu.A;                                                 
+    const result_carry = @subWithOverflow(cpu.A, operand - cpu.get_status_flag(StatusFlag.CARRY));
+    cpu.A = result_carry[0];
+    
+    cpu.set_status_flag(StatusFlag.CARRY, result_carry[1]);
+    
+    cpu.update_zero(cpu.A);
+    cpu.update_negative(cpu.A);
+    
+    const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
+    cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+    cpu.PC += instruction.bytes;
+
+    cpu._wait_cycles += operand_info.cycles;
+}
+
+
+pub fn sec(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.set_status_flag(StatusFlag.CARRY, 1);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn sed(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.set_status_flag(StatusFlag.DECIMAL, 1);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+pub fn sei(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
 
 pub fn sta(cpu: *CPU, instruction: OpInfo) void {  
     const operand_info = get_operand(cpu, instruction);
@@ -498,6 +570,57 @@ pub fn sty(cpu: *CPU, instruction: OpInfo) void {
     
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += operand_info.cycles;
+}
+
+
+pub fn tax(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.X = cpu.A;
+    cpu.update_negative(cpu.X);
+    cpu.update_zero(cpu.X);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+pub fn tay(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.Y = cpu.A;
+    cpu.update_negative(cpu.Y);
+    cpu.update_zero(cpu.Y);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+pub fn tsx(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.X = cpu.SP;
+    cpu.update_negative(cpu.X);
+    cpu.update_zero(cpu.X);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+pub fn txa(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.A = cpu.X;
+    cpu.update_negative(cpu.A);
+    cpu.update_zero(cpu.A);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn txs(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.SP = cpu.X;
+    cpu.update_negative(cpu.SP);
+    cpu.update_zero(cpu.SP);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
+}
+
+
+pub fn tya(cpu: *CPU, instruction: OpInfo) void {  
+    cpu.A = cpu.Y;
+    cpu.update_negative(cpu.A);
+    cpu.update_zero(cpu.A);
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += instruction.cycles;
 }
 
 

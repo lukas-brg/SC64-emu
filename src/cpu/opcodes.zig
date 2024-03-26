@@ -89,6 +89,9 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x50, .op_name="BVC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bvc},
     .{.opcode=0x70, .op_name="BVS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bvs},
     
+    .{.opcode=0x24, .op_name="BIT", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.bit},
+    .{.opcode=0x2C, .op_name="BIT", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 4, .handler_fn = &instructions.bit},
+    
     .{.opcode=0x00, .op_name="BRK", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 7, .handler_fn = &instructions.brk},
     
     .{.opcode=0x18, .op_name="CLC", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.clc},
@@ -197,19 +200,21 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x2E, .op_name="ROL", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 6, .handler_fn = &instructions.rol},
     .{.opcode=0x3E, .op_name="ROL", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 7, .handler_fn = &instructions.rol},
     
-    .{.opcode=0x40, .op_name="RTI", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0x60, .op_name="RTS", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0xE9, .op_name="SBC", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0xE5, .op_name="SBC", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.dummy},
-    .{.opcode=0xF5, .op_name="SBC", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0xED, .op_name="SBC", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0xFD, .op_name="SBC", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0xF9, .op_name="SBC", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 4, .handler_fn = &instructions.dummy},
-    .{.opcode=0xE1, .op_name="SBC", .addressing_mode=AddressingMode.INDIRECT_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.dummy},
-    .{.opcode=0xF1, .op_name="SBC", .addressing_mode=AddressingMode.INDIRECT_Y, .bytes = 2, .cycles = 5, .handler_fn = &instructions.dummy},
-    .{.opcode=0x38, .op_name="SEC", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0xF8, .op_name="SED", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x78, .op_name="SEI", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
+    .{.opcode=0x40, .op_name="RTI", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 6, .handler_fn = &instructions.rti},
+    .{.opcode=0x60, .op_name="RTS", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 6, .handler_fn = &instructions.rts},
+
+    .{.opcode=0xE9, .op_name="SBC", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.sbc},
+    .{.opcode=0xE5, .op_name="SBC", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.sbc},
+    .{.opcode=0xF5, .op_name="SBC", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 4, .handler_fn = &instructions.sbc},
+    .{.opcode=0xED, .op_name="SBC", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 4, .handler_fn = &instructions.sbc},
+    .{.opcode=0xFD, .op_name="SBC", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 4, .handler_fn = &instructions.sbc},
+    .{.opcode=0xF9, .op_name="SBC", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 4, .handler_fn = &instructions.sbc},
+    .{.opcode=0xE1, .op_name="SBC", .addressing_mode=AddressingMode.INDIRECT_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.sbc},
+    .{.opcode=0xF1, .op_name="SBC", .addressing_mode=AddressingMode.INDIRECT_Y, .bytes = 2, .cycles = 5, .handler_fn = &instructions.sbc},
+
+    .{.opcode=0x38, .op_name="SEC", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.sec},
+    .{.opcode=0xF8, .op_name="SED", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.sed},
+    .{.opcode=0x78, .op_name="SEI", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.sei},
     
     .{.opcode=0x85, .op_name="STA", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.sta},
     .{.opcode=0x95, .op_name="STA", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 4, .handler_fn = &instructions.sta},
@@ -227,11 +232,11 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x94, .op_name="STY", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 4, .handler_fn = &instructions.sty},
     .{.opcode=0x8C, .op_name="STY", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 4, .handler_fn = &instructions.sty},
     
-    .{.opcode=0xAA, .op_name="TAX", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0xA8, .op_name="TAY", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0xBA, .op_name="TSX", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x8A, .op_name="TXA", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x9A, .op_name="TXS", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
-    .{.opcode=0x98, .op_name="TYA", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.dummy},
+    .{.opcode=0xAA, .op_name="TAX", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.tax},
+    .{.opcode=0xA8, .op_name="TAY", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.tay},
+    .{.opcode=0xBA, .op_name="TSX", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.tsx},
+    .{.opcode=0x8A, .op_name="TXA", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.txa},
+    .{.opcode=0x9A, .op_name="TXS", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.txs},
+    .{.opcode=0x98, .op_name="TYA", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.tya},
 
 };

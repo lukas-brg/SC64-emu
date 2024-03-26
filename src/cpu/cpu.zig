@@ -86,6 +86,14 @@ pub const CPU = struct {
         return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
 
+
+    pub fn pop_16(self: *CPU) u16 {
+        const low_byte = @as(u16, self.pop());
+        const high_byte = @as(u16, self.pop());
+        return (high_byte << 8) | low_byte;
+    }
+
+
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
         self.SP -= 1;
