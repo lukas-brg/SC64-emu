@@ -56,9 +56,8 @@ const OperandInfo = struct {
 };
 
 fn page_boundary_crossed(cpu: *CPU, addr: u16) bool {
-    _ = cpu;
-    _ = addr;
-    return false;
+    // A page boundary is crossed when the high byte changes
+    return (cpu.PC & 0xFF00) != (addr & 0xFF00);
 }
 
 pub fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {

@@ -1,6 +1,6 @@
 
 const std = @import("std");
-const Bus = @import("bus.zig").Bus;
+const Bus = @import("../bus.zig").Bus;
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
