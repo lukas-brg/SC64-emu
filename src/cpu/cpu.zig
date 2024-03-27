@@ -30,7 +30,7 @@ pub const CPU = struct {
     X: u8,
     Y: u8,
     bus: *Bus,
-    cycle_count: u32 = 0,
+    cycle_count: usize = 0,
     _wait_cycles: usize = 0,
     halt: bool = false,
 
@@ -50,6 +50,9 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
+        if (DEBUG_CPU) {
+            std.debug.print("Loaded PC from reset vector: 0x{x:0<4}\n", .{self.PC});
+        }
     }
 
     fn get_status_bit(self: CPU, bit_index: u3) u1 {
@@ -111,16 +114,18 @@ pub const CPU = struct {
         return self.bus.read(self.PC);
     }
 
+    pub fn do_nothing(self: *CPU) void {
+        _ = self;
+    }
+
     pub fn clock_tick(self: *CPU) void {
       
-        
         if(DEBUG_CPU) {
             std.debug.print("==========================================================================================================================\n", .{});
             std.debug.print("Clock Tick!\n", .{});
             std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
         }
 
-        
         const opcode = self.fetch_byte();
         const instruction = decode_opcode(opcode);
         
@@ -140,7 +145,7 @@ pub const CPU = struct {
 
         if(self.halt) {
             if(DEBUG_CPU) {
-                std.debug.print("HALT0!\n", .{});
+                std.debug.print("HALT!\n", .{});
             }
             return;
         }
@@ -169,15 +174,16 @@ pub const CPU = struct {
         std.debug.print("      {x:0>2}", .{self.Y});
 
         std.debug.print("\n\nSTATUS FLAGS:", .{});
-        std.debug.print("\nC Z I D B V N", .{});
+     
+        std.debug.print("\nN V B D I Z C", .{});
         std.debug.print("\n{} {} {} {} {} {} {} ", 
-            .{ self.get_status_bit(0), 
-                    self.get_status_bit(1), 
-                    self.get_status_bit(2), 
-                    self.get_status_bit(3), 
-                    self.get_status_bit(4), 
+            .{ self.get_status_bit(7), 
                     self.get_status_bit(6), 
-                    self.get_status_bit(7) 
+                    self.get_status_bit(4), 
+                    self.get_status_bit(3), 
+                    self.get_status_bit(2), 
+                    self.get_status_bit(1), 
+                    self.get_status_bit(0) 
                 });
 
         std.debug.print("\n----------------------------------------------------\n\n", .{});

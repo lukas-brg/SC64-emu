@@ -2,6 +2,7 @@ const std = @import("std");
 const c = @import("cpu/cpu.zig");
 const Bus = @import("bus.zig").Bus;
 
+const Emulator = @import("emulator.zig").Emulator;
 
 
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
@@ -10,13 +11,8 @@ pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 }
 
 
-
-
-
 pub fn main() !void {
-    var bus = Bus{};
-    var cpu = c.CPU.init(&bus);
-    
+ 
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
    
@@ -30,20 +26,13 @@ pub fn main() !void {
         rom_path = args[1];
     }
     
+    var emulator = Emulator.init();
 
-    const rom_data = try load_rom_data(rom_path, allocator);
+    _ = try emulator.load_rom(rom_path, 0);
 
-    bus.write_continous(rom_data, 0);
-    
-    cpu.reset();
-    
-    while (!cpu.halt) {
-        cpu.bus.print_mem(0, 100);
-        cpu.clock_tick();
-    }
-
-    allocator.free(rom_data);
+    emulator.run();
 }
+
 
 fn test_init_reset_vector(bus: *Bus) void {
     // Reset vector to 0x2010

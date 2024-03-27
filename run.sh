@@ -7,6 +7,5 @@ else
     output_file="${1%.*}.o65"
     xa "$1" -o ${output_file}
     zig run src/main.zig -- ${output_file}
-    
 fi
 

@@ -6,3 +6,4 @@ LDA #$F0
 ROL
 LDA #$F0
 ROR
+LDA #$FF
