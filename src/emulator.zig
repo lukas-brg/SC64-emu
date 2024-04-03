@@ -11,23 +11,31 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 
 
 
-
 pub const Emulator = struct {
 
     bus: *Bus,
-    cpu: CPU,
+    cpu: *CPU,
+    
 
-    pub fn init() Emulator {
-        var bus = Bus.init();
-        const cpu = CPU.init(&bus);
-   
+    pub fn init(allocator: std.mem.Allocator) !Emulator {
+        const bus = try allocator.create(Bus);
+        bus.* = Bus.init();
+
+        const cpu = try allocator.create(CPU);
+        cpu.* = CPU.init(bus);
+        
         return .{
-            .bus = cpu.bus,
+            .bus = bus,
             .cpu = cpu
         };
     }
 
+    pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
+        allocator.destroy(self.bus);
+        allocator.destroy(self.cpu);
+    }
 
+    
     pub fn load_rom(self: *Emulator, rom_path: []const u8, offset: u16) !void {
 
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -40,16 +48,24 @@ pub const Emulator = struct {
     }
 
 
-    pub fn run(self: *Emulator) void {
+    pub fn run(self: *Emulator, limit_cycles: ?usize) void {
         
         self.cpu.reset();
-        
+        var count: usize = 0;
+    
+    
         while (!self.cpu.halt) {
+            if(limit_cycles) |max_cycles| {
+                if(count >= max_cycles) {
+                    break;
+                }
+            }
             if(DEBUG_CPU) {
                 self.cpu.bus.print_mem(0, 112);
             }
             
             self.cpu.clock_tick();
+            count += 1;
         }
     }
       

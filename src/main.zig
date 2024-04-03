@@ -1,7 +1,7 @@
 const std = @import("std");
 const c = @import("cpu/cpu.zig");
 const Bus = @import("bus.zig").Bus;
-
+const CPU = @import("cpu/cpu.zig").CPU;
 const Emulator = @import("emulator.zig").Emulator;
 
 
@@ -26,11 +26,15 @@ pub fn main() !void {
         rom_path = args[1];
     }
     
-    var emulator = Emulator.init();
+
+    var emulator = try Emulator.init(allocator);
+    //emulator.cpu.set_reset_vector(0x0040);
 
     _ = try emulator.load_rom(rom_path, 0);
 
-    emulator.run();
+    emulator.run(null);
+    emulator.deinit(allocator);
+
 }
 
 
@@ -88,4 +92,28 @@ test "test opcode lookup" {
 
     const instruction = decode_opcode(0xEA);
     assert(std.mem.eql(u8, instruction.op_name, "NOP"));
+}
+
+
+test "cpu and bus allocation" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+   
+    const allocator = gpa.allocator();
+    const rom_path: []const u8 = "test.o65";
+    var emulator = try Emulator.init(allocator);
+
+    _ = try emulator.load_rom(rom_path, 0);
+    
+    std.debug.assert(std.mem.eql(u8, &emulator.bus.memory, &emulator.cpu.bus.memory));
+    std.debug.assert(emulator.bus == emulator.cpu.bus);
+
+    emulator.run(null);
+
+    std.debug.assert(std.mem.eql(u8, &emulator.bus.memory, &emulator.cpu.bus.memory));
+    std.debug.assert(emulator.bus == emulator.cpu.bus);
+   
+    emulator.deinit(allocator);
+
+    
 }

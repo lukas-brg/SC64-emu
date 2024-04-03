@@ -51,7 +51,8 @@ pub const CPU = struct {
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
         if (DEBUG_CPU) {
-            std.debug.print("Loaded PC from reset vector: 0x{x:0<4}\n", .{self.PC});
+            std.debug.print("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
+            std.log.debug("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
         }
     }
 
@@ -117,6 +118,16 @@ pub const CPU = struct {
     pub fn do_nothing(self: *CPU) void {
         _ = self;
     }
+
+    pub fn set_reset_vector(self: *CPU, addr: u16) void {
+        // This function takes the address in big endian, for ease of use
+        const low_byte: u8 = @intCast((addr & 0x00FF));
+        const high_byte: u8 = @intCast((addr >> 8));
+       
+        self.bus.write(RESET_VECTOR, low_byte);
+        self.bus.write(RESET_VECTOR+1, high_byte);
+    }
+
 
     pub fn clock_tick(self: *CPU) void {
       
