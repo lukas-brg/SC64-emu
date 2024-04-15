@@ -53,7 +53,6 @@ pub const OpInfo = struct {
 };
 
 
-
 const OPCODE_TABLE = [_]OpInfo{
     // Only the legal opcodes are implemented for now, ToDo?
     .{.opcode=0x69, .op_name="ADC", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.adc},

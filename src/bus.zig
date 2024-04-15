@@ -29,6 +29,7 @@ pub const Bus = struct {
         return self.memory[addr];
     }
 
+    
 
     pub fn print_mem(self: *Bus, start: u16, len: u16) void {
         std.debug.print("\nMEMORY:", .{});

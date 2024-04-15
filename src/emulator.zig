@@ -48,6 +48,7 @@ pub const Emulator = struct {
     }
 
 
+
     pub fn run(self: *Emulator, limit_cycles: ?usize) void {
         
         self.cpu.reset();
@@ -69,4 +70,5 @@ pub const Emulator = struct {
         }
     }
       
+
 };

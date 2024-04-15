@@ -1,0 +1,14 @@
+.{
+    .name = "zic-20",
+    .version = "0.0.0",
+    .dependencies = .{
+       
+    },
+    .paths = .{
+        "LICENSE",
+        "README.md",
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
