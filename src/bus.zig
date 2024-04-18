@@ -7,6 +7,18 @@ const MEM_SIZE: u17 = 0x10000;
 // Character Rom $D000-$DFFF 
 //
 
+pub const MemoryMap = struct {
+    pub const screen_mem_start: u16 = 0x0400;
+    pub const screen_mem_end: u16 = 0x07E7;
+
+    pub const color_mem_start: u16 = 0xD800;
+    pub const color_mem_end: u16 = 0xDBE7;
+
+    pub const character_rom_start: u16 = 0xD000;
+    pub const character_rom_end: u16 = 0xDFFF;
+};
+
+
 pub const Bus = struct {
     memory: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
 

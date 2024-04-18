@@ -3,18 +3,21 @@ const CPU = @import("cpu/cpu.zig").CPU;
 const DEBUG_CPU = @import("cpu/cpu.zig").DEBUG_CPU;
 const Bus = @import("bus.zig").Bus;
 const graphics = @import("graphics.zig");
-pub const SCALING_FACTOR = 3;
-
+const MemoryMap = @import("bus.zig").MemoryMap;
+const bitutils = @import("cpu/bitutils.zig");
 
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
+
+pub const SCALING_FACTOR = 3;
+
+
 fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
     return data;
 }
-
 
 
 pub const Emulator = struct {
@@ -83,8 +86,6 @@ pub const Emulator = struct {
         };
         defer sdl.SDL_DestroyRenderer(renderer);
 
-        
-        
 
         while (!self.cpu.halt) {
             if(limit_cycles) |max_cycles| {
@@ -98,14 +99,70 @@ pub const Emulator = struct {
             
             self.cpu.clock_tick();
             count += 1;
-            graphics.render_frame(renderer, self);
+            self.render_frame(renderer);
+            break;
         }
         _ = sdl.SDL_RenderClear(renderer);
       
         sdl.SDL_RenderPresent(renderer);
      
         sdl.SDL_Delay(17);
-    }
-      
+    }   
 
+
+    pub fn render_frame(self: *Emulator, renderer: *sdl.struct_SDL_Renderer) void {
+        _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+
+        _ = sdl.SDL_RenderClear(renderer);
+
+
+        sdl.SDL_RenderPresent(renderer);
+        sdl.SDL_Delay(50);
+        
+        var bus = self.bus;
+        // 40 cols, 25 rows
+    
+        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_start + 1) |addr| {
+            const screen_mem_val = @as(u16, bus.read(@intCast(addr)));
+        
+            const char_addr_start: u16 = ( screen_mem_val * 8) + MemoryMap.character_rom_start;
+        
+            const char_count = addr - MemoryMap.screen_mem_start;
+                   
+           
+            // coordinates of upper left corner of char
+            const char_x = (char_count % 40) * 8;
+            const char_y = (char_count / 40) * 8;
+            // std.debug.print("{}\n", .{char_x});
+            // std.debug.print("{}\n", .{char_y});
+            for(0..8) |char_row_idx|{
+                const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
+                
+                const char_row_byte = self.bus.read(char_row_addr);
+                std.debug.print("{x}\n", .{char_row_byte});
+                for(0..8) |char_col_idx| {
+                    const pixel: u1 = bitutils.get_bit_at(char_row_byte, @intCast(char_col_idx));
+                    const char_pixel_x: c_int = @intCast(char_x + char_col_idx);
+                    const char_pixel_y: c_int = @intCast(char_y + char_row_idx);
+                    if (pixel == 1) {
+
+                        _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, sdl.SDL_ALPHA_OPAQUE);
+                        var pixel_rect: sdl.SDL_Rect = .{
+                            .x = char_pixel_x,
+                            .y = char_pixel_y,
+                            .w = SCALING_FACTOR,
+                            .h = SCALING_FACTOR,
+                        };
+
+                        _ = sdl.SDL_RenderFillRect(renderer, &pixel_rect);
+                        sdl.SDL_RenderPresent(renderer);
+                        
+                    }
+                }
+
+            }
+            
+        }
+    }
+        
 };
