@@ -115,10 +115,6 @@ pub const CPU = struct {
         return self.bus.read(self.PC);
     }
 
-    pub fn do_nothing(self: *CPU) void {
-        _ = self;
-    }
-
     pub fn set_reset_vector(self: *CPU, addr: u16) void {
         // This function takes the address in big endian, for ease of use
         const low_byte: u8 = @intCast((addr & 0x00FF));
@@ -127,7 +123,7 @@ pub const CPU = struct {
         self.bus.write(RESET_VECTOR, low_byte);
         self.bus.write(RESET_VECTOR+1, high_byte);
     }
-
+    
 
     pub fn clock_tick(self: *CPU) void {
       

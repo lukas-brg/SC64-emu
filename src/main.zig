@@ -30,14 +30,14 @@ pub fn main() !void {
     
 
     var emulator = try Emulator.init(allocator);
+    defer emulator.deinit(allocator);
     //emulator.cpu.set_reset_vector(0x0040);
 
     _ = try emulator.load_rom(rom_path, 0);
 
-    emulator.run(null);
-    emulator.deinit(allocator);
-
-    _ = try graphics.sdl_test();
+    try emulator.c64_init();
+    try emulator.run(null);
+    //_ = try graphics.sdl_test();
 
 }
 

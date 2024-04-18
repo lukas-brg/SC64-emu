@@ -2,6 +2,11 @@ const std = @import("std");
 
 const MEM_SIZE: u17 = 0x10000;
 
+// Special Memory locations
+// Screen Memory: 0x400 
+// Character Rom $D000-$DFFF 
+//
+
 pub const Bus = struct {
     memory: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
 
@@ -18,7 +23,7 @@ pub const Bus = struct {
         if (buffer.len + offset > self.memory.len) {
             std.debug.panic("Buffer is too large to fit in memory at offset {}.", .{offset});
         }
-       
+        
         @memcpy(
             self.memory[offset..].ptr,
             buffer
@@ -26,7 +31,7 @@ pub const Bus = struct {
     }
 
     pub fn read(self: Bus, addr: u16) u8 {
-        return self.memory[addr];
+        return self.memory[addr]; 
     }
 
     
