@@ -102,11 +102,11 @@ pub const Emulator = struct {
             self.render_frame(renderer);
             break;
         }
+        sdl.SDL_Delay(5000);
         _ = sdl.SDL_RenderClear(renderer);
       
         sdl.SDL_RenderPresent(renderer);
      
-        sdl.SDL_Delay(17);
     }   
 
 
@@ -123,9 +123,9 @@ pub const Emulator = struct {
         // 40 cols, 25 rows
     
         for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_start + 1) |addr| {
-            const screen_mem_val = @as(u16, bus.read(@intCast(addr)));
+            const screen_code = @as(u16, bus.read(@intCast(addr)));
         
-            const char_addr_start: u16 = ( screen_mem_val * 8) + MemoryMap.character_rom_start;
+            const char_addr_start: u16 = (screen_code * 8) + MemoryMap.character_rom_start;
         
             const char_count = addr - MemoryMap.screen_mem_start;
                    
@@ -148,8 +148,8 @@ pub const Emulator = struct {
 
                         _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, sdl.SDL_ALPHA_OPAQUE);
                         var pixel_rect: sdl.SDL_Rect = .{
-                            .x = char_pixel_x,
-                            .y = char_pixel_y,
+                            .x = char_pixel_x * SCALING_FACTOR,
+                            .y = char_pixel_y * SCALING_FACTOR,
                             .w = SCALING_FACTOR,
                             .h = SCALING_FACTOR,
                         };
