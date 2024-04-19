@@ -12,7 +12,8 @@ const sdl = @cImport({
 
 
 pub const SCALING_FACTOR = 3;
-
+pub const BORDER_SIZE_X = 14;
+pub const BORDER_SIZE_Y = 12;
 
 fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
@@ -64,6 +65,25 @@ pub const Emulator = struct {
     }
 
 
+    pub fn clear_screen_mem(self: *Emulator) void {
+        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
+            self.bus.write(@intCast(addr), 0x20);
+        }       
+    }
+
+    pub fn clear_screen_text_area(renderer: *sdl.struct_SDL_Renderer) void {
+        var screen_rect = sdl.SDL_Rect{
+            .x = BORDER_SIZE_X,  // Small margin for readability 
+            .y = BORDER_SIZE_Y,
+            .w = 320,
+            .h = 200,
+        };
+
+        _ = sdl.SDL_SetRenderDrawColor(renderer, 72,58,170,255);
+        _ = sdl.SDL_RenderFillRect(renderer, &screen_rect);
+    }
+    
+
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
         
         self.cpu.reset();
@@ -74,10 +94,16 @@ pub const Emulator = struct {
         }
         defer sdl.SDL_Quit();
 
-        const screen = sdl.SDL_CreateWindow("My Game Window", sdl.SDL_WINDOWPOS_UNDEFINED, sdl.SDL_WINDOWPOS_UNDEFINED, 320*SCALING_FACTOR, 200*SCALING_FACTOR, sdl.SDL_WINDOW_OPENGL) orelse {
-        sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
+        const screen = sdl.SDL_CreateWindow("ZIG64 Emulator", 
+            sdl.SDL_WINDOWPOS_UNDEFINED, 
+            sdl.SDL_WINDOWPOS_UNDEFINED, 
+            (2*BORDER_SIZE_X+320)*SCALING_FACTOR, 
+            (2*BORDER_SIZE_Y+200)*SCALING_FACTOR, sdl.SDL_WINDOW_OPENGL) 
+        orelse {
+            sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
+
         defer sdl.SDL_DestroyWindow(screen);
       
         const renderer = sdl.SDL_CreateRenderer(screen, -1, 0) orelse {
@@ -86,7 +112,13 @@ pub const Emulator = struct {
         };
         defer sdl.SDL_DestroyRenderer(renderer);
 
+        _ = sdl.SDL_SetRenderDrawColor(renderer, 134,122,222,255);
 
+        _ = sdl.SDL_RenderClear(renderer);
+        _ = sdl.SDL_RenderSetScale(renderer, SCALING_FACTOR, SCALING_FACTOR);
+        
+        self.clear_screen_mem();
+        
         while (!self.cpu.halt) {
             if(limit_cycles) |max_cycles| {
                 if(count >= max_cycles) {
@@ -94,74 +126,56 @@ pub const Emulator = struct {
                 }
             }
             if(DEBUG_CPU) {
-                self.cpu.bus.print_mem(0, 112);
+                self.cpu.bus.print_mem(0x400, 0x20);
             }
             
             self.cpu.clock_tick();
             count += 1;
             self.render_frame(renderer);
-            break;
+            sdl.SDL_RenderPresent(renderer);
+            //break;
         }
-        sdl.SDL_Delay(5000);
-        _ = sdl.SDL_RenderClear(renderer);
-      
-        sdl.SDL_RenderPresent(renderer);
-     
+        //sdl.SDL_Delay(5000);
     }   
 
 
+
     pub fn render_frame(self: *Emulator, renderer: *sdl.struct_SDL_Renderer) void {
-        _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-
-        _ = sdl.SDL_RenderClear(renderer);
-
-
-        sdl.SDL_RenderPresent(renderer);
-        sdl.SDL_Delay(50);
+ 
+        clear_screen_text_area(renderer);
         
         var bus = self.bus;
         // 40 cols, 25 rows
     
-        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_start + 1) |addr| {
+        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
             const screen_code = @as(u16, bus.read(@intCast(addr)));
-        
+            
+            if (screen_code == 0x20) {continue;}
+            
             const char_addr_start: u16 = (screen_code * 8) + MemoryMap.character_rom_start;
         
             const char_count = addr - MemoryMap.screen_mem_start;
                    
+            _ = sdl.SDL_SetRenderDrawColor(renderer, 134,122,222,255);
            
             // coordinates of upper left corner of char
-            const char_x = (char_count % 40) * 8;
-            const char_y = (char_count / 40) * 8;
-            // std.debug.print("{}\n", .{char_x});
-            // std.debug.print("{}\n", .{char_y});
+            const char_x = (char_count % 40) * 8 + BORDER_SIZE_X;
+            const char_y = (char_count / 40) * 8 + BORDER_SIZE_Y;
+           
             for(0..8) |char_row_idx|{
                 const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
                 
                 const char_row_byte = self.bus.read(char_row_addr);
-                std.debug.print("{x}\n", .{char_row_byte});
-                for(0..8) |char_col_idx| {
-                    const pixel: u1 = bitutils.get_bit_at(char_row_byte, @intCast(char_col_idx));
+               
+                for(0..8) |char_col_idx|  {
+                    const pixel: u1 = bitutils.get_bit_at(char_row_byte,  @intCast(7-char_col_idx));
                     const char_pixel_x: c_int = @intCast(char_x + char_col_idx);
                     const char_pixel_y: c_int = @intCast(char_y + char_row_idx);
                     if (pixel == 1) {
-
-                        _ = sdl.SDL_SetRenderDrawColor(renderer, 255, 255, 255, sdl.SDL_ALPHA_OPAQUE);
-                        var pixel_rect: sdl.SDL_Rect = .{
-                            .x = char_pixel_x * SCALING_FACTOR,
-                            .y = char_pixel_y * SCALING_FACTOR,
-                            .w = SCALING_FACTOR,
-                            .h = SCALING_FACTOR,
-                        };
-
-                        _ = sdl.SDL_RenderFillRect(renderer, &pixel_rect);
-                        sdl.SDL_RenderPresent(renderer);
-                        
+                        _ = sdl.SDL_RenderDrawPoint(renderer, char_pixel_x, char_pixel_y);  
                     }
                 }
-
             }
-            
         }
     }
         

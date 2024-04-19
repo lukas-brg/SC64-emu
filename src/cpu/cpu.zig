@@ -4,7 +4,7 @@ const Bus = @import("../bus.zig").Bus;
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
-pub const DEBUG_CPU = true;
+pub const DEBUG_CPU = false;
 
 
 const RESET_VECTOR = 0xFFFC;

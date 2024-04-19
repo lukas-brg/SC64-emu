@@ -36,7 +36,7 @@ pub fn main() !void {
     _ = try emulator.load_rom(rom_path, 0);
 
     try emulator.c64_init();
-    emulator.bus.write(0x400, 1);
+    //emulator.bus.write(0x400, 1);
     try emulator.run(null);
     //_ = try graphics.sdl_test();
 
