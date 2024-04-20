@@ -1,4 +1,3 @@
-*=$0000
 start:
     ldx #$00     
 loop:
@@ -8,5 +7,6 @@ loop:
     beq end 
     inx     
     jmp loop
-end:
-    jmp end           
+end:          
+    jmp end  ; this is a hack to keep the window open indefinitely
+    

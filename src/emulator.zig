@@ -25,8 +25,7 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 
 pub const EmulatorConfig = struct {
     headless: bool = false,
-    scaling_factor: f16 = 4,
-    
+    scaling_factor: f16 = 3,    
 };
 
 pub const Emulator = struct {
@@ -54,6 +53,7 @@ pub const Emulator = struct {
     pub fn init_c64(self: *Emulator) !void {
         // load character rom
         try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
+        self.cpu.set_reset_vector(0x1000);
     }
 
     pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
@@ -157,9 +157,8 @@ pub const Emulator = struct {
             count += 1;
             self.render_frame(renderer);
             sdl.SDL_RenderPresent(renderer);
-            //break;
         }
-        //sdl.SDL_Delay(5000);
+      
     }   
 
 
@@ -169,7 +168,6 @@ pub const Emulator = struct {
         clear_screen_text_area(renderer);
         
         var bus = self.bus;
-        // 40 cols, 25 rows
     
         for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
             const screen_code = @as(u16, bus.read(@intCast(addr)));
@@ -191,7 +189,7 @@ pub const Emulator = struct {
                 
                 const char_row_byte = self.bus.read(char_row_addr);
                
-                for(0..8) |char_col_idx|  {
+                for(0..8) |char_col_idx|  {                                      // The leftmost pixel is represented by the most significant bit
                     const pixel: u1 = bitutils.get_bit_at(char_row_byte,  @intCast(7-char_col_idx));
                     const char_pixel_x: c_int = @intCast(char_x + char_col_idx);
                     const char_pixel_y: c_int = @intCast(char_y + char_row_idx);
