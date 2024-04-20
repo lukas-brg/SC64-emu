@@ -11,9 +11,11 @@ const sdl = @cImport({
 });
 
 
-pub const SCALING_FACTOR = 3;
 pub const BORDER_SIZE_X = 14;
 pub const BORDER_SIZE_Y = 12;
+
+
+
 
 fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
@@ -21,30 +23,37 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 }
 
 
+pub const EmulatorConfig = struct {
+    headless: bool = false,
+    scaling_factor: f16 = 4,
+    
+};
+
 pub const Emulator = struct {
 
     bus: *Bus,
     cpu: *CPU,
-    
+    config: EmulatorConfig = .{},
 
-    pub fn init(allocator: std.mem.Allocator) !Emulator {
+
+    pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
         const bus = try allocator.create(Bus);
         bus.* = Bus.init();
 
         const cpu = try allocator.create(CPU);
         cpu.* = CPU.init(bus);
-        
         const emulator: Emulator = .{
             .bus = bus,
-            .cpu = cpu
+            .cpu = cpu,
+            .config = config,
         };
 
         return emulator;
     }
 
-    pub fn c64_init(self: *Emulator) !void {
+    pub fn init_c64(self: *Emulator) !void {
         // load character rom
-        try self.load_rom("src/data/c64_charset.bin", 0xD000);  
+        try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
     }
 
     pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
@@ -84,10 +93,13 @@ pub const Emulator = struct {
     }
     
 
+ 
+
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
         
         self.cpu.reset();
         var count: usize = 0;
+        
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
             sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
@@ -97,8 +109,9 @@ pub const Emulator = struct {
         const screen = sdl.SDL_CreateWindow("ZIG64 Emulator", 
             sdl.SDL_WINDOWPOS_UNDEFINED, 
             sdl.SDL_WINDOWPOS_UNDEFINED, 
-            (2*BORDER_SIZE_X+320)*SCALING_FACTOR, 
-            (2*BORDER_SIZE_Y+200)*SCALING_FACTOR, sdl.SDL_WINDOW_OPENGL) 
+            @intFromFloat(@as(f16, (2*BORDER_SIZE_X+320)) * self.config.scaling_factor), 
+            @intFromFloat(@as(f16, (2*BORDER_SIZE_Y+200)) * self.config.scaling_factor), 
+            sdl.SDL_WINDOW_OPENGL) 
         orelse {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
@@ -115,11 +128,22 @@ pub const Emulator = struct {
         _ = sdl.SDL_SetRenderDrawColor(renderer, 134,122,222,255);
 
         _ = sdl.SDL_RenderClear(renderer);
-        _ = sdl.SDL_RenderSetScale(renderer, SCALING_FACTOR, SCALING_FACTOR);
+        _ = sdl.SDL_RenderSetScale(renderer, self.config.scaling_factor, self.config.scaling_factor);
         
         self.clear_screen_mem();
-        
-        while (!self.cpu.halt) {
+        var quit = false;
+        while (!self.cpu.halt and !quit) {
+            var event: sdl.SDL_Event = undefined;
+            while (sdl.SDL_PollEvent(&event) != 0) {
+                switch (event.type) {
+                    sdl.SDL_QUIT => {
+                        quit = true;
+                    },
+                    else => {},
+                }
+            }
+            
+            
             if(limit_cycles) |max_cycles| {
                 if(count >= max_cycles) {
                     break;

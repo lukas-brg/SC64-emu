@@ -5,7 +5,7 @@ const sdl = @cImport({
 });
 
 
-const SCALING_FACTOR= @import("emulator.zig").SCALING_FACTOR;
+const SCALING_FACTOR= @import("emulator.zig").self.config.scaling_factor;
 
 
 
