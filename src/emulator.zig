@@ -6,6 +6,8 @@ const graphics = @import("graphics.zig");
 const MemoryMap = @import("bus.zig").MemoryMap;
 const bitutils = @import("cpu/bitutils.zig");
 
+//const sdl = @import("sdl2");
+
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
@@ -92,7 +94,21 @@ pub const Emulator = struct {
         _ = sdl.SDL_RenderFillRect(renderer, &screen_rect);
     }
     
+    const BG_Color = struct {
+        r: c_int = 72,
+        g: c_int = 58,
+        b: c_int = 170,
+    };
 
+
+    pub const TextColor = struct {
+        pub const r: u8 = 255;
+        pub const g: u8 = 255;
+        pub const b: u8 = 255;
+    };
+
+    const SCREEN_WIDTH = 320;
+    const SCREEN_HEIGHT = 200;
  
 
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
@@ -119,7 +135,7 @@ pub const Emulator = struct {
 
         defer sdl.SDL_DestroyWindow(screen);
       
-        const renderer = sdl.SDL_CreateRenderer(screen, -1, 0) orelse {
+        const renderer = sdl.SDL_CreateRenderer(screen, -1, sdl.SDL_RENDERER_ACCELERATED) orelse {
             sdl.SDL_Log("Unable to create renderer: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
@@ -129,7 +145,12 @@ pub const Emulator = struct {
 
         _ = sdl.SDL_RenderClear(renderer);
         _ = sdl.SDL_RenderSetScale(renderer, self.config.scaling_factor, self.config.scaling_factor);
-        
+        const texture = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_RGB24, sdl.SDL_TEXTUREACCESS_TARGET, 320, 200) orelse {
+            sdl.SDL_Log("Unable to create texture: %s", sdl.SDL_GetError());
+            return error.SDLInitializationFailed;
+        };
+        defer sdl.SDL_DestroyTexture(texture);
+
         self.clear_screen_mem();
         var quit = false;
         while (!self.cpu.halt and !quit) {
@@ -144,18 +165,20 @@ pub const Emulator = struct {
             }
             
             
-            if(limit_cycles) |max_cycles| {
-                if(count >= max_cycles) {
-                    break;
-                }
-            }
+          
             if(DEBUG_CPU) {
                 self.cpu.bus.print_mem(0x400, 0x20);
             }
             
             self.cpu.clock_tick();
+            self.render_frame(renderer, texture);
+            if(limit_cycles) |max_cycles| {
+                if(count >= max_cycles) {
+                    break;
+                }
+            }
             count += 1;
-            self.render_frame(renderer);
+            //_ = sdl.SDL_RenderCopy(renderer, texture, null, null);
             sdl.SDL_RenderPresent(renderer);
         }
       
@@ -163,42 +186,76 @@ pub const Emulator = struct {
 
 
 
-    pub fn render_frame(self: *Emulator, renderer: *sdl.struct_SDL_Renderer) void {
- 
-        clear_screen_text_area(renderer);
+    pub fn render_frame(self: *Emulator, renderer: *sdl.struct_SDL_Renderer, texture: *sdl.SDL_Texture) void {
+      
+  
         
-        var bus = self.bus;
-    
-        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
-            const screen_code = @as(u16, bus.read(@intCast(addr)));
-            
-            if (screen_code == 0x20) {continue;}
-            
-            const char_addr_start: u16 = (screen_code * 8) + MemoryMap.character_rom_start;
-        
-            const char_count = addr - MemoryMap.screen_mem_start;
-                   
-            _ = sdl.SDL_SetRenderDrawColor(renderer, 134,122,222,255);
-           
-            // coordinates of upper left corner of char
-            const char_x = (char_count % 40) * 8 + BORDER_SIZE_X;
-            const char_y = (char_count / 40) * 8 + BORDER_SIZE_Y;
-           
-            for(0..8) |char_row_idx|{
-                const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
-                
-                const char_row_byte = self.bus.read(char_row_addr);
-               
-                for(0..8) |char_col_idx|  {                                      // The leftmost pixel is represented by the most significant bit
-                    const pixel: u1 = bitutils.get_bit_at(char_row_byte,  @intCast(7-char_col_idx));
-                    const char_pixel_x: c_int = @intCast(char_x + char_col_idx);
-                    const char_pixel_y: c_int = @intCast(char_y + char_row_idx);
-                    if (pixel == 1) {
-                        _ = sdl.SDL_RenderDrawPoint(renderer, char_pixel_x, char_pixel_y);  
-                    }
-                }
-            }
+        // Lock texture to access pixel data
+        //var texture_pixels: [SCREEN_HEIGHT*SCREEN_WIDTH*3]u8 = std.mem.zeroes([SCREEN_HEIGHT*SCREEN_WIDTH*3]u8);
+        //var texture_pixels: ?*anyopaque = undefined;
+        const pitch: c_int = SCREEN_WIDTH * 3;
+        //var texture_pixels_slice = texture_pixels[0..];
+        //_ = sdl.SDL_RenderClear(renderer);
+        //_ = sdl.SDL_LockTexture(texture, &sdl.SDL_Rect{.w=SCREEN_WIDTH, .h=SCREEN_WIDTH, .x=0, .y=0}, &texture_pixels, &pitch);
+        //std.debug.assert(&texture_pixels == texture_pixels_slice);
+        _ = self;
+       
+        //std.debug.print("{d}", .{texture_pixels_slice[0..100]});
+        //var texture_pixels_arr: []u8 = @as([*]u8, @ptrCast(texture_pixels))[0..SCREEN_HEIGHT*SCREEN_HEIGHT*3];
+        var texture_pixels_arr: [pitch*SCREEN_HEIGHT]u8 = undefined;
+       
+        for (0..10000) |i| {
+                texture_pixels_arr[i*3] = 255;
+                texture_pixels_arr[i*3+1] = 255;
+                texture_pixels_arr[i*3+2] = 255;
         }
+        //sdl.SDL_UnlockTexture(texture);
+        _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&texture_pixels_arr), pitch);
+        _ = sdl.SDL_RenderCopy(renderer, texture, null, null);
+        sdl.SDL_RenderPresent(renderer);
+
+       // var bus = self.bus;
+        // for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
+        //     const screen_code = @as(u16, bus.read(@intCast(addr)));
+            
+        //     //if (screen_code == 0x20) {continue;}
+            
+        //     const char_addr_start: u16 = (screen_code * 8) + MemoryMap.character_rom_start;
+        
+        //     const char_count = addr - MemoryMap.screen_mem_start;
+                   
+        //     _ = sdl.SDL_SetRenderDrawColor(renderer, 134,122,222,255);
+           
+        //     // coordinates of upper left corner of char
+        //     const char_x = (char_count % 40) * 8 + BORDER_SIZE_X;
+        //     const char_y = (char_count / 40) * 8 + BORDER_SIZE_Y;
+           
+        //     for(0..8) |char_row_idx|{
+        //         const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
+                
+        //         const char_row_byte = self.bus.read(char_row_addr);
+               
+        //         for(0..8) |char_col_idx|  {                                      // The leftmost pixel is represented by the most significant bit
+                    
+        //             const pixel: u1 = bitutils.get_bit_at(char_row_byte,  @intCast(7-char_col_idx));
+        //             const char_pixel_x = char_x + char_col_idx;
+        //             const char_pixel_y = char_y + char_row_idx;
+        //             // idx = (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3
+        //             const texture_index: usize =  (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
+        //             //std.debug.print("\n{} {} {}", .{char_pixel_x, char_pixel_y, texture_index});
+        //             if (pixel == 1) {
+
+        //                 texture_pixels[texture_index] = TextColor.r;
+        //                 texture_pixels[texture_index+1] = TextColor.g; 
+        //                 texture_pixels[texture_index+2] = TextColor.b;
+
+        //             }
+        //         }
+        //     }
+        // }
+      
+       
     }
+
         
 };
