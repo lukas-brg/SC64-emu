@@ -16,6 +16,11 @@ pub const MemoryMap = struct {
 
     pub const character_rom_start: u16 = 0xD000;
     pub const character_rom_end: u16 = 0xDFFF;
+    
+    pub const bg_color: u16 = 0xD021;
+    pub const text_color: u16 = 0x0286;
+    pub const frame_color: u16 = 0xD020;
+    
 };
 
 

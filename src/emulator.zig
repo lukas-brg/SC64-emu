@@ -2,9 +2,10 @@ const std = @import("std");
 const CPU = @import("cpu/cpu.zig").CPU;
 const DEBUG_CPU = @import("cpu/cpu.zig").DEBUG_CPU;
 const Bus = @import("bus.zig").Bus;
-const graphics = @import("graphics.zig");
+
 const MemoryMap = @import("bus.zig").MemoryMap;
 const bitutils = @import("cpu/bitutils.zig");
+const colors = @import("colors.zig");
 
 //const sdl = @import("sdl2");
 
@@ -72,6 +73,13 @@ pub const Emulator = struct {
         // load character rom
         try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.cpu.set_reset_vector(0x1000);
+
+        self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
+        self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
+        self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
+
+        self.clear_color_mem();
+
     }
 
     pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
@@ -91,6 +99,11 @@ pub const Emulator = struct {
         allocator.free(rom_data);
     }
 
+    pub fn clear_color_mem(self: *Emulator) void {
+        for (MemoryMap.color_mem_start..MemoryMap.color_mem_end) |addr| {
+            self.bus.write(@intCast(addr), self.bus.read(MemoryMap.text_color));
+        }       
+    }
 
     pub fn clear_screen_mem(self: *Emulator) void {
         for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
@@ -134,7 +147,7 @@ pub const Emulator = struct {
 
         defer sdl.SDL_DestroyWindow(screen);
       
-        const renderer = sdl.SDL_CreateRenderer(screen, -1, sdl.SDL_RENDERER_ACCELERATED | sdl.SDL_RENDERER_TARGETTEXTURE) orelse {
+        const renderer = sdl.SDL_CreateRenderer(screen, -1, sdl.SDL_RENDERER_ACCELERATED) orelse {
             sdl.SDL_Log("Unable to create renderer: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
@@ -144,7 +157,7 @@ pub const Emulator = struct {
 
         _ = sdl.SDL_RenderClear(renderer);
         _ = sdl.SDL_RenderSetScale(renderer, self.config.scaling_factor, self.config.scaling_factor);
-        const texture = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_RGB24, sdl.SDL_TEXTUREACCESS_STATIC, 320, 200) orelse {
+        const texture = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_RGB24, sdl.SDL_TEXTUREACCESS_STREAMING, 320, 200) orelse {
             sdl.SDL_Log("Unable to create texture: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
@@ -193,14 +206,21 @@ pub const Emulator = struct {
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
        
         var bus = self.bus;
-        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
-            const screen_code = @as(u16, bus.read(@intCast(addr)));
+        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end, 
+              MemoryMap.color_mem_start..MemoryMap.color_mem_end) 
+            
+            |screen_mem_addr, 
+             color_mem_addr| 
+        {
+            
+            
+            const screen_code = @as(u16, bus.read(@intCast(screen_mem_addr)));
             
             if (screen_code == 0x20) {continue;}
             
             const char_addr_start: u16 = (screen_code * 8) + MemoryMap.character_rom_start;
         
-            const char_count = addr - MemoryMap.screen_mem_start;
+            const char_count = screen_mem_addr - MemoryMap.screen_mem_start;
                    
             // coordinates of upper left corner of char
             const char_x = (char_count % 40) * 8;
@@ -219,9 +239,11 @@ pub const Emulator = struct {
                     const texture_index: usize =  (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
                     
                     if (pixel == 1) {
-                        frame_buffer[texture_index] = TextColor.r;
-                        frame_buffer[texture_index+1] = TextColor.g; 
-                        frame_buffer[texture_index+2] = TextColor.b;
+                        const color_code: u4 = @intCast(self.bus.read(@intCast(color_mem_addr)));
+                        const color = colors.C64_COLOR_PALETE[color_code];
+                        frame_buffer[texture_index]   = color.r;
+                        frame_buffer[texture_index+1] = color.g; 
+                        frame_buffer[texture_index+2] = color.b;
                     }
                 }
             }
