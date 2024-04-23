@@ -2,10 +2,6 @@ const std = @import("std");
 
 const MEM_SIZE: u17 = 0x10000;
 
-// Special Memory locations
-// Screen Memory: 0x400 
-// Character Rom $D000-$DFFF 
-//
 
 pub const MemoryMap = struct {
     pub const screen_mem_start: u16 = 0x0400;

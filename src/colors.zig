@@ -1,3 +1,4 @@
+
 const ColorRGB_Struct = struct {
     r: u8,
     g: u8,

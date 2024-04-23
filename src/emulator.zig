@@ -71,13 +71,13 @@ pub const Emulator = struct {
 
     pub fn init_c64(self: *Emulator) !void {
         // load character rom
-        try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.cpu.set_reset_vector(0x1000);
 
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
 
+        try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.clear_color_mem();
 
     }
@@ -166,8 +166,12 @@ pub const Emulator = struct {
 
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
 
+        const screen_rect = sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = BORDER_SIZE_X, .y = BORDER_SIZE_Y};
+
         self.clear_screen_mem();
+        //clear_screen_text_area(&frame_buffer);
         var quit = false;
+        
         while (!self.cpu.halt and !quit) {
             var event: sdl.SDL_Event = undefined;
             while (sdl.SDL_PollEvent(&event) != 0) {
@@ -195,7 +199,8 @@ pub const Emulator = struct {
             }
             count += 1;
              _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
-            _ = sdl.SDL_RenderCopy(renderer, texture, null, &sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = BORDER_SIZE_X, .y = BORDER_SIZE_Y});
+            _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
+            
             sdl.SDL_RenderPresent(renderer);
         }
       
@@ -209,10 +214,8 @@ pub const Emulator = struct {
         for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end, 
               MemoryMap.color_mem_start..MemoryMap.color_mem_end) 
             
-            |screen_mem_addr, 
-             color_mem_addr| 
+            |screen_mem_addr, color_mem_addr| 
         {
-            
             
             const screen_code = @as(u16, bus.read(@intCast(screen_mem_addr)));
             
@@ -239,12 +242,19 @@ pub const Emulator = struct {
                     const texture_index: usize =  (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
                     
                     if (pixel == 1) {
-                        const color_code: u4 = @intCast(self.bus.read(@intCast(color_mem_addr)));
+                        const color_code: u4 = @truncate(self.bus.read(@intCast(color_mem_addr)));
                         const color = colors.C64_COLOR_PALETE[color_code];
                         frame_buffer[texture_index]   = color.r;
                         frame_buffer[texture_index+1] = color.g; 
                         frame_buffer[texture_index+2] = color.b;
                     }
+                    // else {
+                    //     const color_code: u4 = @intCast(self.bus.read(@intCast(MemoryMap.bg_color)));
+                    //     const color = colors.C64_COLOR_PALETE[color_code];
+                    //     frame_buffer[texture_index]   = color.r;
+                    //     frame_buffer[texture_index+1] = color.g; 
+                    //     frame_buffer[texture_index+2] = color.b;
+                    // }
                 }
             }
         }
