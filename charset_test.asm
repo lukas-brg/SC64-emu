@@ -9,4 +9,4 @@ loop:
     jmp loop
 end:          
     jmp end  ; this is a hack to keep the window open indefinitely
-    
+    gi

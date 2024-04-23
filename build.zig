@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) void {
     
 
     const exe = b.addExecutable(.{
-        .name = "zic20",
+        .name = "z64",
         .root_source_file = .{ .path = "src/main.zig" },
         .target = target,
         .optimize = optimize,

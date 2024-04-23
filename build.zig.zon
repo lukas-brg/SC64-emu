@@ -1,5 +1,5 @@
 .{
-    .name = "zic-20",
+    .name = "z64",
     .version = "0.0.0",
     .dependencies = .{
        
