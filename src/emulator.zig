@@ -73,11 +73,15 @@ pub const Emulator = struct {
         // load character rom
         self.cpu.set_reset_vector(0x1000);
 
+        try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
 
-        try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
+        self.bus.write(0, 0x2F); // direction register
+        self.bus.write(1, 0x37); // processor port
+
+
         self.clear_color_mem();
 
     }
@@ -111,12 +115,13 @@ pub const Emulator = struct {
         }       
     }
 
-    pub fn clear_screen_text_area(frame_buffer: []u8) void {
-      
+    pub fn clear_screen_text_area(self: *Emulator, frame_buffer: []u8) void {
+        const color_code: u4 = @truncate(self.bus.read(MemoryMap.bg_color));
+        const bg_color = colors.C64_COLOR_PALETE[color_code];
         for (0..SCREEN_HEIGHT*SCREEN_WIDTH) |i| {
-            frame_buffer[i*3] = BG_Color.r;
-            frame_buffer[i*3+1] = BG_Color.g; 
-            frame_buffer[i*3+2] = BG_Color.b;
+            frame_buffer[i*3] = bg_color.r;
+            frame_buffer[i*3+1] = bg_color.g; 
+            frame_buffer[i*3+2] = bg_color.b;
         }
     }
     
@@ -153,7 +158,11 @@ pub const Emulator = struct {
         };
         defer sdl.SDL_DestroyRenderer(renderer);
 
-        _ = sdl.SDL_SetRenderDrawColor(renderer, 134,122,222,255);
+        const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
+
+        const frame_color = colors.C64_COLOR_PALETE[color_code];
+
+        _ = sdl.SDL_SetRenderDrawColor(renderer, frame_color.r, frame_color.g, frame_color.b, 255);
 
         _ = sdl.SDL_RenderClear(renderer);
         _ = sdl.SDL_RenderSetScale(renderer, self.config.scaling_factor, self.config.scaling_factor);
@@ -189,8 +198,8 @@ pub const Emulator = struct {
             }
             
             self.cpu.clock_tick();
-            
-            clear_screen_text_area(&frame_buffer);
+            _ = sdl.SDL_RenderClear(renderer);
+            self.clear_screen_text_area(&frame_buffer);
             self.update_frame(&frame_buffer);
             if(limit_cycles) |max_cycles| {
                 if(count >= max_cycles) {

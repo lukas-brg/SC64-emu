@@ -1,6 +1,19 @@
 const std = @import("std");
+const bitutils = @import("cpu/bitutils.zig");
 
 const MEM_SIZE: u17 = 0x10000;
+
+    // %x00: RAM visible in all three areas.
+
+    // %x01: RAM visible at $A000-$BFFF and $E000-$FFFF.
+
+    // %x10: RAM visible at $A000-$BFFF; KERNAL ROM visible at $E000-$FFFF.
+
+    // %x11: BASIC ROM visible at $A000-$BFFF; KERNAL ROM visible at $E000-$FFFF.
+
+    // %0xx: Character ROM visible at $D000-$DFFF. (Except for the value %000, see above.)
+
+    // %1xx: I/O area visible at $D000-$DFFF. (Except for the value %100, see above.)
 
 
 pub const MemoryMap = struct {
@@ -17,6 +30,7 @@ pub const MemoryMap = struct {
     pub const text_color: u16 = 0x0286;
     pub const frame_color: u16 = 0xD020;
     
+    pub const processor_port = 1;
 };
 
 
@@ -27,10 +41,31 @@ pub const Bus = struct {
         return .{};
     }
 
+     
+
     pub fn write(self: *Bus, addr: u16, val: u8) void {
         self.memory[addr] = val;
     }
 
+    pub fn read(self: Bus, addr: u16) u8 {
+        const processor_port_byte = self.memory[MemoryMap.processor_port];
+        
+        switch (bitutils.get_bit_at(processor_port_byte, 2)) {
+            
+
+            0 => {
+                // %0xx: Character ROM visible at $D000-$DFFF. (Except for the value %000, see above.)
+
+            },
+            1 => {
+                // %1xx: I/O area visible at $D000-$DFFF. (Except for the value %100, see above.)
+            
+
+            }
+        }
+        
+        return self.memory[addr]; 
+    }
 
     pub fn write_continous(self: *Bus, buffer: []const u8, offset: u16) void {
         if (buffer.len + offset > self.memory.len) {
@@ -43,9 +78,6 @@ pub const Bus = struct {
         );
     }
 
-    pub fn read(self: Bus, addr: u16) u8 {
-        return self.memory[addr]; 
-    }
 
     
 
