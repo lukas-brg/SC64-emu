@@ -269,7 +269,7 @@ pub fn cpy(cpu: *CPU, instruction: OpInfo) void {
 pub fn dec(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
     
-    const result = operand_info.operand - 1;
+    const result = operand_info.operand -% 1;
     cpu.bus.write(operand_info.address, result);
     cpu.update_negative(result);
     cpu.update_zero(result);
@@ -279,7 +279,8 @@ pub fn dec(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn dex(cpu: *CPU, instruction: OpInfo) void {
-    const result = cpu.X - 1;
+    const result = cpu.X -% 1;
+    
     cpu.X = result;
     cpu.update_negative(result);
     cpu.update_zero(result);
@@ -289,7 +290,7 @@ pub fn dex(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn dey(cpu: *CPU, instruction: OpInfo) void {
-    const result = cpu.Y - 1;
+    const result = cpu.Y -% 1;
     cpu.Y = result;
     cpu.update_negative(result);
     cpu.update_zero(result);
@@ -313,7 +314,7 @@ pub fn eor(cpu: *CPU, instruction: OpInfo) void {
 pub fn inc(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
     
-    const result = operand_info.operand + 1;
+    const result = operand_info.operand +% 1;
     cpu.bus.write(operand_info.address, result);
     cpu.update_negative(result);
     cpu.update_zero(result);
@@ -323,7 +324,7 @@ pub fn inc(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn inx(cpu: *CPU, instruction: OpInfo) void {
-    const result = cpu.X + 1;
+    const result = cpu.X +% 1;
     cpu.X = result;
     cpu.update_negative(result);
     cpu.update_zero(result);
@@ -333,7 +334,7 @@ pub fn inx(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn iny(cpu: *CPU, instruction: OpInfo) void {
-    const result = cpu.Y + 1;
+    const result = cpu.Y +% 1;
     cpu.Y = result;
     cpu.update_negative(result);
     cpu.update_zero(result);

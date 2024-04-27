@@ -30,7 +30,7 @@ pub fn main() !void {
     var emulator = try Emulator.init(allocator, .{.scaling_factor = 4});
     defer emulator.deinit(allocator);
 
-    _ = try emulator.load_rom(rom_path, 0x1000);
+    //_ = try emulator.load_rom(rom_path, 0x1000);
 
     try emulator.init_c64();
     try emulator.run(null);

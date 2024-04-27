@@ -1,0 +1,2086 @@
+Loaded PC from reset vector: 0x0000
+debug: Loaded PC from reset vector: 0x0000
+
+Loaded PC from reset vector: 0xfce2
+debug: Loaded PC from reset vector: 0xfce2
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 0!
+Reading instruction at 0xfce2
+Loaded opcode 0xa2
+Instruction fetched (Opcode: 0xa2, Name: LDX, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 00ff, Address: fce3, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011100100    fce4
+SP:         11111111      ff
+P:          10000000      80
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 0 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 1!
+Reading instruction at 0xfce4
+Loaded opcode 0x78
+Instruction fetched (Opcode: 0x78, Name: SEI, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011100101    fce5
+SP:         11111111      ff
+P:          10000100      84
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 2!
+Reading instruction at 0xfce5
+Loaded opcode 0x9a
+Instruction fetched (Opcode: 0x9a, Name: TXS, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011100110    fce6
+SP:         11111111      ff
+P:          10000100      84
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 3!
+Reading instruction at 0xfce6
+Loaded opcode 0xd8
+Instruction fetched (Opcode: 0xd8, Name: CLD, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011100111    fce7
+SP:         11111111      ff
+P:          10000100      84
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 4!
+Reading instruction at 0xfce7
+Loaded opcode 0x20
+Instruction fetched (Opcode: 0x20, Name: JSR, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 6)
+(Operand: 00a2, Address: fd02, Page Crossed: true, Cycles: 7)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100000010    fd02
+SP:         11111101      fd
+P:          10000100      84
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 5!
+Reading instruction at 0xfd02
+Loaded opcode 0xa2
+Instruction fetched (Opcode: 0xa2, Name: LDX, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0005, Address: fd03, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100000100    fd04
+SP:         11111101      fd
+P:          00000100      04
+A:          00000000      00
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 6!
+Reading instruction at 0xfd04
+Loaded opcode 0xbd
+Instruction fetched (Opcode: 0xbd, Name: LDA, Addressing Mode: ABSOLUTE_X, Bytes: 3, Cycles: 4)
+(Operand: 0030, Address: fd14, Page Crossed: false, Cycles: 4)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100000111    fd07
+SP:         11111101      fd
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 7!
+Reading instruction at 0xfd07
+Loaded opcode 0xdd
+Instruction fetched (Opcode: 0xdd, Name: CMP, Addressing Mode: ABSOLUTE_X, Bytes: 3, Cycles: 4)
+(Operand: 0000, Address: 8008, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100001010    fd0a
+SP:         11111101      fd
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 8!
+Reading instruction at 0xfd0a
+Loaded opcode 0xd0
+Instruction fetched (Opcode: 0xd0, Name: BNE, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+(Operand: 0060, Address: fd0f, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100001111    fd0f
+SP:         11111101      fd
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 9!
+Reading instruction at 0xfd0f
+Loaded opcode 0x60
+Instruction fetched (Opcode: 0x60, Name: RTS, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011101010    fcea
+SP:         11111111      ff
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 10!
+Reading instruction at 0xfcea
+Loaded opcode 0xd0
+Instruction fetched (Opcode: 0xd0, Name: BNE, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+(Operand: 008e, Address: fcef, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011101111    fcef
+SP:         11111111      ff
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 11!
+Reading instruction at 0xfcef
+Loaded opcode 0x8e
+Instruction fetched (Opcode: 0x8e, Name: STX, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 007c, Address: d016, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011110010    fcf2
+SP:         11111111      ff
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 12!
+Reading instruction at 0xfcf2
+Loaded opcode 0x20
+Instruction fetched (Opcode: 0x20, Name: JSR, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 6)
+(Operand: 00a9, Address: fda3, Page Crossed: true, Cycles: 7)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110100011    fda3
+SP:         11111101      fd
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 13!
+Reading instruction at 0xfda3
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 007f, Address: fda4, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110100101    fda5
+SP:         11111101      fd
+P:          00000100      04
+A:          01111111      7f
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 14!
+Reading instruction at 0xfda5
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0099, Address: dc0d, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110101000    fda8
+SP:         11111101      fd
+P:          00000100      04
+A:          01111111      7f
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 15!
+Reading instruction at 0xfda8
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00ff, Address: dd0d, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110101011    fdab
+SP:         11111101      fd
+P:          00000100      04
+A:          01111111      7f
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 16!
+Reading instruction at 0xfdab
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00c3, Address: dc00, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110101110    fdae
+SP:         11111101      fd
+P:          00000100      04
+A:          01111111      7f
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 17!
+Reading instruction at 0xfdae
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0008, Address: fdaf, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110110000    fdb0
+SP:         11111101      fd
+P:          00000100      04
+A:          00001000      08
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 18!
+Reading instruction at 0xfdb0
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00c1, Address: dc0e, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110110011    fdb3
+SP:         11111101      fd
+P:          00000100      04
+A:          00001000      08
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 19!
+Reading instruction at 0xfdb3
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00e7, Address: dd0e, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110110110    fdb6
+SP:         11111101      fd
+P:          00000100      04
+A:          00001000      08
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 20!
+Reading instruction at 0xfdb6
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00ff, Address: dc0f, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110111001    fdb9
+SP:         11111101      fd
+P:          00000100      04
+A:          00001000      08
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 21!
+Reading instruction at 0xfdb9
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00ff, Address: dd0f, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110111100    fdbc
+SP:         11111101      fd
+P:          00000100      04
+A:          00001000      08
+X:          00000101      05
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 22!
+Reading instruction at 0xfdbc
+Loaded opcode 0xa2
+Instruction fetched (Opcode: 0xa2, Name: LDX, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0000, Address: fdbd, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110110111110    fdbe
+SP:         11111101      fd
+P:          00000110      06
+A:          00001000      08
+X:          00000000      00
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 23!
+Reading instruction at 0xfdbe
+Loaded opcode 0x8e
+Instruction fetched (Opcode: 0x8e, Name: STX, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0091, Address: dc03, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111000001    fdc1
+SP:         11111101      fd
+P:          00000110      06
+A:          00001000      08
+X:          00000000      00
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 24!
+Reading instruction at 0xfdc1
+Loaded opcode 0x8e
+Instruction fetched (Opcode: 0x8e, Name: STX, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00ff, Address: dd03, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111000100    fdc4
+SP:         11111101      fd
+P:          00000110      06
+A:          00001000      08
+X:          00000000      00
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 25!
+Reading instruction at 0xfdc4
+Loaded opcode 0x8e
+Instruction fetched (Opcode: 0x8e, Name: STX, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00c3, Address: d418, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111000111    fdc7
+SP:         11111101      fd
+P:          00000110      06
+A:          00001000      08
+X:          00000000      00
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 26!
+Reading instruction at 0xfdc7
+Loaded opcode 0xca
+Instruction fetched (Opcode: 0xca, Name: DEX, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111001000    fdc8
+SP:         11111101      fd
+P:          10000100      84
+A:          00001000      08
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 27!
+Reading instruction at 0xfdc8
+Loaded opcode 0x8e
+Instruction fetched (Opcode: 0x8e, Name: STX, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0091, Address: dc02, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111001011    fdcb
+SP:         11111101      fd
+P:          10000100      84
+A:          00001000      08
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 28!
+Reading instruction at 0xfdcb
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0007, Address: fdcc, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111001101    fdcd
+SP:         11111101      fd
+P:          00000100      04
+A:          00000111      07
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 29!
+Reading instruction at 0xfdcd
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00ff, Address: dd00, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111010000    fdd0
+SP:         11111101      fd
+P:          00000100      04
+A:          00000111      07
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 30!
+Reading instruction at 0xfdd0
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 003f, Address: fdd1, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111010010    fdd2
+SP:         11111101      fd
+P:          00000100      04
+A:          00111111      3f
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 31!
+Reading instruction at 0xfdd2
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 00ff, Address: dd02, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111010101    fdd5
+SP:         11111101      fd
+P:          00000100      04
+A:          00111111      3f
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 32!
+Reading instruction at 0xfdd5
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 00e7, Address: fdd6, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111010111    fdd7
+SP:         11111101      fd
+P:          10000100      84
+A:          11100111      e7
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 33!
+Reading instruction at 0xfdd7
+Loaded opcode 0x85
+Instruction fetched (Opcode: 0x85, Name: STA, Addressing Mode: ZEROPAGE, Bytes: 2, Cycles: 3)
+(Operand: 0037, Address: 01, Page Crossed: true, Cycles: 4)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111011001    fdd9
+SP:         11111101      fd
+P:          10000100      84
+A:          11100111      e7
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 34!
+Reading instruction at 0xfdd9
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 002f, Address: fdda, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111011011    fddb
+SP:         11111101      fd
+P:          00000100      04
+A:          00101111      2f
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 35!
+Reading instruction at 0xfddb
+Loaded opcode 0x85
+Instruction fetched (Opcode: 0x85, Name: STA, Addressing Mode: ZEROPAGE, Bytes: 2, Cycles: 3)
+(Operand: 002f, Address: 00, Page Crossed: true, Cycles: 4)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111011101    fddd
+SP:         11111101      fd
+P:          00000100      04
+A:          00101111      2f
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 36!
+Reading instruction at 0xfddd
+Loaded opcode 0xad
+Instruction fetched (Opcode: 0xad, Name: LDA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0000, Address: 2a6, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111100000    fde0
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 37!
+Reading instruction at 0xfde0
+Loaded opcode 0xf0
+Instruction fetched (Opcode: 0xf0, Name: BEQ, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+(Operand: 00a9, Address: fdec, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111101100    fdec
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 38!
+Reading instruction at 0xfdec
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0095, Address: fded, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111101110    fdee
+SP:         11111101      fd
+P:          10000100      84
+A:          10010101      95
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 39!
+Reading instruction at 0xfdee
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 009f, Address: dc04, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111110001    fdf1
+SP:         11111101      fd
+P:          10000100      84
+A:          10010101      95
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 40!
+Reading instruction at 0xfdf1
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0042, Address: fdf2, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111110011    fdf3
+SP:         11111101      fd
+P:          00000100      04
+A:          01000010      42
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 41!
+Reading instruction at 0xfdf3
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0099, Address: dc05, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110111110110    fdf6
+SP:         11111101      fd
+P:          00000100      04
+A:          01000010      42
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 42!
+Reading instruction at 0xfdf6
+Loaded opcode 0x4c
+Instruction fetched (Opcode: 0x4c, Name: JMP, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 3)
+(Operand: 00a9, Address: ff6e, Page Crossed: true, Cycles: 4)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111101101110    ff6e
+SP:         11111101      fd
+P:          00000100      04
+A:          01000010      42
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 43!
+Reading instruction at 0xff6e
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0081, Address: ff6f, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111101110000    ff70
+SP:         11111101      fd
+P:          10000100      84
+A:          10000001      81
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 44!
+Reading instruction at 0xff70
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 007f, Address: dc0d, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111101110011    ff73
+SP:         11111101      fd
+P:          10000100      84
+A:          10000001      81
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 45!
+Reading instruction at 0xff73
+Loaded opcode 0xad
+Instruction fetched (Opcode: 0xad, Name: LDA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0008, Address: dc0e, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111101110110    ff76
+SP:         11111101      fd
+P:          00000100      04
+A:          00001000      08
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 46!
+Reading instruction at 0xff76
+Loaded opcode 0x29
+Instruction fetched (Opcode: 0x29, Name: AND, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0080, Address: ff77, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111101111000    ff78
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 47!
+Reading instruction at 0xff78
+Loaded opcode 0x09
+Instruction fetched (Opcode: 0x09, Name: ORA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0011, Address: ff79, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111101111010    ff7a
+SP:         11111101      fd
+P:          00000100      04
+A:          00010001      11
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 48!
+Reading instruction at 0xff7a
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0008, Address: dc0e, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111101111101    ff7d
+SP:         11111101      fd
+P:          00000100      04
+A:          00010001      11
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 49!
+Reading instruction at 0xff7d
+Loaded opcode 0x4c
+Instruction fetched (Opcode: 0x4c, Name: JMP, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 3)
+(Operand: 00ad, Address: ee8e, Page Crossed: true, Cycles: 4)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1110111010001110    ee8e
+SP:         11111101      fd
+P:          00000100      04
+A:          00010001      11
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 50!
+Reading instruction at 0xee8e
+Loaded opcode 0xad
+Instruction fetched (Opcode: 0xad, Name: LDA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0007, Address: dd00, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1110111010010001    ee91
+SP:         11111101      fd
+P:          00000100      04
+A:          00000111      07
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 51!
+Reading instruction at 0xee91
+Loaded opcode 0x09
+Instruction fetched (Opcode: 0x09, Name: ORA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0010, Address: ee92, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1110111010010011    ee93
+SP:         11111101      fd
+P:          00000100      04
+A:          00010111      17
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 52!
+Reading instruction at 0xee93
+Loaded opcode 0x8d
+Instruction fetched (Opcode: 0x8d, Name: STA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0007, Address: dd00, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1110111010010110    ee96
+SP:         11111101      fd
+P:          00000100      04
+A:          00010111      17
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 53!
+Reading instruction at 0xee96
+Loaded opcode 0x60
+Instruction fetched (Opcode: 0x60, Name: RTS, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110011110101    fcf5
+SP:         11111111      ff
+P:          00000100      04
+A:          00010111      17
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 54!
+Reading instruction at 0xfcf5
+Loaded opcode 0x20
+Instruction fetched (Opcode: 0x20, Name: JSR, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 6)
+(Operand: 00a9, Address: fd50, Page Crossed: true, Cycles: 7)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110101010000    fd50
+SP:         11111101      fd
+P:          00000100      04
+A:          00010111      17
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 55!
+Reading instruction at 0xfd50
+Loaded opcode 0xa9
+Instruction fetched (Opcode: 0xa9, Name: LDA, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0000, Address: fd51, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110101010010    fd52
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 56!
+Reading instruction at 0xfd52
+Loaded opcode 0xa8
+Instruction fetched (Opcode: 0xa8, Name: TAY, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110101010011    fd53
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 57!
+Reading instruction at 0xfd53
+Loaded opcode 0x99
+Instruction fetched (Opcode: 0x99, Name: STA, Addressing Mode: ABSOLUTE_Y, Bytes: 3, Cycles: 5)
+(Operand: 0000, Address: 02, Page Crossed: true, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110101010110    fd56
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 58!
+Reading instruction at 0xfd56
+Loaded opcode 0x99
+Instruction fetched (Opcode: 0x99, Name: STA, Addressing Mode: ABSOLUTE_Y, Bytes: 3, Cycles: 5)
+(Operand: 0000, Address: 200, Page Crossed: true, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110101011001    fd59
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 59!
+Reading instruction at 0xfd59
+Loaded opcode 0x99
+Instruction fetched (Opcode: 0x99, Name: STA, Addressing Mode: ABSOLUTE_Y, Bytes: 3, Cycles: 5)
+(Operand: 0000, Address: 300, Page Crossed: true, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110101011100    fd5c
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000000      00
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 60!
+Reading instruction at 0xfd5c
+Loaded opcode 0xc8
+Instruction fetched (Opcode: 0xc8, Name: INY, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110101011101    fd5d
+SP:         11111101      fd
+P:          00000100      04
+A:          00000000      00
+X:          11111111      ff
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 61!
+Reading instruction at 0xfd5d
+Loaded opcode 0xd0
+Instruction fetched (Opcode: 0xd0, Name: BNE, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+(Operand: 00dd, Address: fe53, Page Crossed: true, Cycles: 3)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111001010011    fe53
+SP:         11111101      fd
+P:          00000100      04
+A:          00000000      00
+X:          11111111      ff
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 62!
+Reading instruction at 0xfe53
+Loaded opcode 0xdd
+Instruction fetched (Opcode: 0xdd, Name: CMP, Addressing Mode: ABSOLUTE_X, Bytes: 3, Cycles: 4)
+(Operand: 0000, Address: 1d2f, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111001010110    fe56
+SP:         11111101      fd
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 63!
+Reading instruction at 0xfe56
+Loaded opcode 0x20
+Instruction fetched (Opcode: 0x20, Name: JSR, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 6)
+(Operand: 00a2, Address: fd02, Page Crossed: true, Cycles: 7)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100000010    fd02
+SP:         11111011      fb
+P:          00000110      06
+A:          00000000      00
+X:          11111111      ff
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 64!
+Reading instruction at 0xfd02
+Loaded opcode 0xa2
+Instruction fetched (Opcode: 0xa2, Name: LDX, Addressing Mode: IMMEDIATE, Bytes: 2, Cycles: 2)
+(Operand: 0005, Address: fd03, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100000100    fd04
+SP:         11111011      fb
+P:          00000100      04
+A:          00000000      00
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 65!
+Reading instruction at 0xfd04
+Loaded opcode 0xbd
+Instruction fetched (Opcode: 0xbd, Name: LDA, Addressing Mode: ABSOLUTE_X, Bytes: 3, Cycles: 4)
+(Operand: 0030, Address: fd14, Page Crossed: false, Cycles: 4)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100000111    fd07
+SP:         11111011      fb
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 66!
+Reading instruction at 0xfd07
+Loaded opcode 0xdd
+Instruction fetched (Opcode: 0xdd, Name: CMP, Addressing Mode: ABSOLUTE_X, Bytes: 3, Cycles: 4)
+(Operand: 0000, Address: 8008, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100001010    fd0a
+SP:         11111011      fb
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 67!
+Reading instruction at 0xfd0a
+Loaded opcode 0xd0
+Instruction fetched (Opcode: 0xd0, Name: BNE, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+(Operand: 0060, Address: fd0f, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111110100001111    fd0f
+SP:         11111011      fb
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 68!
+Reading instruction at 0xfd0f
+Loaded opcode 0x60
+Instruction fetched (Opcode: 0x60, Name: RTS, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111001011001    fe59
+SP:         11111101      fd
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 69!
+Reading instruction at 0xfe59
+Loaded opcode 0xd0
+Instruction fetched (Opcode: 0xd0, Name: BNE, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+(Operand: 0020, Address: fe5e, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111001011110    fe5e
+SP:         11111101      fd
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 70!
+Reading instruction at 0xfe5e
+Loaded opcode 0x20
+Instruction fetched (Opcode: 0x20, Name: JSR, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 6)
+(Operand: 00ad, Address: f6bc, Page Crossed: true, Cycles: 7)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111011010111100    f6bc
+SP:         11111011      fb
+P:          00000100      04
+A:          00110000      30
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 71!
+Reading instruction at 0xf6bc
+Loaded opcode 0xad
+Instruction fetched (Opcode: 0xad, Name: LDA, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0099, Address: dc01, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111011010111111    f6bf
+SP:         11111011      fb
+P:          10000100      84
+A:          10011001      99
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 72!
+Reading instruction at 0xf6bf
+Loaded opcode 0xcd
+Instruction fetched (Opcode: 0xcd, Name: CMP, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 4)
+(Operand: 0099, Address: dc01, Page Crossed: true, Cycles: 5)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111011011000010    f6c2
+SP:         11111011      fb
+P:          00000110      06
+A:          10011001      99
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 73!
+Reading instruction at 0xf6c2
+Loaded opcode 0xd0
+Instruction fetched (Opcode: 0xd0, Name: BNE, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111011011000100    f6c4
+SP:         11111011      fb
+P:          00000110      06
+A:          10011001      99
+X:          00000101      05
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+0 0 0 0 1 1 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 74!
+Reading instruction at 0xf6c4
+Loaded opcode 0xaa
+Instruction fetched (Opcode: 0xaa, Name: TAX, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111011011000101    f6c5
+SP:         11111011      fb
+P:          10000100      84
+A:          10011001      99
+X:          10011001      99
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 75!
+Reading instruction at 0xf6c5
+Loaded opcode 0x30
+Instruction fetched (Opcode: 0x30, Name: BMI, Addressing Mode: RELATIVE, Bytes: 2, Cycles: 2)
+(Operand: 0085, Address: f6da, Page Crossed: false, Cycles: 2)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111011011011010    f6da
+SP:         11111011      fb
+P:          10000100      84
+A:          10011001      99
+X:          10011001      99
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 76!
+Reading instruction at 0xf6da
+Loaded opcode 0x85
+Instruction fetched (Opcode: 0x85, Name: STA, Addressing Mode: ZEROPAGE, Bytes: 2, Cycles: 3)
+(Operand: 0000, Address: 91, Page Crossed: true, Cycles: 4)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111011011011100    f6dc
+SP:         11111011      fb
+P:          10000100      84
+A:          10011001      99
+X:          10011001      99
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 77!
+Reading instruction at 0xf6dc
+Loaded opcode 0x60
+Instruction fetched (Opcode: 0x60, Name: RTS, Addressing Mode: IMPLIED, Bytes: 1, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111001100001    fe61
+SP:         11111101      fd
+P:          10000100      84
+A:          10011001      99
+X:          10011001      99
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 78!
+Reading instruction at 0xfe61
+Loaded opcode 0x20
+Instruction fetched (Opcode: 0x20, Name: JSR, Addressing Mode: ABSOLUTE, Bytes: 3, Cycles: 6)
+(Operand: 006c, Address: ffe1, Page Crossed: true, Cycles: 7)
+
+----------------------------------------------------
+CPU STATE:
+PC: 1111111111100001    ffe1
+SP:         11111011      fb
+P:          10000100      84
+A:          10011001      99
+X:          10011001      99
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 79!
+Reading instruction at 0xffe1
+Loaded opcode 0x6c
+Instruction fetched (Opcode: 0x6c, Name: JMP, Addressing Mode: INDIRECT, Bytes: 3, Cycles: 5)
+(Operand: 002f, Address: 00, Page Crossed: true, Cycles: 6)
+
+----------------------------------------------------
+CPU STATE:
+PC: 0000000000000000    0000
+SP:         11111011      fb
+P:          10000100      84
+A:          10011001      99
+X:          10011001      99
+Y:          00000001      01
+
+STATUS FLAGS:
+N V B D I Z C
+1 0 0 0 1 0 0 
+----------------------------------------------------
+
+
+MEMORY:
+0400:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+0410:  20 20 20 20 20 20 20 20  20 20 20 20 20 20 20 20 
+
+==========================================================================================================================
+Clock Tick 80!
+Reading instruction at 0x0000
+Loaded opcode 0x2f
+Instruction fetched (Opcode: 0x00, Name: , Addressing Mode: ACCUMULATOR, Bytes: 0, Cycles: 0)
+Segmentation fault at address 0x0
+???:?:?: 0x0 in ??? (???)

@@ -129,7 +129,7 @@ pub const CPU = struct {
       
         if(DEBUG_CPU) {
             std.debug.print("==========================================================================================================================\n", .{});
-            std.debug.print("Clock Tick!\n", .{});
+            std.debug.print("Clock Tick {}!\n", .{self.cycle_count});
             std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
         }
 

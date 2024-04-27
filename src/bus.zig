@@ -106,6 +106,8 @@ pub const Bus = struct {
         return val_ptr.*;
     }
 
+    
+
     pub fn write_continous(self: *Bus, buffer: []const u8, offset: u16) void {
         if (buffer.len + offset > self.ram.len) {
             std.debug.panic("Buffer is too large to fit in memory at offset {}.", .{offset});

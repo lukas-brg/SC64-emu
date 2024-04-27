@@ -62,6 +62,8 @@ pub const Emulator = struct {
         self.cpu.reset();
         self.cpu.set_reset_vector(0x1000);
 
+        try self.load_basic_rom();
+        try self.load_kernal_rom();
 
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
@@ -71,13 +73,35 @@ pub const Emulator = struct {
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
         
-        self.cpu.set_reset_vector(0x1000); // for now write the reset vector into kernal rom as well, after processor port was set
+      //  self.cpu.set_reset_vector(0x1000); // for now write the reset vector into kernal rom as well, after processor port was set
 
         self.cpu.SP = 0xFF;
 
         self.clear_color_mem();
 
     }
+
+    fn load_basic_rom(self: *Emulator) !void {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        defer _ = gpa.deinit();
+    
+        const allocator = gpa.allocator();
+        const rom_data = try load_file_data("data/basic.bin", allocator);
+        @memcpy(self.bus.basic_rom[0..], rom_data);
+        allocator.free(rom_data);
+    }
+
+
+    fn load_kernal_rom(self: *Emulator) !void {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        defer _ = gpa.deinit();
+    
+        const allocator = gpa.allocator();
+        const rom_data = try load_file_data("data/kernal.bin", allocator);
+        @memcpy(self.bus.kernal_rom[0..], rom_data);
+        allocator.free(rom_data);
+    }
+
 
     pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
         allocator.destroy(self.bus);
