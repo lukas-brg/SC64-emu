@@ -18,18 +18,6 @@ pub const BORDER_SIZE_X = 14;
 pub const BORDER_SIZE_Y = 12;
 
 
-const BG_Color = struct {
-    pub const r: c_int = 72;
-    pub const g: c_int = 58;
-    pub const b: c_int = 170;
-};
-
-
-pub const TextColor = struct {
-    pub const r: u8 = 134;
-    pub const g: u8 = 122;
-    pub const b: u8 = 222;
-};
 
 const SCREEN_WIDTH = 320;
 const SCREEN_HEIGHT = 200;
@@ -71,16 +59,21 @@ pub const Emulator = struct {
 
     pub fn init_c64(self: *Emulator) !void {
         // load character rom
+        self.cpu.reset();
         self.cpu.set_reset_vector(0x1000);
 
-        try self.load_rom("src/data/c64_charset.bin", MemoryMap.character_rom_start);  
-        self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
-        self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
-        self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
 
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
+        try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
+        self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
+        self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
+        self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
+        
+        self.cpu.set_reset_vector(0x1000); // for now write the reset vector into kernal rom as well, after processor port was set
+
+        self.cpu.SP = 0xFF;
 
         self.clear_color_mem();
 

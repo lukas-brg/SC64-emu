@@ -105,12 +105,12 @@ test "cpu and bus allocation" {
 
     _ = try emulator.load_rom(rom_path, 0);
 
-    std.debug.assert(std.mem.eql(u8, &emulator.bus.memory, &emulator.cpu.bus.memory));
+    std.debug.assert(std.mem.eql(u8, &emulator.bus.ram, &emulator.cpu.bus.ram));
     std.debug.assert(emulator.bus == emulator.cpu.bus);
 
     emulator.run(null);
 
-    std.debug.assert(std.mem.eql(u8, &emulator.bus.memory, &emulator.cpu.bus.memory));
+    std.debug.assert(std.mem.eql(u8, &emulator.bus.ram, &emulator.cpu.bus.ram));
     std.debug.assert(emulator.bus == emulator.cpu.bus);
 
     emulator.deinit(allocator);
