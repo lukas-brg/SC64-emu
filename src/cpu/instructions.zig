@@ -179,12 +179,13 @@ pub fn bvs(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn brk(cpu: *CPU, instruction: OpInfo) void {
     cpu.push_16(cpu.PC + 2);
+    cpu.push(cpu.status);
     
     cpu._wait_cycles += instruction.cycles;
 
     cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
-
-    cpu.halt = true;
+    cpu.PC += instruction.bytes;
+    //cpu.halt = true;
 }
 
 pub fn bit(cpu: *CPU, instruction: OpInfo) void {
@@ -346,6 +347,7 @@ pub fn iny(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn jmp(cpu: *CPU, instruction: OpInfo) void {  
     const operand = get_operand(cpu, instruction);
+    std.debug.print("{} {x}\n", .{instruction.addressing_mode, cpu.bus.read(cpu.PC+1)});
     cpu.PC = operand.address;
     cpu._wait_cycles += operand.cycles;
 }

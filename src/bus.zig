@@ -31,6 +31,8 @@ pub const MemoryMap = enum {
 pub const Bus = struct {
     ram: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
     
+    mem_size: u17 = MEM_SIZE,
+
     character_rom: [MemoryMap.character_rom_end-MemoryMap.character_rom_start+1]u8 = std.mem.zeroes([MemoryMap.character_rom_end-MemoryMap.character_rom_start+1]u8),
     io_ram: [MemoryMap.character_rom_end-MemoryMap.character_rom_start+1]u8 = std.mem.zeroes([MemoryMap.character_rom_end-MemoryMap.character_rom_start+1]u8),
     
@@ -42,6 +44,57 @@ pub const Bus = struct {
         return .{};
     }
 
+    
+    pub fn write(self: *Bus, addr: u16, val: u8) void {
+        const val_ptr = self.access_mem_val(addr);
+        val_ptr.* = val;
+    }
+    
+    pub fn write_16(self: *Bus, addr: u16, val: u16) void {
+        const bytes = bitutils.split_into_bytes(val);
+        std.debug.print("{any}\n", .{bytes});
+        self.write(addr, bytes[0]);
+        self.write(addr+1, bytes[1]);
+    }
+
+    pub fn read(self: *Bus, addr: u16) u8 {
+        const val_ptr = self.access_mem_val(addr);
+        return val_ptr.*;
+    }
+
+    pub fn read_16(self: *Bus, addr: u16) u16 {
+        const low = self.read(addr);
+        const high = self.read(addr+1);
+        return bitutils.combine_bytes(low, high);
+    }
+
+    pub fn write_continous(self: *Bus, buffer: []const u8, offset: u16) void {
+        if (buffer.len + offset > self.ram.len) {
+            std.debug.panic("Buffer is too large to fit in memory at offset {}.", .{offset});
+        }
+        
+        for (offset..offset+buffer.len, buffer) |addr, val| {
+            self.write(@intCast(addr), val);
+        }
+    }
+    
+
+    pub fn print_mem(self: *Bus, start: u16, end: u17) void {
+        std.debug.print("\nMEMORY:", .{});
+        std.debug.assert(end > start);
+        for (start..end, 0..end-start) | addr , count| {
+            const byte = self.read(@intCast(addr));
+            if (count % 16 == 0) {
+                std.debug.print("\n{x:0>4}:  ", .{addr});
+            }
+            else if (count % 8 == 0) {
+                std.debug.print(" ", .{});
+            }
+            std.debug.print("{x:0>2} ", .{byte});
+        }
+
+        std.debug.print("\n\n", .{});
+    }
     
     fn access_mem_val(self: *Bus, addr: u16) *u8 {
         const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port] & 7);
@@ -95,43 +148,4 @@ pub const Bus = struct {
         return @constCast(val_ptr);
     }
 
-
-    pub fn write(self: *Bus, addr: u16, val: u8) void {
-        const val_ptr = self.access_mem_val(addr);
-        val_ptr.* = val;
-    }
-
-    pub fn read(self: *Bus, addr: u16) u8 {
-        const val_ptr = self.access_mem_val(addr);
-        return val_ptr.*;
-    }
-
-    
-
-    pub fn write_continous(self: *Bus, buffer: []const u8, offset: u16) void {
-        if (buffer.len + offset > self.ram.len) {
-            std.debug.panic("Buffer is too large to fit in memory at offset {}.", .{offset});
-        }
-        
-        for (offset..offset+buffer.len, buffer) |addr, val| {
-            self.write(@intCast(addr), val);
-        }
-    }
-    
-
-    pub fn print_mem(self: *Bus, start: u16, len: u16) void {
-        std.debug.print("\nMEMORY:", .{});
-        for (start..start+len, 0..len) | addr , count| {
-            const byte = self.read(@intCast(addr));
-            if (count % 16 == 0) {
-                std.debug.print("\n{x:0>4}:  ", .{addr});
-            }
-            else if (count % 8 == 0) {
-                std.debug.print(" ", .{});
-            }
-            std.debug.print("{x:0>2} ", .{byte});
-        }
-
-        std.debug.print("\n\n", .{});
-    }
 };

@@ -14,8 +14,8 @@ const sdl = @cImport({
 });
 
 
-pub const BORDER_SIZE_X = 14;
-pub const BORDER_SIZE_Y = 12;
+pub const FRAME_SIZE_X = 14;
+pub const FRAME_SIZE_Y = 12;
 
 
 
@@ -68,6 +68,10 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
+        self.bus.write_16(0x0328, 0xF6ED); // stop routine
+        std.debug.assert(self.bus.read(0x0328) == 0xED);
+        std.debug.assert(self.bus.read(0x0329) == 0xF6);
+        
         try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
@@ -159,8 +163,8 @@ pub const Emulator = struct {
         const screen = sdl.SDL_CreateWindow("ZIG64 Emulator", 
             sdl.SDL_WINDOWPOS_UNDEFINED, 
             sdl.SDL_WINDOWPOS_UNDEFINED, 
-            @intFromFloat(@as(f16, (2*BORDER_SIZE_X+320)) * self.config.scaling_factor), 
-            @intFromFloat(@as(f16, (2*BORDER_SIZE_Y+200)) * self.config.scaling_factor), 
+            @intFromFloat(@as(f16, (2*FRAME_SIZE_X+320)) * self.config.scaling_factor), 
+            @intFromFloat(@as(f16, (2*FRAME_SIZE_Y+200)) * self.config.scaling_factor), 
             sdl.SDL_WINDOW_OPENGL) 
         orelse {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
@@ -183,6 +187,7 @@ pub const Emulator = struct {
 
         _ = sdl.SDL_RenderClear(renderer);
         _ = sdl.SDL_RenderSetScale(renderer, self.config.scaling_factor, self.config.scaling_factor);
+        
         const texture = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_RGB24, sdl.SDL_TEXTUREACCESS_STREAMING, 320, 200) orelse {
             sdl.SDL_Log("Unable to create texture: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
@@ -192,7 +197,7 @@ pub const Emulator = struct {
 
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
 
-        const screen_rect = sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = BORDER_SIZE_X, .y = BORDER_SIZE_Y};
+        const screen_rect = sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = FRAME_SIZE_X, .y = FRAME_SIZE_Y};
 
         self.clear_screen_mem();
         //clear_screen_text_area(&frame_buffer);
@@ -209,11 +214,14 @@ pub const Emulator = struct {
                 }
             }
             
+            const mem_window_size = 0x20;
           
             if(DEBUG_CPU) {
-                self.cpu.bus.print_mem(0x400, 0x20);
+                const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - mem_window_size/2));
+                const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
+                self.cpu.bus.print_mem(start, @intCast(end));
             }
-            
+
             self.cpu.clock_tick();
             _ = sdl.SDL_RenderClear(renderer);
             self.clear_screen_text_area(&frame_buffer);

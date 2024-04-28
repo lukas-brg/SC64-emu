@@ -47,8 +47,8 @@ pub const OpInfo = struct {
     handler_fn:  * const HandlerFn,
 
     pub fn print(self: OpInfo) void {
-        std.debug.print("(Opcode: 0x{x:0>2}, Name: {s}, Addressing Mode: {s}, Bytes: {}, Cycles: {})\n",
-            .{self.opcode, self.op_name, @tagName(self.addressing_mode), self.bytes, self.cycles});
+        std.debug.print("(Name: {s}, Opcode: 0x{x:0>2},  Addressing Mode: {s}, Bytes: {}, Cycles: {})\n",
+            .{self.op_name, self.opcode, @tagName(self.addressing_mode), self.bytes, self.cycles});
     }
 };
 
@@ -91,7 +91,7 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x24, .op_name="BIT", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.bit},
     .{.opcode=0x2C, .op_name="BIT", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 4, .handler_fn = &instructions.bit},
     
-    .{.opcode=0x00, .op_name="BRK", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 7, .handler_fn = &instructions.brk},
+    .{.opcode=0x00, .op_name="BRK", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 2, .cycles = 7, .handler_fn = &instructions.brk},
     
     .{.opcode=0x18, .op_name="CLC", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.clc},
     .{.opcode=0xD8, .op_name="CLD", .addressing_mode=AddressingMode.IMPLIED,    .bytes = 1, .cycles = 2, .handler_fn = &instructions.cld},

@@ -33,7 +33,7 @@ pub fn main() !void {
     //_ = try emulator.load_rom(rom_path, 0x1000);
 
     try emulator.init_c64();
-    try emulator.run(null);
+    try emulator.run(4000);
 }
 
 

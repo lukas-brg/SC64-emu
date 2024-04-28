@@ -5,34 +5,42 @@ const OpInfo = @import("opcodes.zig").OpInfo;
 const AddressingMode = @import("opcodes.zig").AddressingMode;
 const DEBUG_CPU = @import("cpu.zig").DEBUG_CPU;
 
-const combine_bytes = @import("bitutils.zig").combine_bytes;
+const bitutils = @import("bitutils.zig");
 
 
 pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
 
     const address: u16 = switch (instruction.addressing_mode) {
         .IMMEDIATE => cpu.PC + 1,
-        .ABSOLUTE => combine_bytes(cpu.bus.read(cpu.PC+1), cpu.bus.read(cpu.PC+2)),
-        .ABSOLUTE_X => combine_bytes(cpu.bus.read(cpu.PC+1), cpu.bus.read(cpu.PC+2)) + cpu.X,
-        .ABSOLUTE_Y => combine_bytes(cpu.bus.read(cpu.PC+1), cpu.bus.read(cpu.PC+2)) + cpu.Y,
+        .ABSOLUTE => cpu.bus.read_16(cpu.PC+1),
+        .ABSOLUTE_X => cpu.bus.read_16(cpu.PC+1) + cpu.X,
+        .ABSOLUTE_Y => cpu.bus.read_16(cpu.PC+1) + cpu.Y,
         .ZEROPAGE => @as(u16, cpu.bus.read(cpu.PC+1)),
         .ZEROPAGE_X => @as(u16, cpu.bus.read(cpu.PC+1)) + cpu.X,
         .ZEROPAGE_Y => @as(u16, cpu.bus.read(cpu.PC+1)) + cpu.Y,
-        .RELATIVE => cpu.PC + instruction.bytes + @as(u16, cpu.bus.read(cpu.PC + 1)),
+        .RELATIVE => blk: {
+            const offset: u8 = cpu.bus.read(cpu.PC + 1);
+            if ((offset & 0x80) != 0) {
+                //const signed_offset =  -1 * (0x100 - offset);
+                break :blk cpu.PC + instruction.bytes - (0x100 - @as(u16, offset));
+            }
+            else {
+                break :blk cpu.PC + instruction.bytes + offset;
+            }
+        },
         .INDIRECT => blk: {
-            const lookup_addr = combine_bytes(cpu.bus.read(cpu.PC + 1), cpu.bus.read(cpu.PC+2));
-            const addr = cpu.bus.read(lookup_addr);
+            const lookup_addr = cpu.bus.read_16(cpu.PC+1);
+            const addr = cpu.bus.read_16(lookup_addr);
             break :blk addr;
         },
         .INDIRECT_X => blk: {
-            var lookup_addr = combine_bytes(cpu.bus.read(cpu.PC + 1), cpu.bus.read(cpu.PC+2));
-            lookup_addr += cpu.X;
-            const addr = cpu.bus.read(lookup_addr);
+            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1) + cpu.X);
+            const addr = cpu.bus.read_16(lookup_addr);
             break :blk addr;
         },
         .INDIRECT_Y => blk: {
-            const lookup_addr = combine_bytes(cpu.bus.read(cpu.PC + 1), cpu.bus.read(cpu.PC+2));
-            const addr = cpu.bus.read(lookup_addr) + cpu.Y;
+            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.Y);
+            const addr = cpu.bus.read_16(lookup_addr);
             break :blk addr;
         },
         .IMPLIED => undefined,

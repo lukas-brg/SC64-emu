@@ -3,3 +3,4 @@ notes.md
 callgrind.out*
 data/basic.bin
 data/kernal.bin
+out*.txt

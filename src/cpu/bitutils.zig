@@ -1,7 +1,14 @@
-
+const std = @import("std");
 pub inline fn combine_bytes(low: u8, high: u8) u16 {
     return low | (@as(u16, high) << 8);
 }
+
+pub inline fn split_into_bytes(val: u16) [2]u8 {
+    const low: u8 = @truncate(val & 0xFF);
+    const high: u8 = @truncate((val & 0xFF00) >> 8);
+    const bytes = [2]u8{low, high};
+    return bytes;
+}   
 
 pub inline fn get_bit_at(byte: u8, bit_index: u3) u1 {
     return @intCast((byte >> bit_index) & 1);

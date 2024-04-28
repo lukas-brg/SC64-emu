@@ -86,7 +86,7 @@ pub const CPU = struct {
 
 
     pub fn pop(self: *CPU) u8 {
-        self.SP += 1;
+        self.SP +%= 1;
         return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
 
@@ -100,7 +100,7 @@ pub const CPU = struct {
 
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
-        self.SP -= 1;
+        self.SP -%= 1;
     }
 
     pub fn push_16(self: *CPU, val: u16) void {
