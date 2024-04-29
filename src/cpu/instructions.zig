@@ -179,12 +179,15 @@ pub fn bvs(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn brk(cpu: *CPU, instruction: OpInfo) void {
     cpu.push_16(cpu.PC + 2);
-    cpu.push(cpu.status);
+    cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
+    
+    const status_byte = bitutils.set_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK), 1);
+    cpu.push(status_byte);
     
     cpu._wait_cycles += instruction.cycles;
 
-    cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
-    cpu.PC += instruction.bytes;
+    //cpu.PC += instruction.bytes;
+    cpu.PC = cpu.bus.read_16(0xFFFE);
     //cpu.halt = true;
 }
 
@@ -496,7 +499,6 @@ pub fn rti(cpu: *CPU, instruction: OpInfo) void {
     status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.BREAK), get_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK)));
     status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.UNUSED), get_bit_at(cpu.status, @intFromEnum(StatusFlag.UNUSED)));
     cpu.status = status;
-    
     cpu.PC = cpu.pop_16();
     cpu._wait_cycles += instruction.cycles;
 }

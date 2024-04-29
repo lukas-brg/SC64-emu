@@ -27,6 +27,11 @@ pub const MemoryMap = enum {
     pub const processor_port = 1;
 };
 
+pub const MemoryLocation = struct {
+    val_ptr: *u8,
+    read_only: bool,
+    control_bits: u3, // This is intended to help debugging
+};
 
 pub const Bus = struct {
     ram: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
@@ -46,8 +51,13 @@ pub const Bus = struct {
 
     
     pub fn write(self: *Bus, addr: u16, val: u8) void {
-        const val_ptr = self.access_mem_val(addr);
-        val_ptr.* = val;
+        const mem_location = self.access_mem_location(addr);
+        if (!mem_location.read_only) {
+            mem_location.val_ptr.* = val;
+        }
+        else {
+            std.debug.print("Trying to write to rom {}", .{addr});
+        }
     }
     
     pub fn write_16(self: *Bus, addr: u16, val: u16) void {
@@ -58,8 +68,8 @@ pub const Bus = struct {
     }
 
     pub fn read(self: *Bus, addr: u16) u8 {
-        const val_ptr = self.access_mem_val(addr);
-        return val_ptr.*;
+        const mem_location = self.access_mem_location(addr);
+        return mem_location.val_ptr.*;
     }
 
     pub fn read_16(self: *Bus, addr: u16) u16 {
@@ -96,17 +106,19 @@ pub const Bus = struct {
         std.debug.print("\n\n", .{});
     }
     
-    fn access_mem_val(self: *Bus, addr: u16) *u8 {
+    fn access_mem_location(self: *Bus, addr: u16) MemoryLocation {
         const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port] & 7);
         const ram_control_bits: u2 = @truncate(banking_control_bits & 3);
         
         var val_ptr: *u8 = undefined;
+        var read_only = false;
         
         switch (addr) {
             MemoryMap.basic_rom_start...MemoryMap.basic_rom_end => {
                 switch (ram_control_bits) {
                     0b11=> {
                         val_ptr = &self.basic_rom[addr-MemoryMap.basic_rom_start];
+                        read_only = true;
                     },
                     else => {
                         val_ptr = &self.ram[addr];
@@ -117,6 +129,7 @@ pub const Bus = struct {
                 switch (bitutils.get_bit_at(ram_control_bits, 1)) {
                     1=> {
                         val_ptr = &self.kernal_rom[addr-MemoryMap.kernal_rom_start];
+                        read_only = true;
                     },
                     0 => {
                         val_ptr = &self.ram[addr];
@@ -132,6 +145,7 @@ pub const Bus = struct {
                         switch (bitutils.get_bit_at(banking_control_bits, 2)) {
                             0 => {
                                 val_ptr = &self.character_rom[addr-MemoryMap.character_rom_start];
+                                read_only = true;
                             },
                             1 => {
                                 val_ptr = &self.io_ram[addr-MemoryMap.character_rom_start];
@@ -145,7 +159,9 @@ pub const Bus = struct {
             }
         }
 
-        return @constCast(val_ptr);
+        return .{.val_ptr = @constCast(val_ptr),
+                 .read_only = read_only,
+                 .control_bits = banking_control_bits};
     }
 
 };

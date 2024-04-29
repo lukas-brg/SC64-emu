@@ -31,7 +31,7 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 
 
 pub const EmulatorConfig = struct {
-    headless: bool = false,
+    headless: bool = true,
     scaling_factor: f16 = 3,    
 };
 
@@ -68,9 +68,8 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
-        self.bus.write_16(0x0328, 0xF6ED); // stop routine
-        std.debug.assert(self.bus.read(0x0328) == 0xED);
-        std.debug.assert(self.bus.read(0x0329) == 0xF6);
+        //self.bus.write_16(0x0328, 0xF6ED); // stop routine
+       
         
         try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
@@ -171,13 +170,18 @@ pub const Emulator = struct {
             return error.SDLInitializationFailed;
         };
 
+     
         defer sdl.SDL_DestroyWindow(screen);
+        
       
         const renderer = sdl.SDL_CreateRenderer(screen, -1, sdl.SDL_RENDERER_ACCELERATED) orelse {
             sdl.SDL_Log("Unable to create renderer: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
+    
+       
         defer sdl.SDL_DestroyRenderer(renderer);
+    
 
         const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
 
@@ -194,6 +198,9 @@ pub const Emulator = struct {
         };
         defer sdl.SDL_DestroyTexture(texture);
 
+        // if(self.config.headless) {
+        //     sdl.SDL_DestroyWindow(screen);
+        // }
 
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
 
@@ -223,19 +230,23 @@ pub const Emulator = struct {
             }
 
             self.cpu.clock_tick();
-            _ = sdl.SDL_RenderClear(renderer);
-            self.clear_screen_text_area(&frame_buffer);
-            self.update_frame(&frame_buffer);
+            if(!self.config.headless) {
+                _ = sdl.SDL_RenderClear(renderer);
+                self.clear_screen_text_area(&frame_buffer);
+                self.update_frame(&frame_buffer);
+            }
             if(limit_cycles) |max_cycles| {
                 if(count >= max_cycles) {
                     break;
                 }
             }
             count += 1;
-             _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
-            _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
-            
-            sdl.SDL_RenderPresent(renderer);
+
+            if(!self.config.headless) {
+                _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
+                _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
+                sdl.SDL_RenderPresent(renderer);
+            }
         }
       
     }   

@@ -2,12 +2,17 @@
 const std = @import("std");
 const Bus = @import("../bus.zig").Bus;
 
+const bitutils = @import("bitutils.zig");
+
 const decode_opcode = @import("opcodes.zig").decode_opcode;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
 pub const DEBUG_CPU = true;
 
 
 const RESET_VECTOR = 0xFFFC;
+const IRQ_VECTOR = 0xFFFE;
+const NMI_VECTOR = 0xFFFA;
+
 const STACK_BASE_POINTER: u16 = 0x100;
 
 pub const StatusFlag = enum(u3) {
@@ -38,7 +43,7 @@ pub const CPU = struct {
         const cpu = CPU{
             .PC = 0,
             .SP = 0xFF,
-            .status = 0,
+            .status = 0b00100100,
             .A = 0,
             .X = 0,
             .Y = 0,
@@ -54,6 +59,24 @@ pub const CPU = struct {
             std.debug.print("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
             std.log.debug("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
         }
+    }
+
+
+    pub fn irq(self: *CPU) void {
+        if (self.get_status_flag(StatusFlag.INTERRUPT) == 1) {
+            self.push_16(self.PC);
+            self.status = bitutils.set_bit_at(self.status, StatusFlag.UNUSED, 0);
+            self.push(self.status);
+
+            self.PC = self.bus.read_16(IRQ_VECTOR);
+        }
+    }
+
+    pub fn nmi(self: *CPU) void {
+        self.push_16(self.PC);
+        self.status = bitutils.set_bit_at(self.status, StatusFlag.UNUSED, 0);
+        self.push(self.status);
+        self.PC = self.bus.read_16(NMI_VECTOR);
     }
 
     fn get_status_bit(self: CPU, bit_index: u3) u1 {
@@ -129,7 +152,7 @@ pub const CPU = struct {
       
         if(DEBUG_CPU) {
             std.debug.print("==========================================================================================================================\n", .{});
-            std.debug.print("Clock Tick {}!\n", .{self.cycle_count});
+            std.debug.print("Clock Tick {} {}!\n", .{self.cycle_count, self._wait_cycles});
             std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
         }
 
@@ -182,10 +205,11 @@ pub const CPU = struct {
 
         std.debug.print("\n\nSTATUS FLAGS:", .{});
      
-        std.debug.print("\nN V B D I Z C", .{});
-        std.debug.print("\n{} {} {} {} {} {} {} ", 
+        std.debug.print("\nN V - B D I Z C", .{});
+        std.debug.print("\n{} {} {} {} {} {} {} {} ", 
             .{ self.get_status_bit(7), 
                     self.get_status_bit(6), 
+                    self.get_status_bit(5), 
                     self.get_status_bit(4), 
                     self.get_status_bit(3), 
                     self.get_status_bit(2), 
