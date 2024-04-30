@@ -12,6 +12,7 @@ pub const MemoryMap = enum {
     pub const color_mem_end = 0xDBE7;
 
     pub const character_rom_start = 0xD000;
+    pub const io_ram_start = 0xD000;
     pub const character_rom_end = 0xDFFF;
     
     pub const kernal_rom_start = 0xE000;
@@ -24,6 +25,8 @@ pub const MemoryMap = enum {
     pub const text_color = 0x0286;
     pub const frame_color = 0xD020;
     
+    pub const raster_line_reg = 0xD012;
+
     pub const processor_port = 1;
 };
 
@@ -58,6 +61,11 @@ pub const Bus = struct {
         else {
             std.debug.print("Trying to write to rom {}", .{addr});
         }
+    }
+
+    pub fn write_io_ram(self: *Bus, addr: u16, val: u8) void {
+       const index = addr - MemoryMap.io_ram_start;
+       self.io_ram[index] = val;
     }
     
     pub fn write_16(self: *Bus, addr: u16, val: u16) void {

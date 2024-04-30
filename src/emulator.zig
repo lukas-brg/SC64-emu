@@ -68,9 +68,9 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
-        //self.bus.write_16(0x0328, 0xF6ED); // stop routine
-       
-        
+        self.bus.write_16(0x0326, 0xF1CA); // chrout routine
+        self.bus.write_16(0x0328, 0xF6ED); // stop routine
+        std.debug.assert(self.bus.ram[0x326] == 0xCA);
         try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
@@ -146,10 +146,49 @@ pub const Emulator = struct {
     }
     
 
- 
-
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
         self.cpu.reset();
+        if (self.config.headless) {
+            try self.run_headless(limit_cycles);
+        } else {
+            try self.run_windowed(limit_cycles);
+        }
+    }
+
+
+    fn debug_output(self: *Emulator) void {
+        if(DEBUG_CPU) {
+            const mem_window_size = 0x20;
+            const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - mem_window_size/2));
+            const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
+            self.cpu.bus.print_mem(start, @intCast(end));        
+            self.cpu.bus.print_mem(0x326, 0x326 + 0x10 );
+        }
+    }
+
+
+
+    fn run_headless(self: *Emulator, limit_cycles: ?usize) !void {
+        var count: usize = 0;
+        while (!self.cpu.halt) {
+            self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);
+            self.debug_output();
+            self.cpu.clock_tick();
+         
+            if(limit_cycles) |max_cycles| {
+                if(count >= max_cycles) {
+                    break;
+                }
+            }
+            count += 1;
+        }
+    }
+ 
+
+
+
+    pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
+        
         var count: usize = 0;
         
         const pitch: c_int = SCREEN_WIDTH * 3;
@@ -169,8 +208,6 @@ pub const Emulator = struct {
             sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
-
-     
         defer sdl.SDL_DestroyWindow(screen);
         
       
@@ -178,13 +215,9 @@ pub const Emulator = struct {
             sdl.SDL_Log("Unable to create renderer: %s", sdl.SDL_GetError());
             return error.SDLInitializationFailed;
         };
-    
-       
         defer sdl.SDL_DestroyRenderer(renderer);
-    
 
         const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-
         const frame_color = colors.C64_COLOR_PALETE[color_code];
 
         _ = sdl.SDL_SetRenderDrawColor(renderer, frame_color.r, frame_color.g, frame_color.b, 255);
@@ -198,14 +231,12 @@ pub const Emulator = struct {
         };
         defer sdl.SDL_DestroyTexture(texture);
 
-        // if(self.config.headless) {
-        //     sdl.SDL_DestroyWindow(screen);
-        // }
 
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
 
         const screen_rect = sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = FRAME_SIZE_X, .y = FRAME_SIZE_Y};
 
+       
         self.clear_screen_mem();
         //clear_screen_text_area(&frame_buffer);
         var quit = false;
@@ -220,21 +251,14 @@ pub const Emulator = struct {
                     else => {},
                 }
             }
-            
-            const mem_window_size = 0x20;
-          
-            if(DEBUG_CPU) {
-                const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - mem_window_size/2));
-                const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
-                self.cpu.bus.print_mem(start, @intCast(end));
-            }
 
+            self.debug_output();
             self.cpu.clock_tick();
-            if(!self.config.headless) {
-                _ = sdl.SDL_RenderClear(renderer);
-                self.clear_screen_text_area(&frame_buffer);
-                self.update_frame(&frame_buffer);
-            }
+        
+            _ = sdl.SDL_RenderClear(renderer);
+            self.clear_screen_text_area(&frame_buffer);
+            self.update_frame(&frame_buffer);
+        
             if(limit_cycles) |max_cycles| {
                 if(count >= max_cycles) {
                     break;
@@ -242,19 +266,18 @@ pub const Emulator = struct {
             }
             count += 1;
 
-            if(!self.config.headless) {
-                _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
-                _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
-                sdl.SDL_RenderPresent(renderer);
-            }
+            _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
+            _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
+            sdl.SDL_RenderPresent(renderer);
+    
         }
       
     }   
 
 
-
+    
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
-       
+        self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);
         var bus = self.bus;
         for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end, 
               MemoryMap.color_mem_start..MemoryMap.color_mem_end) 
