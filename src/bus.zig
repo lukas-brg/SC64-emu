@@ -59,7 +59,8 @@ pub const Bus = struct {
             mem_location.val_ptr.* = val;
         }
         else {
-            std.debug.print("Trying to write to rom {}", .{addr});
+            std.debug.print("Trying to write to rom {}, writing to ram instead", .{addr});
+            self.ram[addr] = val;
         }
     }
 
@@ -70,7 +71,6 @@ pub const Bus = struct {
     
     pub fn write_16(self: *Bus, addr: u16, val: u16) void {
         const bytes = bitutils.split_into_bytes(val);
-        std.debug.print("{any}\n", .{bytes});
         self.write(addr, bytes[0]);
         self.write(addr+1, bytes[1]);
     }
@@ -170,6 +170,6 @@ pub const Bus = struct {
         return .{.val_ptr = @constCast(val_ptr),
                  .read_only = read_only,
                  .control_bits = banking_control_bits};
-    }
+        }
 
 };

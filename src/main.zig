@@ -31,7 +31,7 @@ pub fn main() !void {
     defer emulator.deinit(allocator);
 
     //_ = try emulator.load_rom(rom_path, 0x1000);
-
+    //emulator.cpu.set_reset_vector(0x1000);
     try emulator.init_c64();
     try emulator.run(null);
 }
@@ -46,7 +46,7 @@ fn test_init_reset_vector(bus: *Bus) void {
 
 test "loading reset vector into pc" {
     const assert = std.debug.assert;
-    var bus = Bus{};
+    var bus = Bus{};  
     var cpu = c.CPU.init(&bus);
     test_init_reset_vector(&bus);
     cpu.reset();

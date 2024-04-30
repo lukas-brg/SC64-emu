@@ -253,6 +253,8 @@ pub const Emulator = struct {
             }
 
             self.debug_output();
+            self.bus.write_16(0x0326, 0xF1CA); // chrout routine
+
             self.cpu.clock_tick();
         
             _ = sdl.SDL_RenderClear(renderer);

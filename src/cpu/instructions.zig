@@ -237,10 +237,12 @@ pub fn cmp(cpu: *CPU, instruction: OpInfo) void {
     
     cpu.update_negative(result);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, carry);
+    const carry_flag: u1 = carry | @intFromBool(result == 0);
+    cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
 }
+
 
 pub fn cpx(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
@@ -250,7 +252,8 @@ pub fn cpx(cpu: *CPU, instruction: OpInfo) void {
     
     cpu.update_negative(result);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, carry);
+    const carry_flag: u1 = carry | @intFromBool(result == 0);
+    cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
 }
@@ -264,7 +267,8 @@ pub fn cpy(cpu: *CPU, instruction: OpInfo) void {
     
     cpu.update_negative(result);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, carry);
+    const carry_flag: u1 = carry | @intFromBool(result == 0);
+    cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
 }
