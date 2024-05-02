@@ -11,29 +11,52 @@ pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     return rom_data;
 }
 
-
-pub fn main() !void {
+pub fn cpu_test() !void {
     
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
    
     const allocator = gpa.allocator();
     
-    const args = try std.process.argsAlloc(allocator);
-    defer std.process.argsFree(allocator, args);
-    var rom_path: []const u8 = "debug.o65";
-    
-    if (args.len > 1){
-        rom_path = args[1];
-    }
 
+    const rom_path: []const u8 = "test/cpu/6502_functional_test.bin";
+    
+   
     var emulator = try Emulator.init(allocator, .{.scaling_factor = 4});
     defer emulator.deinit(allocator);
 
-    //_ = try emulator.load_rom(rom_path, 0x1000);
-    //emulator.cpu.set_reset_vector(0x1000);
-    try emulator.init_c64();
+    _ = try emulator.load_rom(rom_path, 0);
+
+    emulator.cpu.set_reset_vector(0x400);
+    //try emulator.init_c64();
     try emulator.run(null);
+}
+
+
+
+pub fn main() !void {
+    
+    try cpu_test();
+    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    // defer _ = gpa.deinit();
+   
+    // const allocator = gpa.allocator();
+    
+    // const args = try std.process.argsAlloc(allocator);
+    // defer std.process.argsFree(allocator, args);
+    // var rom_path: []const u8 = "debug.o65";
+    
+    // if (args.len > 1){
+    //     rom_path = args[1];
+    // }
+
+    // var emulator = try Emulator.init(allocator, .{.scaling_factor = 4});
+    // defer emulator.deinit(allocator);
+
+    // //_ = try emulator.load_rom(rom_path, 0x1000);
+    // //emulator.cpu.set_reset_vector(0x1000);
+    // try emulator.init_c64();
+    // try emulator.run(null);
 }
 
 

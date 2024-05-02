@@ -2,7 +2,7 @@ const std = @import("std");
 const bitutils = @import("cpu/bitutils.zig");
 
 const MEM_SIZE: u17 = 0x10000;
-
+const DISABLE_BANK_SWITCHING = true;
 
 pub const MemoryMap = enum {
     pub const screen_mem_start= 0x0400;
@@ -113,9 +113,17 @@ pub const Bus = struct {
 
         std.debug.print("\n\n", .{});
     }
+
     
     fn access_mem_location(self: *Bus, addr: u16) MemoryLocation {
+        
         const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port] & 7);
+        if (DISABLE_BANK_SWITCHING) {
+            return .{.val_ptr = @constCast(&self.ram[addr]),
+                 .read_only = false,
+                 .control_bits = banking_control_bits};
+        }
+        
         const ram_control_bits: u2 = @truncate(banking_control_bits & 3);
         
         var val_ptr: *u8 = undefined;
@@ -170,6 +178,6 @@ pub const Bus = struct {
         return .{.val_ptr = @constCast(val_ptr),
                  .read_only = read_only,
                  .control_bits = banking_control_bits};
-        }
+    }
 
 };
