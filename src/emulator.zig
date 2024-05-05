@@ -17,8 +17,6 @@ const sdl = @cImport({
 pub const FRAME_SIZE_X = 14;
 pub const FRAME_SIZE_Y = 12;
 
-
-
 const SCREEN_WIDTH = 320;
 const SCREEN_HEIGHT = 200;
 
@@ -31,8 +29,9 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 
 
 pub const EmulatorConfig = struct {
-    headless: bool = true,
-    scaling_factor: f16 = 3,    
+    headless: bool = false,
+    scaling_factor: f32 = 3,   
+    enable_bank_switching: bool = true, 
 };
 
 pub const Emulator = struct {
@@ -45,7 +44,7 @@ pub const Emulator = struct {
     pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
         const bus = try allocator.create(Bus);
         bus.* = Bus.init();
-
+        bus.enable_bank_switching = config.enable_bank_switching;
         const cpu = try allocator.create(CPU);
         cpu.* = CPU.init(bus);
         const emulator: Emulator = .{
@@ -55,6 +54,15 @@ pub const Emulator = struct {
         };
 
         return emulator;
+    }
+
+    pub fn init_graphics(self: *Emulator) !void {
+        try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
+        self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
+        self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
+        self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
+        self.clear_color_mem();
+
     }
 
     pub fn init_c64(self: *Emulator) !void {
@@ -67,21 +75,8 @@ pub const Emulator = struct {
 
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
-
-        self.bus.write_16(0x0326, 0xF1CA); // chrout routine
-        self.bus.write_16(0x0328, 0xF6ED); // stop routine
-        std.debug.assert(self.bus.ram[0x326] == 0xCA);
-        try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
-        self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
-        self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
-        self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
-        
-      //  self.cpu.set_reset_vector(0x1000); // for now write the reset vector into kernal rom as well, after processor port was set
-
+        try self.init_graphics();        
         self.cpu.SP = 0xFF;
-
-        self.clear_color_mem();
-
     }
 
     fn load_basic_rom(self: *Emulator) !void {
@@ -185,8 +180,6 @@ pub const Emulator = struct {
     }
  
 
-
-
     pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
         
         var count: usize = 0;
@@ -235,7 +228,7 @@ pub const Emulator = struct {
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
 
         const screen_rect = sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = FRAME_SIZE_X, .y = FRAME_SIZE_Y};
-
+ 
        
         self.clear_screen_mem();
         //clear_screen_text_area(&frame_buffer);
@@ -271,12 +264,8 @@ pub const Emulator = struct {
             _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
             _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
             sdl.SDL_RenderPresent(renderer);
-    
-        }
-      
+        }      
     }   
-
-
     
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
         self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);

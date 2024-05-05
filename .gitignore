@@ -4,4 +4,4 @@ callgrind.out*
 data/basic.bin
 data/kernal.bin
 out*.txt
-test/cpu/**
+test_files/cpu/**

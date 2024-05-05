@@ -2,7 +2,6 @@ const std = @import("std");
 const bitutils = @import("cpu/bitutils.zig");
 
 const MEM_SIZE: u17 = 0x10000;
-const DISABLE_BANK_SWITCHING = true;
 
 pub const MemoryMap = enum {
     pub const screen_mem_start= 0x0400;
@@ -36,6 +35,9 @@ pub const MemoryLocation = struct {
     control_bits: u3, // This is intended to help debugging
 };
 
+
+
+
 pub const Bus = struct {
     ram: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
     
@@ -47,6 +49,8 @@ pub const Bus = struct {
     basic_rom: [MemoryMap.basic_rom_end-MemoryMap.basic_rom_start+1]u8 = std.mem.zeroes([MemoryMap.basic_rom_end-MemoryMap.basic_rom_start+1]u8),
     
     kernal_rom: [MemoryMap.kernal_rom_end-MemoryMap.kernal_rom_start+1]u8 = std.mem.zeroes([MemoryMap.kernal_rom_end-MemoryMap.kernal_rom_start+1]u8),
+
+    enable_bank_switching: bool = true,
 
     pub fn init() Bus {
         return .{};
@@ -118,7 +122,7 @@ pub const Bus = struct {
     fn access_mem_location(self: *Bus, addr: u16) MemoryLocation {
         
         const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port] & 7);
-        if (DISABLE_BANK_SWITCHING) {
+        if (!self.enable_bank_switching) {
             return .{.val_ptr = @constCast(&self.ram[addr]),
                  .read_only = false,
                  .control_bits = banking_control_bits};

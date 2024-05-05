@@ -4,61 +4,92 @@ const Bus = @import("bus.zig").Bus;
 const CPU = @import("cpu/cpu.zig").CPU;
 const Emulator = @import("emulator.zig").Emulator;
 const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
-
+const clap = @import("clap");
 
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const rom_data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
     return rom_data;
 }
 
-pub fn cpu_test() !void {
+pub fn cpu_functional_test() !void {
     
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
    
     const allocator = gpa.allocator();
-    
-
     const rom_path: []const u8 = "test/cpu/6502_functional_test.bin";
     
-   
-    var emulator = try Emulator.init(allocator, .{.scaling_factor = 4});
+    var emulator = try Emulator.init(allocator, .{.scaling_factor = 4, .headless = true});
+    emulator.bus.enable_bank_switching = false;
     defer emulator.deinit(allocator);
 
     _ = try emulator.load_rom(rom_path, 0);
 
     emulator.cpu.set_reset_vector(0x400);
     //try emulator.init_c64();
-    try emulator.run(null);
+    try emulator.run(1_000_000);
 }
 
 
 
 pub fn main() !void {
     
-    try cpu_test();
-    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    // defer _ = gpa.deinit();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
    
-    // const allocator = gpa.allocator();
+    const allocator = gpa.allocator();
     
-    // const args = try std.process.argsAlloc(allocator);
-    // defer std.process.argsFree(allocator, args);
-    // var rom_path: []const u8 = "debug.o65";
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
     
-    // if (args.len > 1){
-    //     rom_path = args[1];
-    // }
+    
+    const params = comptime clap.parseParamsComptime(
+        \\-h, --help             Display this help and exit.
+        \\--ftest                Run a functional cpu test
+        \\-h, --headless         No graphical output
+        \\-r, --rom <str>        Run a custom rom on a blank machine rather than KERNAL
+        \\-o, --offset <u16>           Specify the starting position of the custom rom
+        \\-s, --scaling <f32>  Specify a scaling factor, as 320x200 will be very small on modern screens
+        \\--pc <u16>             Specify the initial Program Counter
+    );
 
-    // var emulator = try Emulator.init(allocator, .{.scaling_factor = 4});
-    // defer emulator.deinit(allocator);
+    var diag = clap.Diagnostic{};
+    var res = clap.parse(clap.Help, &params, clap.parsers.default, .{
+        .diagnostic = &diag,
+        .allocator = gpa.allocator(),
+    }) catch |err| {
+        // Report useful error and exit
+        diag.report(std.io.getStdErr().writer(), err) catch {};
+        return err;
+    };
+    defer res.deinit();
 
-    // //_ = try emulator.load_rom(rom_path, 0x1000);
-    // //emulator.cpu.set_reset_vector(0x1000);
-    // try emulator.init_c64();
-    // try emulator.run(null);
+    const headless = res.args.headless != 0;
+    const scaling_factor = res.args.scaling orelse 4;
+
+    if (res.args.help != 0) {
+        return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
+    }
+
+    if(res.args.ftest != 0) {
+        try cpu_functional_test();
+    } 
+    else if (res.args.rom) |rom_path| {
+        var emulator = try Emulator.init(allocator, .{.headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = false});
+        try emulator.init_graphics();
+        defer emulator.deinit(allocator);
+        _ = try emulator.load_rom(rom_path, res.args.offset orelse 0x1000); // 0x1000 is chosen as a default here since xa65 also uses it by default
+        emulator.cpu.set_reset_vector( res.args.pc orelse 0x1000);
+
+        try emulator.run(null);
+    }
+    else {
+        var emulator = try Emulator.init(allocator, .{.scaling_factor = scaling_factor, .headless = headless});
+        defer emulator.deinit(allocator);
+        try emulator.init_c64();
+        try emulator.run(null);
+    }
 }
-
 
 
 fn test_init_reset_vector(bus: *Bus) void {
@@ -66,6 +97,7 @@ fn test_init_reset_vector(bus: *Bus) void {
     bus.write(0xfffc, 0x10);
     bus.write(0xfffd, 0x20);
 }
+
 
 test "loading reset vector into pc" {
     const assert = std.debug.assert;

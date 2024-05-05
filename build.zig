@@ -15,17 +15,34 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // const cpu = b.addModule("cpu", .{.root_source_file = .{.path = "src/cpu/cpu.zig"}});
+    // const emu = b.addModule("emulator", .{.root_source_file = .{.path = "src/emulator.zig"}});
+    // const bus = b.addModule("bus", .{.root_source_file = .{.path = "src/bus.zig"}});
+    // const bitutils = b.addModule("bus", .{.root_source_file = .{.path = "src/cpu/bitutils.zig"}});
     
+
+    const ftest = b.option(bool, "ftest", "Run functional test") orelse false;
+    
+    var exe_path: []const u8 = "src/main.zig";
+
+    if(ftest) {
+        exe_path = "test/cpu/testcpu.zig";
+    }
 
     const exe = b.addExecutable(.{
         .name = "z64",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{ .path = exe_path},
         .target = target,
         .optimize = optimize,
     
     });
- 
-
+    
+    // exe.root_module.addImport("cpu", cpu);
+    // cpu.addImport("bus", bus);
+    // exe.root_module.addImport("emu", emu);
+    // exe.root_module.addImport("bus", bus);
+    // exe.root_module.addImport("cpu.bitutils", bitutils);
+    exe.root_module.addAnonymousImport("clap", .{ .root_source_file =  .{ .path = "lib/clap/clap.zig" } });
     exe.linkSystemLibrary("SDL2");
     
     exe.linkLibC();
@@ -65,6 +82,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 

@@ -22,19 +22,37 @@ pub fn adc(cpu: *CPU, instruction: OpInfo) void {
     const operand = operand_info.operand;
     
     const a_operand = cpu.A;                                                 
-    const result_carry = @addWithOverflow(cpu.A, operand + cpu.get_status_flag(StatusFlag.CARRY));
-    cpu.A = result_carry[0];
     
-    cpu.set_status_flag(StatusFlag.CARRY, result_carry[1]);
-    
-    cpu.update_zero(cpu.A);
-    cpu.update_negative(cpu.A);
-    
-    const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
-    cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
-    cpu.PC += instruction.bytes;
+    if (cpu.get_status_flag(StatusFlag.DECIMAL) == 0) {
+        const result_carry = @addWithOverflow(cpu.A, operand + cpu.get_status_flag(StatusFlag.CARRY));
+        cpu.A = result_carry[0];
+        
+        cpu.set_status_flag(StatusFlag.CARRY, result_carry[1]);
+        cpu.update_negative(cpu.A);
+        const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
+        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
 
-    cpu._wait_cycles += operand_info.cycles;
+    } else {
+        var AL = (cpu.A & 0xF) + (operand & 0xF) + cpu.get_status_flag(StatusFlag.CARRY);         
+        var AH = (cpu.A >> 4) + (operand >> 4) + @intFromBool(AL > 15); 
+
+        if (AL > 9) AL += 6;
+        const N: u1 = @intFromBool(AH & 8 != 0);
+        const V = @intFromBool(((((AH << 4) ^ cpu.A) & 0x80) != 0) and !(((cpu.A ^ operand) & 0x80) != 0));
+
+        cpu.set_status_flag(StatusFlag.OVERFLOW, V);
+        cpu.set_status_flag(StatusFlag.NEGATIVE, N);
+
+        if (AH > 9) AH += 6; 
+        const C: u1 = @intFromBool(AH > 15);
+        cpu.set_status_flag(StatusFlag.CARRY, C);
+        cpu.A = (AH << 4) | (AL & 0xF);
+    }
+
+     cpu.update_zero(cpu.A);
+
+    cpu.PC += instruction.bytes;
+    cpu._wait_cycles += operand_info.cycles;    
 }
 
 
@@ -76,7 +94,7 @@ pub fn asl(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn bcc(cpu: *CPU, instruction: OpInfo) void {
-    if (cpu.get_status_flag(StatusFlag.CARRY) == 1) {
+    if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
         const operand_info = get_operand(cpu, instruction);
         cpu.PC = operand_info.address;
         cpu._wait_cycles += operand_info.cycles;
@@ -354,7 +372,6 @@ pub fn iny(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn jmp(cpu: *CPU, instruction: OpInfo) void {  
     const operand = get_operand(cpu, instruction);
-    std.debug.print("{} {x}\n", .{instruction.addressing_mode, cpu.bus.read(cpu.PC+1)});
     cpu.PC = operand.address;
     cpu._wait_cycles += operand.cycles;
 }
@@ -519,7 +536,7 @@ pub fn sbc(cpu: *CPU, instruction: OpInfo) void {
     const operand = operand_info.operand;
     
     const a_operand = cpu.A;                                                 
-    const result_carry = @subWithOverflow(cpu.A, operand - cpu.get_status_flag(StatusFlag.CARRY));
+    const result_carry = @subWithOverflow(cpu.A, operand - (cpu.get_status_flag(StatusFlag.CARRY) ^ 1 ));
     cpu.A = result_carry[0];
     
     cpu.set_status_flag(StatusFlag.CARRY, result_carry[1]);
