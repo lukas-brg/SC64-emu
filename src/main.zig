@@ -17,7 +17,7 @@ pub fn cpu_functional_test() !void {
     defer _ = gpa.deinit();
    
     const allocator = gpa.allocator();
-    const rom_path: []const u8 = "test/cpu/6502_functional_test.bin";
+    const rom_path: []const u8 = "test_files/cpu/6502_functional_test.bin";
     
     var emulator = try Emulator.init(allocator, .{.scaling_factor = 4, .headless = true});
     emulator.bus.enable_bank_switching = false;
