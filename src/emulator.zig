@@ -1,6 +1,6 @@
 const std = @import("std");
 const CPU = @import("cpu/cpu.zig").CPU;
-const DEBUG_CPU = @import("cpu/cpu.zig").DEBUG_CPU;
+const DEBUG_CPU = true;
 const Bus = @import("bus.zig").Bus;
 
 const MemoryMap = @import("bus.zig").MemoryMap;
@@ -34,11 +34,26 @@ pub const EmulatorConfig = struct {
     enable_bank_switching: bool = true, 
 };
 
+
+pub const DebugLogConfig = struct {
+    enable_debug_log: bool = true,
+    print_mem: bool = true,
+    print_mem_window_size: usize  = 0x20,
+    print_stack: bool = true,
+    print_stack_limit: usize = 10,
+    print_cpu_state: bool = true,
+    start_at_cycle: usize = 0,
+    end_at_cycle: ?usize = null, 
+
+};
+
 pub const Emulator = struct {
 
     bus: *Bus,
     cpu: *CPU,
     config: EmulatorConfig = .{},
+    log_config: DebugLogConfig = .{},
+    cycle_count: usize = 0,
 
 
     pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
@@ -53,6 +68,8 @@ pub const Emulator = struct {
             .config = config,
         };
 
+        cpu.print_debug_info = false; // This flag will be set based on the other parameters later in print_debug_output()
+
         return emulator;
     }
 
@@ -62,7 +79,6 @@ pub const Emulator = struct {
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
         self.clear_color_mem();
-
     }
 
     pub fn init_c64(self: *Emulator) !void {
@@ -151,38 +167,63 @@ pub const Emulator = struct {
     }
 
 
-    fn debug_output(self: *Emulator) void {
-        if(DEBUG_CPU) {
-            const mem_window_size = 0x20;
-            const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - mem_window_size/2));
-            const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
+    fn _print_debug_output(self: *Emulator) void {
+        const mem_window_size: i32 = @intCast(self.log_config.print_mem_window_size);
+        const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - @divFloor(mem_window_size, 2)));
+        const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
+        if(self.log_config.print_cpu_state){
+            self.cpu.print_state();   
+        }
+
+        if(self.log_config.print_stack) {
+            self.cpu.print_stack(self.log_config.print_stack_limit);
+        }
+
+        if(self.log_config.print_mem) {
             self.cpu.bus.print_mem(start, @intCast(end));        
-            self.cpu.bus.print_mem(0x326, 0x326 + 0x10 );
+            self.cpu.bus.print_mem(0x210, @intCast(0x21a+0x10));        
+        }
+}
+
+    fn print_debug_output(self: *Emulator) void {
+        
+        if(self.log_config.enable_debug_log and self.cycle_count >= self.log_config.start_at_cycle) {
+            if(self.log_config.end_at_cycle) |end_cycle| {
+                if(self.cycle_count > end_cycle) {
+                    self.cpu.print_debug_info = false;
+                    self.log_config.enable_debug_log = false;
+                    self._print_debug_output(); // print the output one last time to see the effect of the last instruction shown
+                    return;
+                   
+                }
+            }
+            self.cpu.print_debug_info = true;
+            self._print_debug_output();
+           
         }
     }
 
 
-
     fn run_headless(self: *Emulator, limit_cycles: ?usize) !void {
-        var count: usize = 0;
+      
+        
         while (!self.cpu.halt) {
             self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);
-            self.debug_output();
+            self.print_debug_output();
             self.cpu.clock_tick();
          
+            self.cycle_count += 1;
             if(limit_cycles) |max_cycles| {
-                if(count >= max_cycles) {
+                if(self.cycle_count >= max_cycles) {
                     break;
                 }
             }
-            count += 1;
         }
+        self.print_debug_output();
     }
  
 
     pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
-        
-        var count: usize = 0;
         
         const pitch: c_int = SCREEN_WIDTH * 3;
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
@@ -229,7 +270,7 @@ pub const Emulator = struct {
 
         const screen_rect = sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = FRAME_SIZE_X, .y = FRAME_SIZE_Y};
  
-       
+
         self.clear_screen_mem();
         //clear_screen_text_area(&frame_buffer);
         var quit = false;
@@ -245,26 +286,28 @@ pub const Emulator = struct {
                 }
             }
 
-            self.debug_output();
             self.bus.write_16(0x0326, 0xF1CA); // chrout routine
 
+            self.print_debug_output();
             self.cpu.clock_tick();
         
             _ = sdl.SDL_RenderClear(renderer);
             self.clear_screen_text_area(&frame_buffer);
             self.update_frame(&frame_buffer);
         
-            if(limit_cycles) |max_cycles| {
-                if(count >= max_cycles) {
-                    break;
-                }
-            }
-            count += 1;
-
             _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
             _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
             sdl.SDL_RenderPresent(renderer);
-        }      
+        
+            self.cycle_count += 1;
+            if(limit_cycles) |max_cycles| {
+                if(self.cycle_count >= max_cycles) {
+                    break;
+                }
+            }
+        }    
+
+        self.print_debug_output(); 
     }   
     
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {

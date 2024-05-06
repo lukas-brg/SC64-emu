@@ -1,3 +1,6 @@
 [submodule "lib/clap"]
 	path = lib/clap
 	url = https://github.com/Hejsil/zig-clap.git
+[submodule "test_files/6502_65C02_functional_tests"]
+	path = test_files/6502_65C02_functional_tests
+	url = https://github.com/Klaus2m5/6502_65C02_functional_tests

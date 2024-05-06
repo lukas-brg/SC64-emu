@@ -8,7 +8,7 @@ const combine_bytes = @import("bitutils.zig").combine_bytes;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
 const set_bit_at = @import("bitutils.zig").set_bit_at;
 const bitutils = @import("bitutils.zig");
-const DEBUG_CPU = @import("cpu.zig").DEBUG_CPU;
+const DEBUG_CPU = @import("cpu.zig").self.pring_debug_info;
 
 
 
@@ -107,7 +107,7 @@ pub fn bcc(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn bcs(cpu: *CPU, instruction: OpInfo) void {
-    if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
+    if (cpu.get_status_flag(StatusFlag.CARRY) == 1) {
         const operand_info = get_operand(cpu, instruction);
         cpu.PC = operand_info.address;
         cpu._wait_cycles += operand_info.cycles;
@@ -197,10 +197,11 @@ pub fn bvs(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn brk(cpu: *CPU, instruction: OpInfo) void {
     cpu.push_16(cpu.PC + 2);
-    cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
     
-    const status_byte = bitutils.set_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK), 1);
+    var status_byte = bitutils.set_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK), 1);
+    status_byte = bitutils.set_bit_at(status_byte, @intFromEnum(StatusFlag.UNUSED), 1);
     cpu.push(status_byte);
+    cpu.set_status_flag(StatusFlag.INTERRUPT, 1);
     
     cpu._wait_cycles += instruction.cycles;
 
@@ -251,11 +252,11 @@ pub fn cmp(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
     const result_carry = @subWithOverflow(cpu.A, operand_info.operand);
     const result = result_carry[0];
-    const carry = result_carry[1];
+    //const carry = result_carry[1];
     
     cpu.update_negative(result);
     cpu.update_zero(result);
-    const carry_flag: u1 = carry | @intFromBool(result == 0);
+    const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
     cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
@@ -266,11 +267,11 @@ pub fn cpx(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
     const result_carry = @subWithOverflow(cpu.X, operand_info.operand);
     const result = result_carry[0];
-    const carry = result_carry[1];
+    //const carry = result_carry[1];
     
     cpu.update_negative(result);
     cpu.update_zero(result);
-    const carry_flag: u1 = carry | @intFromBool(result == 0);
+    const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
     cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
@@ -281,11 +282,11 @@ pub fn cpy(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
     const result_carry = @subWithOverflow(cpu.Y, operand_info.operand);
     const result = result_carry[0];
-    const carry = result_carry[1];
+    //const carry = result_carry[1];
     
     cpu.update_negative(result);
     cpu.update_zero(result);
-    const carry_flag: u1 = carry | @intFromBool(result == 0);
+    const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
     cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
@@ -462,20 +463,22 @@ pub fn php(cpu: *CPU, instruction: OpInfo) void {
 
 
 pub fn pla(cpu: *CPU, instruction: OpInfo) void {
-    cpu.status = cpu.pop();
+    cpu.A = cpu.pop();
+    cpu.update_negative(cpu.A);
+    cpu.update_zero(cpu.A);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
 }
 
 
 pub fn plp(cpu: *CPU, instruction: OpInfo) void {
-    cpu.A = cpu.pop();
-
-    cpu.update_negative(cpu.A);
-    cpu.update_zero(cpu.A);
-
+    var status = cpu.pop();
+    status = set_bit_at(status, @intFromEnum(StatusFlag.BREAK), 1);
+    status = set_bit_at(status, 5, 1);
+    cpu.status = status;
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
+
 }
 
 
@@ -634,8 +637,6 @@ pub fn txa(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn txs(cpu: *CPU, instruction: OpInfo) void {  
     cpu.SP = cpu.X;
-    cpu.update_negative(cpu.SP);
-    cpu.update_zero(cpu.SP);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
 }

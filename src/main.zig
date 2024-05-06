@@ -17,7 +17,7 @@ pub fn cpu_functional_test() !void {
     defer _ = gpa.deinit();
    
     const allocator = gpa.allocator();
-    const rom_path: []const u8 = "test_files/cpu/6502_functional_test.bin";
+    const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";
     
     var emulator = try Emulator.init(allocator, .{.scaling_factor = 4, .headless = true});
     emulator.bus.enable_bank_switching = false;
@@ -27,7 +27,7 @@ pub fn cpu_functional_test() !void {
 
     emulator.cpu.set_reset_vector(0x400);
     //try emulator.init_c64();
-    try emulator.run(1_000_000);
+    try emulator.run(43967);
 }
 
 
@@ -46,10 +46,11 @@ pub fn main() !void {
     const params = comptime clap.parseParamsComptime(
         \\-h, --help             Display this help and exit.
         \\--ftest                Run a functional cpu test
-        \\-h, --headless         No graphical output
-        \\-r, --rom <str>        Run a custom rom on a blank machine rather than KERNAL
-        \\-o, --offset <u16>           Specify the starting position of the custom rom
-        \\-s, --scaling <f32>  Specify a scaling factor, as 320x200 will be very small on modern screens
+        \\--headless             No graphical output
+        \\-r, --rom <str>        Run a custom rom on a blank machine instead of KERNAL
+        \\-o, --offset <u16>     Specify the starting position of the custom rom
+        \\-s, --scaling <f32>    Specify a scaling factor, as 320x200 will be very small on modern screens
+        \\-c, --cycles <usize>   Specify the number of cycles to be executed
         \\--pc <u16>             Specify the initial Program Counter
     );
 
@@ -81,13 +82,13 @@ pub fn main() !void {
         _ = try emulator.load_rom(rom_path, res.args.offset orelse 0x1000); // 0x1000 is chosen as a default here since xa65 also uses it by default
         emulator.cpu.set_reset_vector( res.args.pc orelse 0x1000);
 
-        try emulator.run(null);
+        try emulator.run(res.args.cycles);
     }
     else {
         var emulator = try Emulator.init(allocator, .{.scaling_factor = scaling_factor, .headless = headless});
         defer emulator.deinit(allocator);
         try emulator.init_c64();
-        try emulator.run(null);
+        try emulator.run(res.args.cycles);
     }
 }
 

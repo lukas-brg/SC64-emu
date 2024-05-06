@@ -6,7 +6,7 @@ const bitutils = @import("bitutils.zig");
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
-pub const DEBUG_CPU = true;
+
 
 
 const RESET_VECTOR = 0xFFFC;
@@ -38,6 +38,7 @@ pub const CPU = struct {
     cycle_count: usize = 0,
     _wait_cycles: usize = 0,
     halt: bool = false,
+    print_debug_info: bool = true,
 
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
@@ -55,7 +56,7 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
-        if (DEBUG_CPU) {
+        if (self.print_debug_info) {
             std.debug.print("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
             std.log.debug("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
         }
@@ -147,10 +148,21 @@ pub const CPU = struct {
         self.bus.write(RESET_VECTOR+1, high_byte);
     }
     
+    pub fn print_stack(self: *CPU, limit: usize) void {
+        var sp_abs = STACK_BASE_POINTER + @as(u16, self.SP) + 1;
+        var count: usize = 0;
+        std.debug.print("STACK:\n", .{});
+        while (sp_abs <= STACK_BASE_POINTER + 0xFF and count < limit) {
+            std.debug.print("{x:0>4}: {x:0>2}\n", .{sp_abs, self.bus.read(sp_abs)});
+            sp_abs+=1;
+            count+=1;
+        }
+
+    }
 
     pub fn clock_tick(self: *CPU) void {
       
-        if(DEBUG_CPU) {
+        if(self.print_debug_info) {
             std.debug.print("==========================================================================================================================\n", .{});
             std.debug.print("Clock Tick {} {}!\n", .{self.cycle_count, self._wait_cycles});
             std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
@@ -159,7 +171,7 @@ pub const CPU = struct {
         const opcode = self.fetch_byte();
         const instruction = decode_opcode(opcode);
         
-        if(DEBUG_CPU) {
+        if(self.print_debug_info) {
             std.debug.print("Loaded opcode 0x{x:0>2}\n", .{opcode});
             std.debug.print("Instruction fetched ", .{});
             instruction.print();
@@ -169,14 +181,7 @@ pub const CPU = struct {
         
         self.cycle_count += 1;
 
-        if(DEBUG_CPU) {
-            self.print_state();   
-        }
-
         if(self.halt) {
-            if(DEBUG_CPU) {
-                std.debug.print("HALT!\n", .{});
-            }
             return;
         }
     }

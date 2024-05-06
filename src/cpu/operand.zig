@@ -3,7 +3,7 @@ const CPU = @import("cpu.zig").CPU;
 const StatusFlag = @import("cpu.zig").StatusFlag;
 const OpInfo = @import("opcodes.zig").OpInfo;
 const AddressingMode = @import("opcodes.zig").AddressingMode;
-const DEBUG_CPU = @import("cpu.zig").DEBUG_CPU;
+
 
 const bitutils = @import("bitutils.zig");
 
@@ -13,11 +13,11 @@ pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
     const address: u16 = switch (instruction.addressing_mode) {
         .IMMEDIATE => cpu.PC + 1,
         .ABSOLUTE => cpu.bus.read_16(cpu.PC+1),
-        .ABSOLUTE_X => cpu.bus.read_16(cpu.PC+1) + cpu.X,
-        .ABSOLUTE_Y => cpu.bus.read_16(cpu.PC+1) + cpu.Y,
+        .ABSOLUTE_X => cpu.bus.read_16(cpu.PC+1) +% cpu.X,
+        .ABSOLUTE_Y => cpu.bus.read_16(cpu.PC+1) +%  cpu.Y,
         .ZEROPAGE => @as(u16, cpu.bus.read(cpu.PC+1)),
-        .ZEROPAGE_X => @as(u16, cpu.bus.read(cpu.PC+1)) + cpu.X,
-        .ZEROPAGE_Y => @as(u16, cpu.bus.read(cpu.PC+1)) + cpu.Y,
+        .ZEROPAGE_X => @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.X),
+        .ZEROPAGE_Y => @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.Y),
         .RELATIVE => blk: {
             const offset: u8 = cpu.bus.read(cpu.PC + 1);
             if ((offset & 0x80) != 0) {
@@ -34,7 +34,7 @@ pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
             break :blk addr;
         },
         .INDIRECT_X => blk: {
-            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1) + cpu.X);
+            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.X);
             const addr = cpu.bus.read_16(lookup_addr);
             break :blk addr;
         },
@@ -94,7 +94,7 @@ pub fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {
         }
     };
 
-    if (DEBUG_CPU) {
+    if (cpu.print_debug_info) {
         operand_info.print();
     }
    
