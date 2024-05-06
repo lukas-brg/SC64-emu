@@ -105,6 +105,9 @@ pub const Emulator = struct {
         allocator.free(rom_data);
     }
 
+    pub fn set_logging_config(self: *Emulator, config: DebugLogConfig) void {
+       self.log_config = config;
+    }
 
     fn load_kernal_rom(self: *Emulator) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -206,7 +209,6 @@ pub const Emulator = struct {
 
     fn run_headless(self: *Emulator, limit_cycles: ?usize) !void {
       
-        
         while (!self.cpu.halt) {
             self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);
             self.print_debug_output();

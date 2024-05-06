@@ -11,26 +11,6 @@ pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     return rom_data;
 }
 
-pub fn cpu_functional_test() !void {
-    
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-   
-    const allocator = gpa.allocator();
-    const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";
-    
-    var emulator = try Emulator.init(allocator, .{.scaling_factor = 4, .headless = true});
-    emulator.bus.enable_bank_switching = false;
-    defer emulator.deinit(allocator);
-
-    _ = try emulator.load_rom(rom_path, 0);
-
-    emulator.cpu.set_reset_vector(0x400);
-    //try emulator.init_c64();
-    try emulator.run(43967);
-}
-
-
 
 pub fn main() !void {
     
@@ -51,6 +31,9 @@ pub fn main() !void {
         \\-o, --offset <u16>     Specify the starting position of the custom rom
         \\-s, --scaling <f32>    Specify a scaling factor, as 320x200 will be very small on modern screens
         \\-c, --cycles <usize>   Specify the number of cycles to be executed
+        \\-d, --disable_log      Enable debug logging
+        \\-l, --log              Enable debug logging
+        \\--log_start <usize>    Start debug logging at instruction no 
         \\--pc <u16>             Specify the initial Program Counter
     );
 
@@ -67,16 +50,27 @@ pub fn main() !void {
 
     const headless = res.args.headless != 0;
     const scaling_factor = res.args.scaling orelse 4;
-
+    const log_start = res.args.log_start orelse 0;
+    const log: bool = res.args.disable_log == 0 or res.args.log != 0;
+    
+  
     if (res.args.help != 0) {
         return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
     }
 
     if(res.args.ftest != 0) {
-        try cpu_functional_test();
+        const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";   
+        var emulator = try Emulator.init(allocator, .{.headless = true});
+        defer emulator.deinit(allocator);
+        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start});
+        emulator.bus.enable_bank_switching = false;
+        _ = try emulator.load_rom(rom_path, 0);
+        emulator.cpu.set_reset_vector(0x400);
+        try emulator.run(res.args.cycles);
     } 
     else if (res.args.rom) |rom_path| {
         var emulator = try Emulator.init(allocator, .{.headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = false});
+        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start});
         try emulator.init_graphics();
         defer emulator.deinit(allocator);
         _ = try emulator.load_rom(rom_path, res.args.offset orelse 0x1000); // 0x1000 is chosen as a default here since xa65 also uses it by default
@@ -86,6 +80,7 @@ pub fn main() !void {
     }
     else {
         var emulator = try Emulator.init(allocator, .{.scaling_factor = scaling_factor, .headless = headless});
+        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start});
         defer emulator.deinit(allocator);
         try emulator.init_c64();
         try emulator.run(res.args.cycles);
