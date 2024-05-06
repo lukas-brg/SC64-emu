@@ -50,7 +50,7 @@ pub fn main() !void {
 
     const headless = res.args.headless != 0;
     const scaling_factor = res.args.scaling orelse 4;
-    const log_start = res.args.log_start orelse 0;
+    var log_start = res.args.log_start orelse 0;
     const log: bool = res.args.disable_log == 0 or res.args.log != 0;
     
   
@@ -60,13 +60,15 @@ pub fn main() !void {
 
     if(res.args.ftest != 0) {
         const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";   
+        const cycles = res.args.cycles orelse 43967;
+        log_start = res.args.log_start orelse 43953;
         var emulator = try Emulator.init(allocator, .{.headless = true});
         defer emulator.deinit(allocator);
         emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start});
         emulator.bus.enable_bank_switching = false;
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
-        try emulator.run(res.args.cycles);
+        try emulator.run(cycles);
     } 
     else if (res.args.rom) |rom_path| {
         var emulator = try Emulator.init(allocator, .{.headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = false});
@@ -75,7 +77,6 @@ pub fn main() !void {
         defer emulator.deinit(allocator);
         _ = try emulator.load_rom(rom_path, res.args.offset orelse 0x1000); // 0x1000 is chosen as a default here since xa65 also uses it by default
         emulator.cpu.set_reset_vector( res.args.pc orelse 0x1000);
-
         try emulator.run(res.args.cycles);
     }
     else {
