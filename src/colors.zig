@@ -6,7 +6,7 @@ const ColorRGB_Struct = struct {
 };
 
 
-pub const C64_COLOR_PALETE = [16]ColorRGB_Struct {
+pub const C64_COLOR_PALETTE = [16]ColorRGB_Struct {
     .{.r=0,   .g=0,   .b=0},      // black
     .{.r=255, .g=255, .b=255},    // White
     .{.r=136, .g=0, .  b=0},      // Red

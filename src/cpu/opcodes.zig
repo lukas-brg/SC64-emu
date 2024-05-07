@@ -2,12 +2,11 @@ const std = @import("std");
 const CPU = @import("cpu.zig").CPU;
 const instructions = @import("instructions.zig");
 
-
 const HandlerFn = fn(*CPU, OpInfo) void;
 
-const opcode_lookup_table: [256]OpInfo = init_opcodes();
+const opcode_lookup_table: [256]OpInfo = init_opcode_table();
 
-fn init_opcodes() [256]OpInfo {
+fn init_opcode_table() [256]OpInfo {
     var table: [256]OpInfo = undefined;
     for (OPCODE_TABLE) |opcode_struct| {
         table[opcode_struct.opcode] = opcode_struct;

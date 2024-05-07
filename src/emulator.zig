@@ -151,7 +151,7 @@ pub const Emulator = struct {
 
     pub fn clear_screen_text_area(self: *Emulator, frame_buffer: []u8) void {
         const color_code: u4 = @truncate(self.bus.read(MemoryMap.bg_color));
-        const bg_color = colors.C64_COLOR_PALETE[color_code];
+        const bg_color = colors.C64_COLOR_PALETTE[color_code];
         for (0..SCREEN_HEIGHT*SCREEN_WIDTH) |i| {
             frame_buffer[i*3] = bg_color.r;
             frame_buffer[i*3+1] = bg_color.g; 
@@ -254,7 +254,7 @@ pub const Emulator = struct {
         defer sdl.SDL_DestroyRenderer(renderer);
 
         const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-        const frame_color = colors.C64_COLOR_PALETE[color_code];
+        const frame_color = colors.C64_COLOR_PALETTE[color_code];
 
         _ = sdl.SDL_SetRenderDrawColor(renderer, frame_color.r, frame_color.g, frame_color.b, 255);
 
@@ -347,7 +347,7 @@ pub const Emulator = struct {
                     
                     if (pixel == 1) {
                         const color_code: u4 = @truncate(self.bus.read(@intCast(color_mem_addr)));
-                        const color = colors.C64_COLOR_PALETE[color_code];
+                        const color = colors.C64_COLOR_PALETTE[color_code];
                         frame_buffer[texture_index]   = color.r;
                         frame_buffer[texture_index+1] = color.g; 
                         frame_buffer[texture_index+2] = color.b;
