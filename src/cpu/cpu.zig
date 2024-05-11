@@ -6,7 +6,9 @@ const bitutils = @import("bitutils.zig");
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
 const get_bit_at = @import("bitutils.zig").get_bit_at;
-
+const OpInfo = @import("opcodes.zig").OpInfo;
+const OperandInfo = @import("operand.zig").OperandInfo;
+const get_operand = @import("operand.zig").get_operand;
 
 
 const RESET_VECTOR = 0xFFFC;
@@ -25,6 +27,26 @@ pub const StatusFlag = enum(u3) {
     OVERFLOW,
     NEGATIVE,
 };
+
+
+pub fn print_disassembly(cpu: *CPU, instruction: OpInfo, operand_info: OperandInfo) void {
+  
+    switch (instruction.addressing_mode) {
+        .ABSOLUTE => std.debug.print("{X:0>4}:  {s} ${X:0>4}\n", .{cpu.PC, instruction.op_name, operand_info.address}),
+        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X\n", .{cpu.PC, instruction.op_name, cpu.bus.read_16(cpu.PC+1)}),
+        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y\n", .{cpu.PC, instruction.op_name, cpu.bus.read_16(cpu.PC+1)}),
+        .IMPLIED, .ACCUMULATOR => std.debug.print("{X:0>4}:  {s}\n", .{cpu.PC, instruction.op_name}),
+        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4})\n", .{cpu.PC, instruction.op_name, cpu.bus.read_16(cpu.PC+1)}),
+        .INDIRECT_Y => std.debug.print("{X:0>4}:  {s} (${X:0>2}),Y\n", .{cpu.PC, instruction.op_name, cpu.bus.read(cpu.PC+1)}),
+        .INDIRECT_X => std.debug.print("{X:0>4}:  {s} (${X:0>2},X)\n", .{cpu.PC, instruction.op_name, cpu.bus.read(cpu.PC+1)}),
+        .IMMEDIATE => std.debug.print("{X:0>4}:  {s} #${X:0>2}\n", .{cpu.PC, instruction.op_name, operand_info.operand}),
+        .ZEROPAGE => std.debug.print("{X:0>4}:  {s} ${X:0>2}\n", .{cpu.PC, instruction.op_name, cpu.bus.read(cpu.PC+1)}),
+        .ZEROPAGE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>2},Y\n", .{cpu.PC, instruction.op_name, cpu.bus.read(cpu.PC+1)}),
+        .ZEROPAGE_X => std.debug.print("{X:0>4}:  {s} ${X:0>2},X\n", .{cpu.PC, instruction.op_name, cpu.bus.read(cpu.PC+1)}),
+        .RELATIVE => std.debug.print("{X:0>4}:  {s} ${X:0>2}\n", .{cpu.PC, instruction.op_name, cpu.bus.read(cpu.PC+1)}),        
+    }
+}
+
 
 pub const CPU = struct {
     /// Implementation of the 6502 microprocessor
@@ -56,10 +78,7 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
-        if (self.print_debug_info) {
-            std.debug.print("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
-            std.log.debug("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
-        }
+        std.log.info("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
     }
 
 
@@ -143,7 +162,6 @@ pub const CPU = struct {
         // This function takes the address in big endian, for ease of use
         const low_byte: u8 = @intCast((addr & 0x00FF));
         const high_byte: u8 = @intCast((addr >> 8));
-       
         self.bus.write(RESET_VECTOR, low_byte);
         self.bus.write(RESET_VECTOR+1, high_byte);
     }
@@ -165,16 +183,19 @@ pub const CPU = struct {
         if(self.print_debug_info) {
             std.debug.print("==========================================================================================================================\n", .{});
             std.debug.print("Clock Tick {} {}!\n", .{self.cycle_count, self._wait_cycles});
-            std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
+            //std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
         }
 
         const opcode = self.fetch_byte();
         const instruction = decode_opcode(opcode);
         
         if(self.print_debug_info) {
-            std.debug.print("Loaded opcode 0x{x:0>2}\n", .{opcode});
-            std.debug.print("Instruction fetched ", .{});
+            //std.debug.print("Loaded opcode 0x{x:0>2}\n", .{opcode});
+            //std.debug.print("Instruction fetched ", .{});
+            const operand_info = get_operand(self, instruction);
+            print_disassembly(self, instruction, operand_info);
             instruction.print();
+            operand_info.print();
         }
         
         instruction.handler_fn(self, instruction);

@@ -103,7 +103,7 @@ pub const Bus = struct {
 
     pub fn print_mem(self: *Bus, start: u16, end: u17) void {
         std.debug.print("\nMEMORY:", .{});
-        std.debug.assert(end > start);
+        std.debug.assert(end >= start);
         for (start..end, 0..end-start) | addr , count| {
             const byte = self.read(@intCast(addr));
             if (count % 16 == 0) {

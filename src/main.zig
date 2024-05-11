@@ -34,6 +34,7 @@ pub fn main() !void {
         \\-d, --disable_log      Enable debug logging
         \\-l, --log              Enable debug logging
         \\--log_start <usize>    Start debug logging at instruction no 
+        \\--log_end <usize>      End debug logging at instruction no 
         \\--pc <u16>             Specify the initial Program Counter
     );
 
@@ -52,8 +53,8 @@ pub fn main() !void {
     const scaling_factor = res.args.scaling orelse 4;
     var log_start = res.args.log_start orelse 0;
     const log: bool = res.args.disable_log == 0 or res.args.log != 0;
+    const log_end = res.args.log_end;
     
-  
     if (res.args.help != 0) {
         return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
     }
@@ -64,7 +65,7 @@ pub fn main() !void {
         log_start = res.args.log_start orelse 43953;
         var emulator = try Emulator.init(allocator, .{.headless = true});
         defer emulator.deinit(allocator);
-        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start});
+        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start, .end_at_cycle = log_end});
         emulator.bus.enable_bank_switching = false;
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
@@ -72,16 +73,18 @@ pub fn main() !void {
     } 
     else if (res.args.rom) |rom_path| {
         var emulator = try Emulator.init(allocator, .{.headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = false});
-        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start});
+        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start, .end_at_cycle = log_end});
         try emulator.init_graphics();
         defer emulator.deinit(allocator);
-        _ = try emulator.load_rom(rom_path, res.args.offset orelse 0x1000); // 0x1000 is chosen as a default here since xa65 also uses it by default
+        const offset = res.args.offset orelse 0x1000;
+        std.debug.print("offset {x}\n", .{offset});
+        _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
         emulator.cpu.set_reset_vector( res.args.pc orelse 0x1000);
         try emulator.run(res.args.cycles);
     }
     else {
         var emulator = try Emulator.init(allocator, .{.scaling_factor = scaling_factor, .headless = headless});
-        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start});
+        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start, .end_at_cycle = log_end});
         defer emulator.deinit(allocator);
         try emulator.init_c64();
         try emulator.run(res.args.cycles);

@@ -39,7 +39,7 @@ pub const DebugLogConfig = struct {
     enable_debug_log: bool = true,
     print_mem: bool = true,
     print_mem_window_size: usize  = 0x20,
-    print_stack: bool = true,
+    print_stack: bool = false,
     print_stack_limit: usize = 10,
     print_cpu_state: bool = true,
     start_at_cycle: usize = 0,
@@ -184,7 +184,7 @@ pub const Emulator = struct {
 
         if(self.log_config.print_mem) {
             self.cpu.bus.print_mem(start, @intCast(end));        
-            self.cpu.bus.print_mem(0x210, @intCast(0x21a+0x10));        
+           self.cpu.bus.print_mem(0x210, @intCast(0x22B));        
         }
 }
 

@@ -50,7 +50,7 @@ pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
     return address;
 }
 
-const OperandInfo = struct {
+pub const OperandInfo = struct {
     operand: u8,
     address: u16,
     page_crossed: bool,
@@ -94,9 +94,9 @@ pub fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {
         }
     };
 
-    if (cpu.print_debug_info) {
-        operand_info.print();
-    }
+    // if (cpu.print_debug_info) {
+    //     operand_info.print();
+    // }
    
     return operand_info;
 }
