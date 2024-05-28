@@ -42,7 +42,7 @@ pub const DebugLogConfig = struct {
     print_stack: bool = false,
     print_stack_limit: usize = 10,
     print_cpu_state: bool = true,
-    start_at_cycle: usize = 0,
+    start_at_cycle: usize = 1e+6,
     end_at_cycle: ?usize = null, 
 
 };
@@ -184,7 +184,7 @@ pub const Emulator = struct {
 
         if(self.log_config.print_mem) {
             self.cpu.bus.print_mem(start, @intCast(end));        
-           self.cpu.bus.print_mem(0x210, @intCast(0x22B));        
+            //self.cpu.bus.print_mem(0x210, @intCast(0x22B));        
         }
 }
 
@@ -311,6 +311,7 @@ pub const Emulator = struct {
 
         self.print_debug_output(); 
     }   
+    
     
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
         self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);

@@ -520,8 +520,18 @@ pub fn rti(cpu: *CPU, instruction: OpInfo) void {
     var status = cpu.pop();
     
     // Break and unused bit are supposed to be ignored, so they are set to the previous state of the cpu
-    status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.BREAK), get_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK)));
-    status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.UNUSED), get_bit_at(cpu.status, @intFromEnum(StatusFlag.UNUSED)));
+    status = bitutils.set_bit_at(
+        status,
+    @intFromEnum(StatusFlag.BREAK),
+       get_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK))
+    );
+    
+    status = bitutils.set_bit_at(
+        status,
+     @intFromEnum(StatusFlag.UNUSED),
+     get_bit_at(cpu.status, @intFromEnum(StatusFlag.UNUSED))
+     );
+    
     cpu.status = status;
     cpu.PC = cpu.pop_16();
     cpu._wait_cycles += instruction.cycles;

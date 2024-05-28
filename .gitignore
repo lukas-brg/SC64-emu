@@ -5,3 +5,4 @@ data/basic.bin
 data/kernal.bin
 out*.txt
 test_files/cpu/**
+test_files/AllSuiteA*

@@ -39,8 +39,8 @@ pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
             break :blk addr;
         },
         .INDIRECT_Y => blk: {
-            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.Y);
-            const addr = cpu.bus.read_16(lookup_addr);
+            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1));
+            const addr = cpu.bus.read_16(lookup_addr)  +% cpu.Y;
             break :blk addr;
         },
         .IMPLIED => undefined,

@@ -113,11 +113,11 @@ pub const CPU = struct {
         self.status |= (@as(u8, val) << bit_index); // set bit
     }
 
-    pub inline fn update_negative(self: *CPU, result: u8) void {
+    pub fn update_negative(self: *CPU, result: u8) void {
         self.set_status_flag(StatusFlag.NEGATIVE, get_bit_at(result, 7));
     }
 
-    pub inline fn update_zero(self: *CPU, result: u8) void {
+    pub fn update_zero(self: *CPU, result: u8) void {
         self.set_status_flag(StatusFlag.ZERO, @intFromBool(result == 0));
     }
 
@@ -159,7 +159,6 @@ pub const CPU = struct {
     }
 
     pub fn set_reset_vector(self: *CPU, addr: u16) void {
-        // This function takes the address in big endian, for ease of use
         const low_byte: u8 = @intCast((addr & 0x00FF));
         const high_byte: u8 = @intCast((addr >> 8));
         self.bus.write(RESET_VECTOR, low_byte);
