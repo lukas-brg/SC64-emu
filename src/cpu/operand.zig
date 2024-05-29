@@ -54,7 +54,7 @@ pub const OperandInfo = struct {
     operand: u8,
     address: u16,
     page_crossed: bool,
-    cycles: u3, // There can be additional cycles if a page boundary was crossed, so this parameter is used again
+    cycles: u4, // There can be additional cycles if a page boundary was crossed, so this parameter is used again
 
     pub fn print(self: OperandInfo) void {
         std.debug.print("(Operand: {x:0>4}, Address: {x:0>2}, Page Crossed: {}, Cycles: {})\n",

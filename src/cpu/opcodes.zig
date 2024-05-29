@@ -42,7 +42,7 @@ pub const OpInfo = struct {
     op_name: []const u8,
     addressing_mode: AddressingMode,
     bytes: u3,
-    cycles: u3,
+    cycles: u4,
     handler_fn:  * const HandlerFn,
 
     pub fn print(self: OpInfo) void {
@@ -72,11 +72,11 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x21, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.and_fn},
     .{.opcode=0x31, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_Y, .bytes = 2, .cycles = 5, .handler_fn = &instructions.and_fn},
 
-    .{.opcode=0x0A, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 1, .cycles = 2, .handler_fn = &instructions.asl},
-    .{.opcode=0x06, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 5, .handler_fn = &instructions.asl},
-    .{.opcode=0x16, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 2, .cycles = 6, .handler_fn = &instructions.asl},
-    .{.opcode=0x0E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 6, .handler_fn = &instructions.asl},
-    .{.opcode=0x1E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_Y, .bytes = 3, .cycles = 7, .handler_fn = &instructions.asl},
+    .{.opcode=0x0A, .op_name="ASL", .addressing_mode=AddressingMode.ACCUMULATOR,   .bytes = 1, .cycles = 2, .handler_fn = &instructions.asl},
+    .{.opcode=0x06, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE, .bytes = 2, .cycles = 5, .handler_fn = &instructions.asl},
+    .{.opcode=0x16, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE_X,   .bytes = 2, .cycles = 6, .handler_fn = &instructions.asl},
+    .{.opcode=0x0E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE, .bytes = 3, .cycles = 6, .handler_fn = &instructions.asl},
+    .{.opcode=0x1E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 7, .handler_fn = &instructions.asl},
 
     .{.opcode=0x90, .op_name="BCC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bcc},
     .{.opcode=0xB0, .op_name="BCS", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bcs},

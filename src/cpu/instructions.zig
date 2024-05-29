@@ -484,11 +484,11 @@ pub fn plp(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn ror(cpu: *CPU, instruction: OpInfo) void {  
     const operand_info = get_operand(cpu, instruction);
-    const result = bitutils.rotate_right(operand_info.operand, 1);
-
+    var result = bitutils.rotate_right(operand_info.operand, 1);
+    result = bitutils.set_bit_at(result,  7, cpu.get_status_flag(StatusFlag.CARRY));
     cpu.update_negative(result);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(result, 0));
+    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(operand_info.operand, 0));
     
     switch (instruction.addressing_mode) {
         .ACCUMULATOR => cpu.A = result,
@@ -501,11 +501,12 @@ pub fn ror(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn rol(cpu: *CPU, instruction: OpInfo) void {  
     const operand_info = get_operand(cpu, instruction);
-    const result = bitutils.rotate_left(operand_info.operand, 1);
+    var result = bitutils.rotate_left(operand_info.operand, 1);
+    result = bitutils.set_bit_at(result,  0, cpu.get_status_flag(StatusFlag.CARRY));
 
     cpu.update_negative(result);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(result, 0));
+    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(operand_info.operand, 7));
     
     switch (instruction.addressing_mode) {
         .ACCUMULATOR => cpu.A = result,

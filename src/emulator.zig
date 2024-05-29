@@ -31,7 +31,7 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 pub const EmulatorConfig = struct {
     headless: bool = false,
     scaling_factor: f32 = 3,   
-    enable_bank_switching: bool = true, 
+    enable_bank_switching: bool = false, 
 };
 
 
@@ -184,7 +184,7 @@ pub const Emulator = struct {
 
         if(self.log_config.print_mem) {
             self.cpu.bus.print_mem(start, @intCast(end));        
-            //self.cpu.bus.print_mem(0x210, @intCast(0x22B));        
+            self.cpu.bus.print_mem(0xc0, @intCast(0xc9));        
         }
 }
 
