@@ -4,6 +4,7 @@ const instructions = @import("instructions.zig");
 
 const HandlerFn = fn(*CPU, OpInfo) void;
 
+
 const opcode_lookup_table: [256]OpInfo = init_opcode_table();
 
 fn init_opcode_table() [256]OpInfo {
@@ -72,10 +73,10 @@ const OPCODE_TABLE = [_]OpInfo{
     .{.opcode=0x21, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.and_fn},
     .{.opcode=0x31, .op_name="AND", .addressing_mode=AddressingMode.INDIRECT_Y, .bytes = 2, .cycles = 5, .handler_fn = &instructions.and_fn},
 
-    .{.opcode=0x0A, .op_name="ASL", .addressing_mode=AddressingMode.ACCUMULATOR,   .bytes = 1, .cycles = 2, .handler_fn = &instructions.asl},
-    .{.opcode=0x06, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE, .bytes = 2, .cycles = 5, .handler_fn = &instructions.asl},
-    .{.opcode=0x16, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE_X,   .bytes = 2, .cycles = 6, .handler_fn = &instructions.asl},
-    .{.opcode=0x0E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE, .bytes = 3, .cycles = 6, .handler_fn = &instructions.asl},
+    .{.opcode=0x0A, .op_name="ASL", .addressing_mode=AddressingMode.ACCUMULATOR,.bytes = 1, .cycles = 2, .handler_fn = &instructions.asl},
+    .{.opcode=0x06, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 5, .handler_fn = &instructions.asl},
+    .{.opcode=0x16, .op_name="ASL", .addressing_mode=AddressingMode.ZEROPAGE_X, .bytes = 2, .cycles = 6, .handler_fn = &instructions.asl},
+    .{.opcode=0x0E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE,   .bytes = 3, .cycles = 6, .handler_fn = &instructions.asl},
     .{.opcode=0x1E, .op_name="ASL", .addressing_mode=AddressingMode.ABSOLUTE_X, .bytes = 3, .cycles = 7, .handler_fn = &instructions.asl},
 
     .{.opcode=0x90, .op_name="BCC", .addressing_mode=AddressingMode.RELATIVE,   .bytes = 2, .cycles = 2, .handler_fn = &instructions.bcc},

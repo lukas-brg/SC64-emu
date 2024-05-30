@@ -31,4 +31,4 @@ pub const C64_COLOR_PALETTE = [16]ColorRGB_Struct {
 
 pub const BG_COLOR = 6;
 pub const TEXT_COLOR = 14; 
-pub const FRAME_COLOR = 14; 
+pub const FRAME_COLOR = 14;

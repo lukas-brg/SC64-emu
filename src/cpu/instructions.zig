@@ -24,10 +24,13 @@ pub fn adc(cpu: *CPU, instruction: OpInfo) void {
     const a_operand = cpu.A;                                                 
     
     if (cpu.get_status_flag(StatusFlag.DECIMAL) == 0) {
-        const result_carry = @addWithOverflow(cpu.A, operand + cpu.get_status_flag(StatusFlag.CARRY));
-        cpu.A = result_carry[0];
         
-        cpu.set_status_flag(StatusFlag.CARRY, result_carry[1]);
+        const carry_in_add = @addWithOverflow(operand, cpu.get_status_flag(StatusFlag.CARRY));
+
+        const result_carry = @addWithOverflow(cpu.A, carry_in_add[0]);
+        cpu.A = result_carry[0];
+        const carry_out: u1 = result_carry[1] | carry_in_add[1];
+        cpu.set_status_flag(StatusFlag.CARRY, carry_out);
         cpu.update_negative(cpu.A);
         const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
         cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
@@ -549,11 +552,13 @@ pub fn sbc(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
     const operand = operand_info.operand;
     
+    const carry_in_sub = @subWithOverflow(operand, (cpu.get_status_flag(StatusFlag.CARRY) ^ 1 ));
+
     const a_operand = cpu.A;                                                 
-    const result_carry = @subWithOverflow(cpu.A, operand - (cpu.get_status_flag(StatusFlag.CARRY) ^ 1 ));
+    const result_carry = @subWithOverflow(cpu.A, carry_in_sub[0]);
     cpu.A = result_carry[0];
-    
-    cpu.set_status_flag(StatusFlag.CARRY, result_carry[1]);
+    const carry_out = ~(carry_in_sub[1] & result_carry[1]);
+    cpu.set_status_flag(StatusFlag.CARRY, carry_out);
     
     cpu.update_zero(cpu.A);
     cpu.update_negative(cpu.A);
