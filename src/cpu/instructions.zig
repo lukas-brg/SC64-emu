@@ -550,12 +550,15 @@ pub fn rts(cpu: *CPU, instruction: OpInfo) void {
 
 pub fn sbc(cpu: *CPU, instruction: OpInfo) void {
     const operand_info = get_operand(cpu, instruction);
+    // const operand = @as(u16, operand_info.operand);
+    // const A = @as(u16, cpu.A);
+
+
     const operand = operand_info.operand;
-    
-    const carry_in_sub = @subWithOverflow(operand, (cpu.get_status_flag(StatusFlag.CARRY) ^ 1 ));
+    const carry_in_sub = @subWithOverflow(cpu.A, operand);
 
     const a_operand = cpu.A;                                                 
-    const result_carry = @subWithOverflow(cpu.A, carry_in_sub[0]);
+    const result_carry = @subWithOverflow(carry_in_sub[0], (cpu.get_status_flag(StatusFlag.CARRY) ^ 1 ));
     cpu.A = result_carry[0];
     const carry_out = ~(carry_in_sub[1] & result_carry[1]);
     cpu.set_status_flag(StatusFlag.CARRY, carry_out);
