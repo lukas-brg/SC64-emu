@@ -30,20 +30,21 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 
 pub const EmulatorConfig = struct {
     headless: bool = false,
-    scaling_factor: f32 = 3,   
+    scaling_factor: f32 = 4,   
     enable_bank_switching: bool = true, 
 };
 
 
 pub const DebugLogConfig = struct {
-    enable_debug_log: bool = true,
+    enable_debug_log: bool = false,
     print_mem: bool = true,
     print_mem_window_size: usize  = 0x20,
     print_stack: bool = false,
     print_stack_limit: usize = 10,
     print_cpu_state: bool = true,
-    start_at_cycle: usize = 1e+6,
+    start_at_cycle: usize = 3,
     end_at_cycle: ?usize = null, 
+    compact_log: bool = true,
 
 };
 
@@ -74,7 +75,7 @@ pub const Emulator = struct {
     }
 
     pub fn init_graphics(self: *Emulator) !void {
-        try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
+        //try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);  
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
@@ -83,6 +84,7 @@ pub const Emulator = struct {
 
     pub fn init_c64(self: *Emulator) !void {
         // load character rom
+        try self.load_character_rom("data/c64_charset.bin");
         self.cpu.reset();
         self.cpu.set_reset_vector(0x1000);
 
@@ -102,6 +104,16 @@ pub const Emulator = struct {
         const allocator = gpa.allocator();
         const rom_data = try load_file_data("data/basic.bin", allocator);
         @memcpy(self.bus.basic_rom[0..], rom_data);
+        allocator.free(rom_data);
+    }
+
+    fn load_character_rom(self: *Emulator, charset_path: [] const u8) !void {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        defer _ = gpa.deinit();
+
+        const allocator = gpa.allocator();
+        const rom_data = try load_file_data(@ptrCast(charset_path), allocator);
+        @memcpy(self.bus.character_rom[0..], rom_data);
         allocator.free(rom_data);
     }
 
@@ -186,10 +198,9 @@ pub const Emulator = struct {
             self.cpu.bus.print_mem(start, @intCast(end));        
             self.cpu.bus.print_mem(0xc0, @intCast(0xc9));        
         }
-}
+    }
 
     fn print_debug_output(self: *Emulator) void {
-        
         if(self.log_config.enable_debug_log and self.cycle_count >= self.log_config.start_at_cycle) {
             if(self.log_config.end_at_cycle) |end_cycle| {
                 if(self.cycle_count > end_cycle) {
@@ -202,7 +213,6 @@ pub const Emulator = struct {
             }
             self.cpu.print_debug_info = true;
             self._print_debug_output();
-           
         }
     }
 
@@ -288,19 +298,20 @@ pub const Emulator = struct {
                 }
             }
 
-            self.bus.write_16(0x0326, 0xF1CA); // chrout routine
+            //self.bus.write_16(0x0326, 0xF1CA); // chrout routine
 
             self.print_debug_output();
             self.cpu.clock_tick();
         
-            _ = sdl.SDL_RenderClear(renderer);
+           if(self.cycle_count % 10000 == 0){
+             _ = sdl.SDL_RenderClear(renderer);
             self.clear_screen_text_area(&frame_buffer);
             self.update_frame(&frame_buffer);
         
             _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
             _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
             sdl.SDL_RenderPresent(renderer);
-        
+        }
             self.cycle_count += 1;
             if(limit_cycles) |max_cycles| {
                 if(self.cycle_count >= max_cycles) {
@@ -314,7 +325,7 @@ pub const Emulator = struct {
     
     
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
-        self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);
+       self.bus.write_io_ram(MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now
         var bus = self.bus;
         for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end, 
               MemoryMap.color_mem_start..MemoryMap.color_mem_end) 
@@ -326,7 +337,7 @@ pub const Emulator = struct {
             
             if (screen_code == 0x20) {continue;}
             
-            const char_addr_start: u16 = (screen_code * 8) + MemoryMap.character_rom_start;
+            const char_addr_start: u16 = (screen_code * 8);
         
             const char_count = screen_mem_addr - MemoryMap.screen_mem_start;
                    
@@ -337,7 +348,8 @@ pub const Emulator = struct {
             for(0..8) |char_row_idx|{
                 const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
                 
-                const char_row_byte = self.bus.read(char_row_addr);
+                //const char_row_byte = self.bus.read(char_row_addr);
+               const char_row_byte = self.bus.character_rom[char_row_addr];
                
                 for(0..8) |char_col_idx|  {                                     // The leftmost pixel is represented by the most significant bit
                     const pixel: u1 = bitutils.get_bit_at(char_row_byte,  @intCast(7-char_col_idx));
@@ -353,17 +365,9 @@ pub const Emulator = struct {
                         frame_buffer[texture_index+1] = color.g; 
                         frame_buffer[texture_index+2] = color.b;
                     }
-                    // else {
-                    //     const color_code: u4 = @intCast(self.bus.read(@intCast(MemoryMap.bg_color)));
-                    //     const color = colors.C64_COLOR_PALETE[color_code];
-                    //     frame_buffer[texture_index]   = color.r;
-                    //     frame_buffer[texture_index+1] = color.g; 
-                    //     frame_buffer[texture_index+2] = color.b;
-                    // }
                 }
             }
         }
-       
     }
         
 };

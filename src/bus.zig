@@ -59,11 +59,15 @@ pub const Bus = struct {
     
     pub fn write(self: *Bus, addr: u16, val: u8) void {
         const mem_location = self.access_mem_location(addr);
+        if(addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
+            std.debug.print("Writing to character rom {X}\n", .{addr});
+        }
+        
         if (!mem_location.read_only) {
             mem_location.val_ptr.* = val;
         }
         else {
-            std.debug.print("Trying to write to rom {}, writing to ram instead", .{addr});
+            std.debug.print("Trying to write to rom at {X}, writing to ram instead\n", .{addr});
             self.ram[addr] = val;
         }
     }
@@ -164,6 +168,7 @@ pub const Bus = struct {
                     else => {
                         switch (bitutils.get_bit_at(banking_control_bits, 2)) {
                             0 => {
+                                std.debug.print("crom\n", .{});
                                 val_ptr = &self.character_rom[addr-MemoryMap.character_rom_start];
                                 read_only = true;
                             },

@@ -4,6 +4,7 @@ const Bus = @import("bus.zig").Bus;
 const CPU = @import("cpu/cpu.zig").CPU;
 const Emulator = @import("emulator.zig").Emulator;
 const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
+const DebugLogConfig = @import("emulator.zig").DebugLogConfig;
 const clap = @import("clap");
 
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
@@ -48,11 +49,12 @@ pub fn main() !void {
         return err;
     };
     defer res.deinit();
-
+    const default_emu_config = EmulatorConfig{};
+    const default_dbg_config = DebugLogConfig{};
     const headless = res.args.headless != 0;
-    const scaling_factor = res.args.scaling orelse 4;
-    var log_start = res.args.log_start orelse 0;
-    const log: bool = res.args.disable_log == 0 or res.args.log != 0;
+    const scaling_factor = res.args.scaling orelse default_emu_config.scaling_factor;
+    var log_start = res.args.log_start orelse default_dbg_config.start_at_cycle;
+    const log: bool = (res.args.log != 0 or default_dbg_config.enable_debug_log) and (res.args.disable_log == 0);
     const log_end = res.args.log_end;
     
     if (res.args.help != 0) {
