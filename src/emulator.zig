@@ -79,12 +79,12 @@ pub const Emulator = struct {
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
+        try self.load_character_rom("data/c64_charset.bin");
         self.clear_color_mem();
     }
 
     pub fn init_c64(self: *Emulator) !void {
         // load character rom
-        try self.load_character_rom("data/c64_charset.bin");
         self.cpu.reset();
         self.cpu.set_reset_vector(0x1000);
 
@@ -107,12 +107,12 @@ pub const Emulator = struct {
         allocator.free(rom_data);
     }
 
-    fn load_character_rom(self: *Emulator, charset_path: [] const u8) !void {
+    fn load_character_rom(self: *Emulator, charset_path: []const u8) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
         const allocator = gpa.allocator();
-        const rom_data = try load_file_data(@ptrCast(charset_path), allocator);
+        const rom_data = try load_file_data(charset_path, allocator);
         @memcpy(self.bus.character_rom[0..], rom_data);
         allocator.free(rom_data);
     }

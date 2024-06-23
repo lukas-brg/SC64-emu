@@ -214,12 +214,12 @@ pub fn brk(cpu: *CPU, instruction: OpInfo) void {
 }
 
 pub fn bit(cpu: *CPU, instruction: OpInfo) void {
+    
     const operand_info = get_operand(cpu, instruction);
     const operand = operand_info.operand;
     cpu.set_status_flag(StatusFlag.NEGATIVE, bitutils.get_bit_at(operand, 7));
     cpu.set_status_flag(StatusFlag.OVERFLOW, bitutils.get_bit_at(operand, 6));
-    cpu.A &= operand;
-    cpu.update_zero(cpu.A);
+    cpu.update_zero(operand & cpu.A);
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
 }

@@ -78,7 +78,7 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
-        std.log.info("Loaded PC from reset vector: 0x{x:0>4}\n", .{self.PC});
+        std.log.info("CPU Reset. Loaded PC from reset vector: 0x{x:0>4}", .{self.PC});
     }
 
 
