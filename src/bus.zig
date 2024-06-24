@@ -60,9 +60,15 @@ pub const Bus = struct {
     pub fn write(self: *Bus, addr: u16, val: u8) void {
         const mem_location = self.access_mem_location(addr);
         if(addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
-            std.debug.print("Writing to character rom {X}\n", .{addr});
+            std.debug.print("Writing to character rom {X:0>4}\n", .{addr});
         }
         
+        if(addr == MemoryMap.processor_port and ((val & 7) != (self.ram[addr] & 7))) {
+            const new_control_bits: u3 = @truncate(val);
+            std.log.debug("Bank switch. Control bits changed from {b:0>3} to {b:0>3}", .{mem_location.control_bits, new_control_bits});
+        }
+
+
         if (!mem_location.read_only) {
             mem_location.val_ptr.* = val;
         }
@@ -96,7 +102,7 @@ pub const Bus = struct {
 
     pub fn write_continous(self: *Bus, buffer: []const u8, offset: u16) void {
         if (buffer.len + offset > self.ram.len) {
-            std.debug.panic("Buffer is too large to fit in memory at offset {}.", .{offset});
+            std.debug.panic("Buffer is too large to fit in memory at offset {X}.", .{offset});
         }
         
         for (offset..offset+buffer.len, buffer) |addr, val| {
@@ -168,7 +174,6 @@ pub const Bus = struct {
                     else => {
                         switch (bitutils.get_bit_at(banking_control_bits, 2)) {
                             0 => {
-                                std.debug.print("crom\n", .{});
                                 val_ptr = &self.character_rom[addr-MemoryMap.character_rom_start];
                                 read_only = true;
                             },

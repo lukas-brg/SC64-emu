@@ -35,16 +35,16 @@ pub const EmulatorConfig = struct {
 };
 
 
-pub const DebugLogConfig = struct {
-    enable_debug_log: bool = false,
+pub const DebugTraceConfig = struct {
+    enable_trace: bool = false,
     print_mem: bool = true,
     print_mem_window_size: usize  = 0x20,
     print_stack: bool = false,
     print_stack_limit: usize = 10,
     print_cpu_state: bool = true,
-    start_at_cycle: usize = 3,
+    start_at_cycle: usize = 0,
     end_at_cycle: ?usize = null, 
-    compact_log: bool = true,
+    verbose: bool = false,
 
 };
 
@@ -53,7 +53,7 @@ pub const Emulator = struct {
     bus: *Bus,
     cpu: *CPU,
     config: EmulatorConfig = .{},
-    log_config: DebugLogConfig = .{},
+    trace_config: DebugTraceConfig = .{},
     cycle_count: usize = 0,
 
 
@@ -61,6 +61,8 @@ pub const Emulator = struct {
         const bus = try allocator.create(Bus);
         bus.* = Bus.init();
         bus.enable_bank_switching = config.enable_bank_switching;
+        std.log.debug("Emulator.init() called", .{});
+        std.log.debug("Bank switching: {}", .{bus.enable_bank_switching});
         const cpu = try allocator.create(CPU);
         cpu.* = CPU.init(bus);
         const emulator: Emulator = .{
@@ -84,17 +86,16 @@ pub const Emulator = struct {
     }
 
     pub fn init_c64(self: *Emulator) !void {
-        // load character rom
-        self.cpu.reset();
-        self.cpu.set_reset_vector(0x1000);
 
         try self.load_basic_rom();
         try self.load_kernal_rom();
 
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
+        self.cpu.reset();
         try self.init_graphics();        
         self.cpu.SP = 0xFF;
+        std.log.info("C64 init procedure complete", .{});
     }
 
     fn load_basic_rom(self: *Emulator) !void {
@@ -105,6 +106,7 @@ pub const Emulator = struct {
         const rom_data = try load_file_data("data/basic.bin", allocator);
         @memcpy(self.bus.basic_rom[0..], rom_data);
         allocator.free(rom_data);
+        std.log.info("Loaded BASIC rom", .{});
     }
 
     fn load_character_rom(self: *Emulator, charset_path: []const u8) !void {
@@ -115,10 +117,11 @@ pub const Emulator = struct {
         const rom_data = try load_file_data(charset_path, allocator);
         @memcpy(self.bus.character_rom[0..], rom_data);
         allocator.free(rom_data);
+        std.log.info("Loaded charset '{s}' into character rom", .{charset_path});
     }
 
-    pub fn set_logging_config(self: *Emulator, config: DebugLogConfig) void {
-       self.log_config = config;
+    pub fn set_trace_config(self: *Emulator, config: DebugTraceConfig) void {
+       self.trace_config = config;
     }
 
     fn load_kernal_rom(self: *Emulator) !void {
@@ -129,6 +132,7 @@ pub const Emulator = struct {
         const rom_data = try load_file_data("data/kernal.bin", allocator);
         @memcpy(self.bus.kernal_rom[0..], rom_data);
         allocator.free(rom_data);
+        std.log.info("Loaded KERNAL rom", .{});
     }
 
 
@@ -147,6 +151,7 @@ pub const Emulator = struct {
         const rom_data = try load_file_data(rom_path, allocator);
         self.cpu.bus.write_continous(rom_data, offset);
         allocator.free(rom_data);
+        std.log.info("Loaded rom data from file '{s}' at offset {X:0>4}", .{rom_path, offset});
     }
 
     pub fn clear_color_mem(self: *Emulator) void {
@@ -183,36 +188,44 @@ pub const Emulator = struct {
 
 
     fn _print_debug_output(self: *Emulator) void {
-        const mem_window_size: i32 = @intCast(self.log_config.print_mem_window_size);
+        const mem_window_size: i32 = @intCast(self.trace_config.print_mem_window_size);
         const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - @divFloor(mem_window_size, 2)));
         const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
-        if(self.log_config.print_cpu_state){
+      
+        if(self.trace_config.print_cpu_state){
             self.cpu.print_state();   
         }
 
-        if(self.log_config.print_stack) {
-            self.cpu.print_stack(self.log_config.print_stack_limit);
+        if(self.trace_config.print_stack) {
+            self.cpu.print_stack(self.trace_config.print_stack_limit);
         }
 
-        if(self.log_config.print_mem) {
+        if(self.trace_config.print_mem) {
             self.cpu.bus.print_mem(start, @intCast(end));        
             self.cpu.bus.print_mem(0xc0, @intCast(0xc9));        
         }
     }
 
     fn print_debug_output(self: *Emulator) void {
-        if(self.log_config.enable_debug_log and self.cycle_count >= self.log_config.start_at_cycle) {
-            if(self.log_config.end_at_cycle) |end_cycle| {
+        if(self.trace_config.enable_trace and self.cycle_count >= self.trace_config.start_at_cycle) {
+            if(!self.trace_config.verbose) {
+                self.cpu.print_debug_info = false;
+                self.cpu.print_state_compact();
+                return;
+            }
+            else if(self.trace_config.end_at_cycle) |end_cycle| {
                 if(self.cycle_count > end_cycle) {
                     self.cpu.print_debug_info = false;
-                    self.log_config.enable_debug_log = false;
+                    self.trace_config.enable_trace = false;
                     self._print_debug_output(); // print the output one last time to see the effect of the last instruction shown
                     return;
                    
                 }
             }
-            self.cpu.print_debug_info = true;
-            self._print_debug_output();
+            if(self.trace_config.verbose) {
+                self.cpu.print_debug_info = true;
+                self._print_debug_output();
+            }
         }
     }
 
@@ -221,8 +234,8 @@ pub const Emulator = struct {
       
         while (!self.cpu.halt) {
             self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);
-            self.print_debug_output();
             self.cpu.clock_tick();
+            self.print_debug_output();
          
             self.cycle_count += 1;
             if(limit_cycles) |max_cycles| {
@@ -300,8 +313,8 @@ pub const Emulator = struct {
 
             //self.bus.write_16(0x0326, 0xF1CA); // chrout routine
 
-            self.print_debug_output();
             self.cpu.clock_tick();
+            self.print_debug_output();
         
            if(self.cycle_count % 10000 == 0){
              _ = sdl.SDL_RenderClear(renderer);
@@ -320,12 +333,13 @@ pub const Emulator = struct {
             }
         }    
 
-        self.print_debug_output(); 
+         
     }   
     
     
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
-       self.bus.write_io_ram(MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now
+        self.bus.write_io_ram(MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
+                                                                        // as at some point it waits for the rasterline register to reach 0
         var bus = self.bus;
         for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end, 
               MemoryMap.color_mem_start..MemoryMap.color_mem_end) 
@@ -356,14 +370,14 @@ pub const Emulator = struct {
                     const char_pixel_x = char_x + char_col_idx;
                     const char_pixel_y = char_y + char_row_idx;
 
-                    const texture_index: usize =  (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
+                    const frame_buf_idx: usize = (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
                     
                     if (pixel == 1) {
                         const color_code: u4 = @truncate(self.bus.read(@intCast(color_mem_addr)));
                         const color = colors.C64_COLOR_PALETTE[color_code];
-                        frame_buffer[texture_index]   = color.r;
-                        frame_buffer[texture_index+1] = color.g; 
-                        frame_buffer[texture_index+2] = color.b;
+                        frame_buffer[frame_buf_idx  ] = color.r;
+                        frame_buffer[frame_buf_idx+1] = color.g; 
+                        frame_buffer[frame_buf_idx+2] = color.b;
                     }
                 }
             }

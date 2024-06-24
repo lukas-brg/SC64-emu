@@ -4,7 +4,7 @@ const Bus = @import("bus.zig").Bus;
 const CPU = @import("cpu/cpu.zig").CPU;
 const Emulator = @import("emulator.zig").Emulator;
 const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
-const DebugLogConfig = @import("emulator.zig").DebugLogConfig;
+const DebugTraceConfig = @import("emulator.zig").DebugTraceConfig;
 const clap = @import("clap");
 
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
@@ -32,11 +32,13 @@ pub fn main() !void {
         \\-o, --offset <u16>     Specify the starting position of the custom rom
         \\-s, --scaling <f32>    Specify a scaling factor, as 320x200 will be very small on modern screens
         \\-c, --cycles <usize>   Specify the number of cycles to be executed
-        \\-d, --disable_log      Enable debug logging
-        \\-l, --log              Enable debug logging
-        \\--log_start <usize>    Start debug logging at instruction no 
-        \\--log_end <usize>      End debug logging at instruction no 
+        \\-d, --disable_trace      Disable debug trace
+        \\-t, --trace              Enable debug trace
+        \\--trace_start <usize>    Start debug trace at instruction no 
+        \\--trace_end <usize>      End debug trace at instruction no 
         \\--pc <u16>             Specify the initial Program Counter
+        \\--nobankswitch         Disable bank switching
+        \\-v, --trace_verbose 
     );
 
     var diag = clap.Diagnostic{};
@@ -50,43 +52,51 @@ pub fn main() !void {
     };
     defer res.deinit();
     const default_emu_config = EmulatorConfig{};
-    const default_dbg_config = DebugLogConfig{};
+    const default_dbg_config = DebugTraceConfig{};
     const headless = res.args.headless != 0;
     const scaling_factor = res.args.scaling orelse default_emu_config.scaling_factor;
-    var log_start = res.args.log_start orelse default_dbg_config.start_at_cycle;
-    const log: bool = (res.args.log != 0 or default_dbg_config.enable_debug_log) and (res.args.disable_log == 0);
-    const log_end = res.args.log_end;
-    
+    const trace_start = res.args.trace_start orelse default_dbg_config.start_at_cycle;
+    const trace: bool = (res.args.trace != 0 or default_dbg_config.enable_trace) and (res.args.disable_trace == 0);
+    const trace_end = res.args.trace_end;
+    const bank_switching = (res.args.nobankswitch == 0) and default_emu_config.enable_bank_switching;
+    const verbose = (res.args.trace_verbose != 0) or default_dbg_config.verbose;
+
+    var emu_config = EmulatorConfig{.headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = bank_switching};
+    const trace_config = DebugTraceConfig{.enable_trace = trace, .start_at_cycle = trace_start, .end_at_cycle = trace_end, .verbose = verbose};
     if (res.args.help != 0) {
-        return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
+        return clap.help(std.io.getStdOut().writer(), clap.Help, &params, .{});
     }
 
     if(res.args.ftest != 0) {
         const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";   
         const cycles = res.args.cycles orelse 43967;
-        log_start = res.args.log_start orelse 43953;
-        var emulator = try Emulator.init(allocator, .{.headless = true});
+        
+        emu_config.headless = true;
+        var emulator = try Emulator.init(allocator, emu_config);
+        
         defer emulator.deinit(allocator);
-        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start, .end_at_cycle = log_end});
+        emulator.set_trace_config(trace_config);
         emulator.bus.enable_bank_switching = false;
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
         try emulator.run(cycles);
     } 
     else if (res.args.rom) |rom_path| {
-        var emulator = try Emulator.init(allocator, .{.headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = false});
-        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start, .end_at_cycle = log_end});
+        
+        emu_config.enable_bank_switching = false;
+        var emulator = try Emulator.init(allocator, emu_config);
+        
+        emulator.set_trace_config(trace_config);
         try emulator.init_graphics();
         defer emulator.deinit(allocator);
         const offset = res.args.offset orelse 0x1000;
-        std.debug.print("offset {x}\n", .{offset});
         _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
         emulator.cpu.set_reset_vector( res.args.pc orelse 0x1000);
         try emulator.run(res.args.cycles);
     }
     else {
-        var emulator = try Emulator.init(allocator, .{.scaling_factor = scaling_factor, .headless = headless});
-        emulator.set_logging_config(.{.enable_debug_log = log, .start_at_cycle = log_start, .end_at_cycle = log_end});
+        var emulator = try Emulator.init(allocator, emu_config);
+        emulator.set_trace_config(trace_config);
         defer emulator.deinit(allocator);
         try emulator.init_c64();
         try emulator.run(res.args.cycles);

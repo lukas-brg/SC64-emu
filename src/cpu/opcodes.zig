@@ -1,14 +1,15 @@
 const std = @import("std");
 const CPU = @import("cpu.zig").CPU;
 const instructions = @import("instructions.zig");
+const instruction = @import("instruction.zig");
 
-const HandlerFn = fn(*CPU, OpInfo) void;
+const HandlerFn = fn(*CPU, instruction.Instruction) void;
 
 
-const opcode_lookup_table: [256]OpInfo = init_opcode_table();
+const opcode_lookup_table: [256]OpcodeInfo = init_opcode_table();
 
-fn init_opcode_table() [256]OpInfo {
-    var table: [256]OpInfo = undefined;
+fn init_opcode_table() [256]OpcodeInfo {
+    var table: [256]OpcodeInfo = undefined;
     for (OPCODE_TABLE) |opcode_struct| {
         table[opcode_struct.opcode] = opcode_struct;
     }
@@ -16,7 +17,7 @@ fn init_opcode_table() [256]OpInfo {
 }
 
 
-pub inline fn decode_opcode(opcode: u8) OpInfo {
+pub inline fn decode_opcode(opcode: u8) OpcodeInfo {
     return opcode_lookup_table[opcode];
 }
 
@@ -38,7 +39,7 @@ pub const AddressingMode = enum {
 };
 
 
-pub const OpInfo = struct {
+pub const OpcodeInfo = struct {
     opcode: u8,
     op_name: []const u8,
     addressing_mode: AddressingMode,
@@ -46,14 +47,14 @@ pub const OpInfo = struct {
     cycles: u4,
     handler_fn:  * const HandlerFn,
 
-    pub fn print(self: OpInfo) void {
+    pub fn print(self: OpcodeInfo) void {
         std.debug.print("(Name: {s}, Opcode: 0x{x:0>2},  Addressing Mode: {s}, Bytes: {}, Cycles: {})\n",
             .{self.op_name, self.opcode, @tagName(self.addressing_mode), self.bytes, self.cycles});
     }
 };
 
 
-const OPCODE_TABLE = [_]OpInfo{
+const OPCODE_TABLE = [_]OpcodeInfo{
     // Only the legal opcodes are implemented for now, ToDo?
     .{.opcode=0x69, .op_name="ADC", .addressing_mode=AddressingMode.IMMEDIATE,  .bytes = 2, .cycles = 2, .handler_fn = &instructions.adc},
     .{.opcode=0x65, .op_name="ADC", .addressing_mode=AddressingMode.ZEROPAGE,   .bytes = 2, .cycles = 3, .handler_fn = &instructions.adc},

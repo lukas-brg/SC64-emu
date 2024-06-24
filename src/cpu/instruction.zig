@@ -1,16 +1,16 @@
 const std = @import("std");
 const CPU = @import("cpu.zig").CPU;
 const StatusFlag = @import("cpu.zig").StatusFlag;
-const OpInfo = @import("opcodes.zig").OpInfo;
+const OpcodeInfo = @import("opcodes.zig").OpcodeInfo;
 const AddressingMode = @import("opcodes.zig").AddressingMode;
 
 
 const bitutils = @import("bitutils.zig");
 
 
-pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
+pub fn get_operand_address(cpu: *CPU, opcode: OpcodeInfo) u16 {
 
-    const address: u16 = switch (instruction.addressing_mode) {
+    const address: u16 = switch (opcode.addressing_mode) {
         .IMMEDIATE => cpu.PC + 1,
         .ABSOLUTE => cpu.bus.read_16(cpu.PC+1),
         .ABSOLUTE_X => cpu.bus.read_16(cpu.PC+1) +% cpu.X,
@@ -22,10 +22,10 @@ pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
             const offset: u8 = cpu.bus.read(cpu.PC + 1);
             if ((offset & 0x80) != 0) {
                 //const signed_offset =  -1 * (0x100 - offset);
-                break :blk cpu.PC + instruction.bytes - (0x100 - @as(u16, offset));
+                break :blk cpu.PC + opcode.bytes - (0x100 - @as(u16, offset));
             }
             else {
-                break :blk cpu.PC + instruction.bytes + offset;
+                break :blk cpu.PC + opcode.bytes + offset;
             }
         },
         .INDIRECT => blk: {
@@ -50,15 +50,19 @@ pub fn get_operand_address(cpu: *CPU, instruction: OpInfo) u16 {
     return address;
 }
 
-pub const OperandInfo = struct {
-    operand: u8,
-    address: u16,
+pub const Instruction = struct {
+    operand: ?u8 = null,
+    operand_addr: ?u16 = null,
     page_crossed: bool,
     cycles: u4, // There can be additional cycles if a page boundary was crossed, so this parameter is used again
+    instruction_addr: u16,
+    op_name: [] const u8,
+    addressing_mode: AddressingMode,
+    bytes: u8,
 
-    pub fn print(self: OperandInfo) void {
-        std.debug.print("(Operand: {x:0>4}, Address: {x:0>2}, Page Crossed: {}, Cycles: {})\n",
-        .{self.operand, self.address, self.page_crossed, self.cycles});
+    pub fn print(self: Instruction) void {
+        std.debug.print("(Operand: {?x:0>4}, Address: {?x:0>2}, Page Crossed: {}, Cycles: {})\n",
+        .{self.operand, self.operand_addr, self.page_crossed, self.cycles});
     }
 };
 
@@ -67,30 +71,48 @@ fn page_boundary_crossed(cpu: *CPU, addr: u16) bool {
     return (cpu.PC & 0xFF00) != (addr & 0xFF00);
 }
 
-pub fn get_operand(cpu: *CPU, instruction: OpInfo) OperandInfo {
+pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
 
-    const operand_info: OperandInfo = switch (instruction.addressing_mode) {
+    const operand_info: Instruction = switch (opcode.addressing_mode) {
         .ACCUMULATOR => .{
             .operand = cpu.A,
-            .address = undefined,
+            .operand_addr = null,
             .page_crossed = false,
-            .cycles = instruction.cycles,
+            .cycles = opcode.cycles,
+            .instruction_addr = cpu.PC,
+            .op_name=opcode.op_name,
+            .addressing_mode=opcode.addressing_mode,
+            .bytes=opcode.bytes,
+            
         },
 
         .IMPLIED => .{
-            .operand = undefined,
-            .address = undefined,
+            .operand = null,
+            .operand_addr = null,
             .page_crossed = false,
-            .cycles = instruction.cycles,
+            .cycles = opcode.cycles,
+            .instruction_addr = cpu.PC,
+            .op_name=opcode.op_name,
+            .addressing_mode=opcode.addressing_mode,
+            .bytes=opcode.bytes,
         },
 
         else => blk: {
-            const address = get_operand_address(cpu, instruction);
+            const address = get_operand_address(cpu, opcode);
             const operand = cpu.bus.read(address);
             const page_crossed = page_boundary_crossed(cpu, address);
-            const cycles = instruction.cycles + @intFromBool(page_crossed); // If a page cross happens instructions take one cycle more to execute
+            const cycles = opcode.cycles + @intFromBool(page_crossed); // If a page cross happens instructions take one cycle more to execute
 
-            break :blk .{.operand=operand, .address=address, .page_crossed=page_crossed, .cycles=cycles};
+            break :blk .{
+                .operand=operand, 
+                .operand_addr=address, 
+                .page_crossed=page_crossed, 
+                .cycles=cycles, 
+                .instruction_addr  =cpu.PC,
+                .op_name=opcode.op_name,
+                .addressing_mode=opcode.addressing_mode,
+                .bytes=opcode.bytes,
+            };
         }
     };
 
