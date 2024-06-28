@@ -69,7 +69,7 @@ pub fn main() !void {
 
     if(res.args.ftest != 0) {
         const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";   
-        const cycles = res.args.cycles orelse 43967;
+        const cycles = res.args.cycles;
         
         emu_config.headless = true;
         var emulator = try Emulator.init(allocator, emu_config);
@@ -93,6 +93,7 @@ pub fn main() !void {
         _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
         emulator.cpu.set_reset_vector( res.args.pc orelse 0x1000);
         try emulator.run(res.args.cycles);
+        emulator.bus.print_mem(0x210, 0x211);
     }
     else {
         var emulator = try Emulator.init(allocator, emu_config);

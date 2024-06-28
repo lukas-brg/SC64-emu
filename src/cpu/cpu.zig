@@ -33,18 +33,18 @@ pub fn print_disassembly_inline(cpu: CPU,  instruction: Instruction) void {
     
     const PC = instruction.instruction_addr;
     switch (instruction.addressing_mode) {
-        .ABSOLUTE => std.debug.print("{X:0>4}:  {s} ${X:0>4}{s: <6}", .{PC, instruction.op_name, instruction.operand_addr.?, ""}),
-        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X{s: <4}", .{PC, instruction.op_name, cpu.bus.read_16(PC+1), ""}),
-        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y{s: <4}", .{PC, instruction.op_name, cpu.bus.read_16(PC+1), ""}),
-        .IMPLIED, .ACCUMULATOR => std.debug.print("{X:0>4}:  {s}{s: <12}", .{PC, instruction.op_name,""}),
-        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4}){s: <4}", .{PC, instruction.op_name, cpu.bus.read_16(PC+1),""}),
-        .INDIRECT_Y => std.debug.print("{X:0>4}:  {s} (${X:0>2}),Y{s: <4}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
-        .INDIRECT_X => std.debug.print("{X:0>4}:  {s} (${X:0>2},X){s: <4}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
-        .IMMEDIATE => std.debug.print("{X:0>4}:  {s} #${X:0>2}{s: <7}", .{PC, instruction.op_name, instruction.operand.?,""}),
-        .ZEROPAGE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <8}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
-        .ZEROPAGE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>2},Y{s: <6}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
-        .ZEROPAGE_X => std.debug.print("{X:0>4}:  {s} ${X:0>2},X{s: <6}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
-        .RELATIVE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <8}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),        
+        .ABSOLUTE => std.debug.print("{X:0>4}:  {s} ${X:0>4}{s: <4}", .{PC, instruction.op_name, instruction.operand_addr.?, ""}),
+        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X{s: <2}", .{PC, instruction.op_name, cpu.bus.read_16(PC+1), ""}),
+        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y{s: <2}", .{PC, instruction.op_name, cpu.bus.read_16(PC+1), ""}),
+        .IMPLIED, .ACCUMULATOR => std.debug.print("{X:0>4}:  {s}{s: <10}", .{PC, instruction.op_name,""}),
+        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4}){s: <2}", .{PC, instruction.op_name, cpu.bus.read_16(PC+1),""}),
+        .INDIRECT_Y => std.debug.print("{X:0>4}:  {s} (${X:0>2}),Y{s: <2}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
+        .INDIRECT_X => std.debug.print("{X:0>4}:  {s} (${X:0>2},X){s: <2}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
+        .IMMEDIATE => std.debug.print("{X:0>4}:  {s} #${X:0>2}{s: <5}", .{PC, instruction.op_name, instruction.operand.?,""}),
+        .ZEROPAGE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
+        .ZEROPAGE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>2},Y{s: <4}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
+        .ZEROPAGE_X => std.debug.print("{X:0>4}:  {s} ${X:0>2},X{s: <4}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),
+        .RELATIVE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{PC, instruction.op_name, cpu.bus.read(PC+1),""}),        
     }
 }
 
@@ -138,6 +138,7 @@ pub const CPU = struct {
 
     pub fn pop(self: *CPU) u8 {
         self.SP +%= 1;
+        if(self.SP == 0) std.log.warn("Stack overflow (Pop from empty stack)", .{});
         return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
 
@@ -151,6 +152,7 @@ pub const CPU = struct {
 
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
+        if(self.SP == 0) std.log.warn("Stack overflow (Push on full stack)", .{});
         self.SP -%= 1;
     }
 
@@ -167,10 +169,11 @@ pub const CPU = struct {
     }
 
     pub fn set_reset_vector(self: *CPU, addr: u16) void {
-        const low_byte: u8 = @intCast((addr & 0x00FF));
-        const high_byte: u8 = @intCast((addr >> 8));
-        self.bus.write(RESET_VECTOR, low_byte);
-        self.bus.write(RESET_VECTOR+1, high_byte);
+        // const low_byte: u8 = @intCast((addr & 0x00FF));
+        // const high_byte: u8 = @intCast((addr >> 8));
+        // self.bus.write(RESET_VECTOR, low_byte);
+        // self.bus.write(RESET_VECTOR+1, high_byte);
+        self.bus.write_16(RESET_VECTOR, addr);
     }
     
     pub fn print_stack(self: *CPU, limit: usize) void {
@@ -185,15 +188,17 @@ pub const CPU = struct {
 
     }
 
+    
     pub fn clock_tick(self: *CPU) void {
-      
+        
+        const d_prev = self.get_status_flag(StatusFlag.DECIMAL);
         if(self.print_debug_info) {
             std.debug.print("==========================================================================================================================\n", .{});
             std.debug.print("Clock Tick {} {}!\n", .{self.cycle_count, self._wait_cycles});
             //std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
         }
         const opcode = self.fetch_byte();
-        const opcode_info = decode_opcode(opcode);
+        const opcode_info = decode_opcode(opcode) orelse std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{opcode, self.PC});
         const instruction_info = get_instruction(self, opcode_info);
         self.current_instruction = instruction_info;
         if(self.print_debug_info) {
@@ -205,8 +210,17 @@ pub const CPU = struct {
         }
         
         opcode_info.handler_fn(self, instruction_info);
-        
         self.cycle_count += 1;
+        const d_curr = self.get_status_flag(StatusFlag.DECIMAL);
+        if(d_curr != d_prev) {
+            if(d_curr == 1) {
+                std.log.debug("Decimal mode activated during instruction {s} no. {} at {X:0>4}", .{instruction_info.op_name, self.cycle_count, instruction_info.instruction_addr});
+            } else {
+                std.log.debug("Decimal mode deactivated during instruction {s} no. {} at {X:0>4}", .{instruction_info.op_name, self.cycle_count, instruction_info.instruction_addr});
+            }
+        }
+
+
 
         if(self.halt) {
             return;
@@ -217,7 +231,13 @@ pub const CPU = struct {
     pub fn print_state_compact(self: CPU) void {
         const instruction = self.current_instruction orelse unreachable;
         print_disassembly_inline(self, instruction);
-        std.debug.print("AC={X:0>2}  XR={X:0>2}  YR={X:0>2}  SP={X:0>2}  |  n={} v={} d={} i={} z={} c={}  | {} {}   ", .{
+        if(instruction.operand) |op| {
+            std.debug.print("{X:0>2}    ", .{op});
+        } else {
+            std.debug.print("--    ", .{});
+        }
+
+        std.debug.print("AC={X:0>2}  XR={X:0>2}  YR={X:0>2}  SP={X:0>2}  |  n={} v={} d={} i={} z={} c={}  |  {} {}   ", .{
             self.A,
             self.X,
             self.Y,

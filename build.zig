@@ -8,7 +8,7 @@ pub fn build(b: *std.Build) void {
 
 
     const exe = b.addExecutable(.{
-        .name = "z64",
+        .name = "sc64",
         .root_source_file = .{ .path = "src/main.zig"},
         .target = target,
         .optimize = optimize,

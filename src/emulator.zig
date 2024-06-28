@@ -257,7 +257,7 @@ pub const Emulator = struct {
         }
         defer sdl.SDL_Quit();
 
-        const screen = sdl.SDL_CreateWindow("ZIG64 Emulator", 
+        const screen = sdl.SDL_CreateWindow("SC64 Emulator", 
             sdl.SDL_WINDOWPOS_UNDEFINED, 
             sdl.SDL_WINDOWPOS_UNDEFINED, 
             @intFromFloat(@as(f16, (2*FRAME_SIZE_X+320)) * self.config.scaling_factor), 
@@ -299,7 +299,7 @@ pub const Emulator = struct {
         self.clear_screen_mem();
         //clear_screen_text_area(&frame_buffer);
         var quit = false;
-        
+
         while (!self.cpu.halt and !quit) {
             var event: sdl.SDL_Event = undefined;
             while (sdl.SDL_PollEvent(&event) != 0) {
@@ -311,20 +311,20 @@ pub const Emulator = struct {
                 }
             }
 
-            //self.bus.write_16(0x0326, 0xF1CA); // chrout routine
 
             self.cpu.clock_tick();
             self.print_debug_output();
         
            if(self.cycle_count % 10000 == 0){
-             _ = sdl.SDL_RenderClear(renderer);
-            self.clear_screen_text_area(&frame_buffer);
-            self.update_frame(&frame_buffer);
-        
-            _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
-            _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
-            sdl.SDL_RenderPresent(renderer);
-        }
+                _ = sdl.SDL_RenderClear(renderer);
+                self.clear_screen_text_area(&frame_buffer);
+                self.update_frame(&frame_buffer);
+            
+                _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
+                _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
+                sdl.SDL_RenderPresent(renderer);
+            }
+
             self.cycle_count += 1;
             if(limit_cycles) |max_cycles| {
                 if(self.cycle_count >= max_cycles) {
@@ -349,7 +349,7 @@ pub const Emulator = struct {
             
             const screen_code = @as(u16, bus.read(@intCast(screen_mem_addr)));
             
-            if (screen_code == 0x20) {continue;}
+            if (screen_code == 0x20) continue;
             
             const char_addr_start: u16 = (screen_code * 8);
         

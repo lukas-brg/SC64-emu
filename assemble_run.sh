@@ -6,6 +6,6 @@ if [ $# -eq 0 ]; then
 else
     output_file="${1%.*}.o65"
     xa "$1" -o ${output_file}
-    zig build run -- -r ${output_file}
+    zig build run -- -r ${output_file} --nobankswitch
 fi
 

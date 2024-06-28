@@ -6,10 +6,10 @@ const instruction = @import("instruction.zig");
 const HandlerFn = fn(*CPU, instruction.Instruction) void;
 
 
-const opcode_lookup_table: [256]OpcodeInfo = init_opcode_table();
+const opcode_lookup_table: [256]?OpcodeInfo = init_opcode_table();
 
-fn init_opcode_table() [256]OpcodeInfo {
-    var table: [256]OpcodeInfo = undefined;
+fn init_opcode_table() [256]?OpcodeInfo {
+    var table: [256]?OpcodeInfo = [_]?OpcodeInfo{null} ** 256;
     for (OPCODE_TABLE) |opcode_struct| {
         table[opcode_struct.opcode] = opcode_struct;
     }
@@ -17,7 +17,7 @@ fn init_opcode_table() [256]OpcodeInfo {
 }
 
 
-pub inline fn decode_opcode(opcode: u8) OpcodeInfo {
+pub inline fn decode_opcode(opcode: u8) ?OpcodeInfo {
     return opcode_lookup_table[opcode];
 }
 

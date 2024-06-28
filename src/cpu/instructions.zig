@@ -213,8 +213,6 @@ pub fn brk(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bit(cpu: *CPU, instruction: Instruction) void {
-    
-    
     const operand = instruction.operand.?;
     cpu.set_status_flag(StatusFlag.NEGATIVE, bitutils.get_bit_at(operand, 7));
     cpu.set_status_flag(StatusFlag.OVERFLOW, bitutils.get_bit_at(operand, 6));
@@ -296,8 +294,6 @@ pub fn cpy(cpu: *CPU, instruction: Instruction) void {
 
 
 pub fn dec(cpu: *CPU, instruction: Instruction) void {
-    
-    
     const result = instruction.operand.? -% 1;
     cpu.bus.write(instruction.operand_addr.?, result);
     cpu.update_negative(result);
@@ -329,8 +325,6 @@ pub fn dey(cpu: *CPU, instruction: Instruction) void {
 
 
 pub fn eor(cpu: *CPU, instruction: Instruction) void {
-    
-    
     const result = instruction.operand.? ^ cpu.A;
     cpu.A = result;
     cpu.update_negative(result);
@@ -341,8 +335,6 @@ pub fn eor(cpu: *CPU, instruction: Instruction) void {
 
 
 pub fn inc(cpu: *CPU, instruction: Instruction) void {
-    
-    
     const result = instruction.operand.? +% 1;
     cpu.bus.write(instruction.operand_addr.?, result);
     cpu.update_negative(result);
@@ -385,7 +377,6 @@ pub fn jsr(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn lda(cpu: *CPU, instruction: Instruction) void {  
-    
     cpu.A = instruction.operand.?;
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
@@ -394,7 +385,6 @@ pub fn lda(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn ldx(cpu: *CPU, instruction: Instruction) void {  
-    
     cpu.X = instruction.operand.?;
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
@@ -546,45 +536,54 @@ pub fn rts(cpu: *CPU, instruction: Instruction) void {
 
 
 pub fn sbc(cpu: *CPU, instruction: Instruction) void {
-    // 
-    // // const operand = @as(u16, instruction.operand.?);
-    // // const A = @as(u16, cpu.A);
-
-
-    // const operand = instruction.operand.?;
-    // const carry_in_sub = @subWithOverflow(cpu.A, operand);
-
-    // const a_operand = cpu.A;                                                 
-    // const result_carry = @subWithOverflow(carry_in_sub[0], (cpu.get_status_flag(StatusFlag.CARRY) ^ 1 ));
-    // cpu.A = result_carry[0];
-    // const carry_out = ~(carry_in_sub[1] & result_carry[1]);
-    // cpu.set_status_flag(StatusFlag.CARRY, carry_out);
-    
-    // cpu.update_zero(cpu.A);
-    // cpu.update_negative(cpu.A);
-    
-    // const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
-    // cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
-    // cpu.PC += instruction.bytes;
-
-    // cpu._wait_cycles += instruction.cycles;
-
-    
-    
-    const operand = ~instruction.operand.?;
     
     const a_operand = cpu.A;       
-    const carry_in_add = @addWithOverflow(operand, cpu.get_status_flag(StatusFlag.CARRY));
 
-    const result_carry = @addWithOverflow(cpu.A, carry_in_add[0]);
-    cpu.A = result_carry[0];
-    const carry_out: u1 = result_carry[1] | carry_in_add[1];
-    cpu.set_status_flag(StatusFlag.CARRY, carry_out);
-    cpu.update_negative(cpu.A);
-    const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
-    cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
-    cpu.update_zero(cpu.A);
+    if(cpu.get_status_flag(StatusFlag.DECIMAL) == 0) {
+        //SBC in binary mode is just ADC with the second operand negated
+        const operand = ~instruction.operand.?;
+        const carry_in_add = @addWithOverflow(operand, cpu.get_status_flag(StatusFlag.CARRY));
 
+        const result_carry = @addWithOverflow(cpu.A, carry_in_add[0]);
+        cpu.A = result_carry[0];
+        const carry_out: u1 = result_carry[1] | carry_in_add[1];
+        cpu.set_status_flag(StatusFlag.CARRY, carry_out);
+        cpu.update_negative(cpu.A);
+        const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
+        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        cpu.update_zero(cpu.A);
+
+    } else {
+        const operand = instruction.operand.?;
+
+        const carry = cpu.get_status_flag(StatusFlag.CARRY);
+        const temp_result = @addWithOverflow(cpu.A, operand);
+        const temp_result_with_carry = @addWithOverflow(temp_result[0], carry);
+
+        var result: u8 = temp_result_with_carry[0];
+        var carry_out: u1 = temp_result_with_carry[1];
+
+        const low_nibble = (result & 0x0F);
+        const high_nibble = (result >> 4);
+
+        if (low_nibble > 9) {
+            result = @addWithOverflow(result, 6)[0];
+        }
+        if (high_nibble > 9 or carry_out != 0) {
+            result = @addWithOverflow(result, 0x60)[0];
+            carry_out = 1; 
+        } else {
+            carry_out = 0; 
+        }
+
+        cpu.A = result & 0xFF;
+        cpu.set_status_flag(StatusFlag.CARRY, carry_out);
+        cpu.update_negative(cpu.A);
+        const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
+        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        cpu.update_zero(cpu.A);
+    }
+    
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;    
 }
@@ -629,9 +628,7 @@ pub fn stx(cpu: *CPU, instruction: Instruction) void {
 
 
 pub fn sty(cpu: *CPU, instruction: Instruction) void {  
-    
     cpu.bus.write(instruction.operand_addr.?, cpu.Y);
-    
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;
 }

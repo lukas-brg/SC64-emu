@@ -84,6 +84,7 @@ pub const Bus = struct {
     }
     
     pub fn write_16(self: *Bus, addr: u16, val: u16) void {
+        if(addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});
         const bytes = bitutils.split_into_bytes(val);
         self.write(addr, bytes[0]);
         self.write(addr+1, bytes[1]);
@@ -95,6 +96,7 @@ pub const Bus = struct {
     }
 
     pub fn read_16(self: *Bus, addr: u16) u16 {
+        if(addr > MEM_SIZE - 2) std.debug.panic("Trying to read from out of bounds at {X:0>4}", .{addr});
         const low = self.read(addr);
         const high = self.read(addr+1);
         return bitutils.combine_bytes(low, high);
