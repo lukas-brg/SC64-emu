@@ -8,5 +8,5 @@ loop:
     inx     
     jmp loop
 end:          
-    jmp end  ; this is a hack to keep the window open indefinitely
+    jmp end  ; keep the window open indefinitely
     

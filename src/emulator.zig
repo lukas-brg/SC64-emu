@@ -7,6 +7,11 @@ const MemoryMap = @import("bus.zig").MemoryMap;
 const bitutils = @import("cpu/bitutils.zig");
 const colors = @import("colors.zig");
 
+
+//const raylib = @import("raylib.zig");
+const raylib = @cImport({
+    @cInclude("raylib.h");
+});
 //const sdl = @import("sdl2");
 
 const sdl = @cImport({
@@ -64,6 +69,7 @@ pub const Emulator = struct {
         std.log.debug("Emulator.init() called", .{});
         std.log.debug("Bank switching: {}", .{bus.enable_bank_switching});
         const cpu = try allocator.create(CPU);
+        
         cpu.* = CPU.init(bus);
         const emulator: Emulator = .{
             .bus = bus,
@@ -92,6 +98,10 @@ pub const Emulator = struct {
 
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
+
+        self.bus.write_16(0x00A0, 0x0800); // Points to BASIC start at $0801
+        self.bus.write_16(0x00A2, 0xA000); // Points to end of BASIC at $A000
+
         self.cpu.reset();
         try self.init_graphics();        
         self.cpu.SP = 0xFF;
@@ -101,7 +111,7 @@ pub const Emulator = struct {
     fn load_basic_rom(self: *Emulator) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
-    
+        
         const allocator = gpa.allocator();
         const rom_data = try load_file_data("data/basic.bin", allocator);
         @memcpy(self.bus.basic_rom[0..], rom_data);
@@ -249,7 +259,12 @@ pub const Emulator = struct {
  
 
     pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
-        
+         const width = 800;
+    const height = 450;
+
+    raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT);
+    raylib.InitWindow(width, height, "zig raylib example");
+    
         const pitch: c_int = SCREEN_WIDTH * 3;
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
             sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
@@ -293,7 +308,12 @@ pub const Emulator = struct {
 
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
 
-        const screen_rect = sdl.SDL_Rect{.w = SCREEN_WIDTH, .h=SCREEN_HEIGHT, .x = FRAME_SIZE_X, .y = FRAME_SIZE_Y};
+        const screen_rect = sdl.SDL_Rect{
+            .w = SCREEN_WIDTH, 
+            .h = SCREEN_HEIGHT, 
+            .x = FRAME_SIZE_X, 
+            .y = FRAME_SIZE_Y
+        };
  
 
         self.clear_screen_mem();
@@ -315,7 +335,7 @@ pub const Emulator = struct {
             self.cpu.clock_tick();
             self.print_debug_output();
         
-           if(self.cycle_count % 10000 == 0){
+            if(self.cycle_count % 10000 == 0){
                 _ = sdl.SDL_RenderClear(renderer);
                 self.clear_screen_text_area(&frame_buffer);
                 self.update_frame(&frame_buffer);
@@ -363,21 +383,21 @@ pub const Emulator = struct {
                 const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
                 
                 //const char_row_byte = self.bus.read(char_row_addr);
-               const char_row_byte = self.bus.character_rom[char_row_addr];
+                const char_row_byte = self.bus.character_rom[char_row_addr];
                
                 for(0..8) |char_col_idx|  {                                     // The leftmost pixel is represented by the most significant bit
                     const pixel: u1 = bitutils.get_bit_at(char_row_byte,  @intCast(7-char_col_idx));
                     const char_pixel_x = char_x + char_col_idx;
                     const char_pixel_y = char_y + char_row_idx;
 
-                    const frame_buf_idx: usize = (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
+                    const fbuf_idx: usize = (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
                     
                     if (pixel == 1) {
                         const color_code: u4 = @truncate(self.bus.read(@intCast(color_mem_addr)));
                         const color = colors.C64_COLOR_PALETTE[color_code];
-                        frame_buffer[frame_buf_idx  ] = color.r;
-                        frame_buffer[frame_buf_idx+1] = color.g; 
-                        frame_buffer[frame_buf_idx+2] = color.b;
+                        frame_buffer[fbuf_idx  ] = color.r;
+                        frame_buffer[fbuf_idx+1] = color.g; 
+                        frame_buffer[fbuf_idx+2] = color.b;
                     }
                 }
             }

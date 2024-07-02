@@ -6,7 +6,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-
+ 
     const exe = b.addExecutable(.{
         .name = "sc64",
         .root_source_file = .{ .path = "src/main.zig"},
@@ -18,8 +18,14 @@ pub fn build(b: *std.Build) void {
     exe.root_module.addAnonymousImport("clap", .{ .root_source_file =  .{ .path = "lib/clap/clap.zig" } });
     exe.linkSystemLibrary("SDL2");
     
-    exe.linkLibC();
     
+    //exe.linkLibC();
+
+    const raylib_dep = b.dependency("raylib", .{
+        .target = target,
+    });
+    exe.linkLibrary(raylib_dep.artifact("raylib"));
+
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);

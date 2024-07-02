@@ -6,3 +6,5 @@ data/kernal.bin
 out*.txt
 test_files/cpu/**
 test_files/AllSuiteA*
+.zig-cache/**
+.vscode/**

@@ -7,6 +7,7 @@ const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
 const DebugTraceConfig = @import("emulator.zig").DebugTraceConfig;
 const clap = @import("clap");
 
+
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const rom_data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
     return rom_data;
@@ -51,24 +52,38 @@ pub fn main() !void {
         return err;
     };
     defer res.deinit();
+    
     const default_emu_config = EmulatorConfig{};
     const default_dbg_config = DebugTraceConfig{};
     const headless = res.args.headless != 0;
     const scaling_factor = res.args.scaling orelse default_emu_config.scaling_factor;
+    
     const trace_start = res.args.trace_start orelse default_dbg_config.start_at_cycle;
     const trace: bool = (res.args.trace != 0 or default_dbg_config.enable_trace) and (res.args.disable_trace == 0);
     const trace_end = res.args.trace_end;
+    
     const bank_switching = (res.args.nobankswitch == 0) and default_emu_config.enable_bank_switching;
     const verbose = (res.args.trace_verbose != 0) or default_dbg_config.verbose;
 
-    var emu_config = EmulatorConfig{.headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = bank_switching};
-    const trace_config = DebugTraceConfig{.enable_trace = trace, .start_at_cycle = trace_start, .end_at_cycle = trace_end, .verbose = verbose};
+    var emu_config = EmulatorConfig{
+        .headless = headless, 
+        .scaling_factor = scaling_factor, 
+        .enable_bank_switching = bank_switching
+    };
+    
+    const trace_config = DebugTraceConfig{
+        .enable_trace = trace, 
+        .start_at_cycle = trace_start, 
+        .end_at_cycle = trace_end, 
+        .verbose = verbose
+    };
+    
     if (res.args.help != 0) {
         return clap.help(std.io.getStdOut().writer(), clap.Help, &params, .{});
     }
 
     if(res.args.ftest != 0) {
-        const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";   
+        const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";
         const cycles = res.args.cycles;
         
         emu_config.headless = true;
@@ -80,7 +95,7 @@ pub fn main() !void {
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
         try emulator.run(cycles);
-    } 
+    }                                                                          
     else if (res.args.rom) |rom_path| {
         
         emu_config.enable_bank_switching = false;

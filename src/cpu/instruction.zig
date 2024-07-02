@@ -3,8 +3,6 @@ const CPU = @import("cpu.zig").CPU;
 const StatusFlag = @import("cpu.zig").StatusFlag;
 const OpcodeInfo = @import("opcodes.zig").OpcodeInfo;
 const AddressingMode = @import("opcodes.zig").AddressingMode;
-
-
 const bitutils = @import("bitutils.zig");
 
 
@@ -56,7 +54,7 @@ pub const Instruction = struct {
     page_crossed: bool,
     cycles: u4, // There can be additional cycles if a page boundary was crossed, so this parameter is used again
     instruction_addr: u16,
-    op_name: [] const u8,
+    mnemonic: []const u8,
     addressing_mode: AddressingMode,
     bytes: u8,
 
@@ -80,7 +78,7 @@ pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
             .page_crossed = false,
             .cycles = opcode.cycles,
             .instruction_addr = cpu.PC,
-            .op_name=opcode.op_name,
+            .mnemonic=opcode.mnemonic,
             .addressing_mode=opcode.addressing_mode,
             .bytes=opcode.bytes,
             
@@ -92,7 +90,7 @@ pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
             .page_crossed = false,
             .cycles = opcode.cycles,
             .instruction_addr = cpu.PC,
-            .op_name=opcode.op_name,
+            .mnemonic=opcode.mnemonic,
             .addressing_mode=opcode.addressing_mode,
             .bytes=opcode.bytes,
         },
@@ -109,7 +107,7 @@ pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
                 .page_crossed=page_crossed, 
                 .cycles=cycles, 
                 .instruction_addr  =cpu.PC,
-                .op_name=opcode.op_name,
+                .mnemonic=opcode.mnemonic,
                 .addressing_mode=opcode.addressing_mode,
                 .bytes=opcode.bytes,
             };
