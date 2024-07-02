@@ -9,13 +9,13 @@ pub fn build(b: *std.Build) void {
  
     const exe = b.addExecutable(.{
         .name = "sc64",
-        .root_source_file = .{ .path = "src/main.zig"},
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     
     });
     
-    exe.root_module.addAnonymousImport("clap", .{ .root_source_file =  .{ .path = "lib/clap/clap.zig" } });
+    exe.root_module.addAnonymousImport("clap", .{ .root_source_file =  b.path("lib/clap/clap.zig")});
     exe.linkSystemLibrary("SDL2");
     
     
@@ -41,7 +41,7 @@ pub fn build(b: *std.Build) void {
 
 
     const exe_unit_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file =  b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });

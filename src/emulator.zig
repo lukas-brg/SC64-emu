@@ -137,7 +137,7 @@ pub const Emulator = struct {
     fn load_kernal_rom(self: *Emulator) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
-    
+        
         const allocator = gpa.allocator();
         const rom_data = try load_file_data("data/kernal.bin", allocator);
         @memcpy(self.bus.kernal_rom[0..], rom_data);
@@ -259,12 +259,12 @@ pub const Emulator = struct {
  
 
     pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
-         const width = 800;
-    const height = 450;
+        // const width = 800;
+        // const height = 450;
 
-    raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT);
-    raylib.InitWindow(width, height, "zig raylib example");
-    
+        // raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT);
+        // raylib.InitWindow(width, height, "zig raylib example");
+        
         const pitch: c_int = SCREEN_WIDTH * 3;
         if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
             sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
