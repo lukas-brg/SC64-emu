@@ -1,5 +1,4 @@
 const std = @import("std");
-
 const raylib = @import("raylib.zig");
 
 const CPU = @import("cpu/cpu.zig").CPU;
@@ -7,13 +6,13 @@ const Bus = @import("bus.zig").Bus;
 const MemoryMap = @import("bus.zig").MemoryMap;
 const bitutils = @import("cpu/bitutils.zig");
 const colors = @import("colors.zig");
+const Renderer = @import("renderer.zig").Renderer;
 
+const SCREEN_WIDTH = @import("renderer.zig").SCREEN_WIDTH;
+const SCREEN_HEIGHT = @import("renderer.zig").SCREEN_HEIGHT;
+const BORDER_SIZE_X = @import("renderer.zig").BORDER_SIZE_X;
+const BORDER_SIZE_Y = @import("renderer.zig").BORDER_SIZE_Y;
 
-pub const BORDER_SIZE_X = 14;
-pub const BORDER_SIZE_Y = 12;
-
-const SCREEN_WIDTH = 320;
-const SCREEN_HEIGHT = 200;
 
 
 
@@ -250,54 +249,25 @@ pub const Emulator = struct {
         self.print_debug_output();
     }
     
-    
+
     pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
-        const scale = self.config.scaling_factor;
-        const win_w: c_int = @intFromFloat((SCREEN_WIDTH  + 2*BORDER_SIZE_X) * scale);
-        const win_h: c_int = @intFromFloat((SCREEN_HEIGHT + 2*BORDER_SIZE_Y) * scale);
-        raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT | raylib.FLAG_WINDOW_RESIZABLE);
-        raylib.InitWindow(win_w, win_h, "SC64 Emulator");
-        
-        const texture = raylib.LoadTextureFromImage(raylib.Image{
-            .data = null,
-            .width = SCREEN_WIDTH,
-            .height = SCREEN_HEIGHT,
-            .mipmaps = 1,
-            .format = raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8,
-        });
-        
+        const renderer = Renderer.init(self.config.scaling_factor);
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
         self.clear_screen_mem();
-
+        
         while (!raylib.WindowShouldClose() and !self.cpu.halt) {
            
             self.cpu.clock_tick();
             self.print_debug_output();
-        
+       
             if (self.cycle_count % 10000 == 0){
                 self.clear_screen_text_area(&frame_buffer);
                 self.update_frame(&frame_buffer);
-                raylib.UpdateTexture(texture, &frame_buffer);
-                
-                const border_color: raylib.Color = blk: {
-                    const ccode: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-                    const color = colors.C64_COLOR_PALETTE[ccode];
-                    break :blk .{
-                        .r = color.r,
-                        .g = color.g,
-                        .b = color.b,
-                        .a = 255,
-                    };
+                const border_color = blk: {
+                    const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
+                    break :blk colors.C64_COLOR_PALETTE[color_code];
                 };
-
-                raylib.BeginDrawing();
-                defer raylib.EndDrawing();
-                
-                raylib.ClearBackground(border_color);
-                raylib.DrawTextureEx(texture, raylib.Vector2{
-                    .x = BORDER_SIZE_X * scale,
-                    .y = BORDER_SIZE_Y * scale,
-                }, 0.0, scale, raylib.WHITE);
+                renderer.render_frame(&frame_buffer, border_color);
             }
 
             self.cycle_count += 1;

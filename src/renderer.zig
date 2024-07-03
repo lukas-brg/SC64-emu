@@ -1,0 +1,69 @@
+const raylib = @import("raylib.zig");
+
+const MemoryMap = @import("bus.zig").MemoryMap;
+const colors = @import("colors.zig");
+
+pub const BORDER_SIZE_X = 14;
+pub const BORDER_SIZE_Y = 12;
+
+pub const SCREEN_WIDTH = 320;
+pub const SCREEN_HEIGHT = 200;
+
+
+pub const Renderer = struct {
+    scale: f32,
+    texture: raylib.struct_Texture = undefined,
+
+
+    pub fn init(scaling_factor: f32) Renderer {
+        var renderer = Renderer{.scale = scaling_factor};
+        renderer.init_window();
+        return renderer;
+    }
+
+
+    pub fn init_window(self: *Renderer) void {
+        const scale = self.scale;
+        const win_w: c_int = @intFromFloat((SCREEN_WIDTH  + 2*BORDER_SIZE_X) * scale);
+        const win_h: c_int = @intFromFloat((SCREEN_HEIGHT + 2*BORDER_SIZE_Y) * scale);
+        raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT | raylib.FLAG_WINDOW_RESIZABLE);
+        raylib.InitWindow(win_w, win_h, "SC64 Emulator");
+        
+        // center window
+        const monitor = raylib.GetCurrentMonitor();
+        const monitor_w = raylib.GetMonitorWidth(monitor);
+        const monitor_h = raylib.GetMonitorHeight(monitor);
+        const x = @divFloor(monitor_w, 2) - @divFloor(win_w, 2);
+        const y = @divFloor(monitor_h,2) - @divFloor(win_h, 2);
+        raylib.SetWindowPosition(x, y);
+
+        self.texture = raylib.LoadTextureFromImage(raylib.Image{
+            .data = null,
+            .width = SCREEN_WIDTH,
+            .height = SCREEN_HEIGHT,
+            .mipmaps = 1,
+            .format = raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8,
+        });
+    }
+
+
+    pub fn render_frame(self: Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {
+        raylib.UpdateTexture(self.texture, frame_buffer.ptr);
+        
+        const ray_border_color: raylib.Color = .{
+            .r = border_color.r,
+            .g = border_color.g,
+            .b = border_color.b,
+            .a = 255,
+        };
+        
+        raylib.BeginDrawing();
+        defer raylib.EndDrawing();
+        
+        raylib.ClearBackground(ray_border_color);
+        raylib.DrawTextureEx(self.texture, raylib.Vector2{
+            .x = BORDER_SIZE_X * self.scale,
+            .y = BORDER_SIZE_Y * self.scale,
+        }, 0.0, self.scale, raylib.WHITE);
+    }
+};
