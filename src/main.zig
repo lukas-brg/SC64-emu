@@ -1,4 +1,4 @@
-pub const std = @import("std");
+const std = @import("std");
 const c = @import("cpu/cpu.zig");
 const Bus = @import("bus.zig").Bus;
 const CPU = @import("cpu/cpu.zig").CPU;
@@ -32,19 +32,22 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
 
     const params = comptime clap.parseParamsComptime(
-        \\-h, --help             Display this help and exit.
-        \\--ftest                Run a functional cpu test
-        \\--headless             No graphical output
-        \\-r, --rom <str>        Run a custom rom on a blank machine instead of KERNAL
-        \\-o, --offset <u16>     Specify the starting position of the custom rom
-        \\-s, --scaling <f32>    Specify a scaling factor, as 320x200 will be very small on modern screens
-        \\-c, --cycles <usize>   Specify the number of cycles to be executed
-        \\-d, --disable_trace      Disable debug trace
-        \\-t, --trace              Enable debug trace
-        \\--trace_start <usize>    Start debug trace at instruction no 
-        \\--trace_end <usize>      End debug trace at instruction no 
-        \\--pc <u16>             Specify the initial Program Counter
-        \\--nobankswitch         Disable bank switching
+        \\-h, --help                 Display this help and exit.
+        \\--ftest                    Run a functional cpu test
+        \\--headless                 No graphical output
+        \\-r, --rom <str>            Run a custom rom on a blank machine instead of KERNAL
+        \\-o, --offset <u16>         Specify the starting position of the custom rom
+        \\-s, --scaling <f32>        Specify a scaling factor, as 320x200 will be very small on modern screens
+        \\-c, --cycles <usize>       Specify the number of cycles to be executed
+        \\-i, --instructions         Specify the number of instructions to be executed
+        \\-d, --disable_trace        Disable debug trace
+        \\-t, --trace                Enable debug trace
+        \\--trace_start <usize>      Start debug trace at cycle no 
+        \\--trace_addr <u16>         Trace a single address specified here
+        \\--trace_end <usize>        End debug trace at cycle no 
+        \\--trace_start_ins <usize>  Start debug trace at instruction no
+        \\--pc <u16>                 Specify the initial Program Counter
+        \\--nobankswitch             Disable bank switching
         \\-v, --trace_verbose 
     );
 
@@ -63,17 +66,30 @@ pub fn main() !void {
     const default_dbg_config = DebugTraceConfig{};
     const headless = res.args.headless != 0;
     const scaling_factor = res.args.scaling orelse default_emu_config.scaling_factor;
-
+    const trace_start_i = res.args.trace_start_ins orelse default_dbg_config.start_at_instr;
+    
     const trace_start = res.args.trace_start orelse default_dbg_config.start_at_cycle;
     const trace: bool = (res.args.trace != 0 or default_dbg_config.enable_trace) and (res.args.disable_trace == 0);
     const trace_end = res.args.trace_end;
 
+
     const bank_switching = (res.args.nobankswitch == 0) and default_emu_config.enable_bank_switching;
     const verbose = (res.args.trace_verbose != 0) or default_dbg_config.verbose;
 
-    var emu_config = EmulatorConfig{ .headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = bank_switching };
+    var emu_config = EmulatorConfig{ 
+        .headless = headless, 
+        .scaling_factor = scaling_factor, 
+        .enable_bank_switching = bank_switching,
+    };
 
-    const trace_config = DebugTraceConfig{ .enable_trace = trace, .start_at_cycle = trace_start, .end_at_cycle = trace_end, .verbose = verbose };
+    const trace_config = DebugTraceConfig{ 
+        .enable_trace = trace, 
+        .start_at_cycle = trace_start, 
+        .start_at_instr = trace_start_i,
+        .end_at_cycle = trace_end, 
+        .verbose = verbose,
+        .capture_addr = res.args.trace_addr,
+    };
 
     if (res.args.help != 0) {
         return clap.help(std.io.getStdOut().writer(), clap.Help, &params, .{});

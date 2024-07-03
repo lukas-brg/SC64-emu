@@ -32,6 +32,8 @@ pub const DebugTraceConfig = struct {
     print_stack_limit: usize = 10,
     print_cpu_state: bool = true,
     start_at_cycle: usize = 0,
+    start_at_instr: usize = 0,
+    capture_addr: ?u16 = 0,
     end_at_cycle: ?usize = null,
     verbose: bool = false,
 };
@@ -50,7 +52,7 @@ pub const Emulator = struct {
         bus.* = Bus.init();
         bus.enable_bank_switching = config.enable_bank_switching;
         const cpu = try allocator.create(CPU);
-
+        
         cpu.* = CPU.init(bus);
         const emulator: Emulator = .{
             .bus = bus,
@@ -119,6 +121,10 @@ pub const Emulator = struct {
 
     pub fn set_trace_config(self: *Emulator, config: DebugTraceConfig) void {
         self.trace_config = config;
+
+        // Activate tracing automatically if trace_start parameter is set
+        const enable = config.enable_trace or (config.start_at_cycle > 0) or (config.start_at_instr > 0);
+        self.trace_config.enable_trace = enable;
     }
 
     fn load_kernal_rom(self: *Emulator) !void {
@@ -175,7 +181,7 @@ pub const Emulator = struct {
     pub fn step(self: *Emulator, frame_buffer: []u8) bool {
         var quit = false;
         self.cpu.step();
-        self.print_debug_output();
+        self.print_trace();
 
         if (self.instruction_count % 10000 == 0 and !self.config.headless) {
             const r = self.renderer.?;
@@ -241,42 +247,57 @@ pub const Emulator = struct {
         });
     }
 
-    fn _print_debug_output(self: *Emulator) void {
-        const mem_window_size: i32 = @intCast(self.trace_config.print_mem_window_size);
-        const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - @divFloor(mem_window_size, 2)));
-        const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
 
-        if (self.trace_config.print_cpu_state) {
-            self.cpu.print_state();
-        }
+    fn print_trace(self: *Emulator) void {
+       
+        const cfg = self.trace_config;
+        const do_print_trace: bool = blk: {
+            const cycle = self.cpu.cycle_count;
+            const instr = self.cpu.instruction_count;
+            const addr = self.cpu.current_instruction.?.instruction_addr;
+            
+            if (cfg.capture_addr) |caddr| {
+                if (addr == caddr) {
+                    break :blk true;
+                } 
+            }
+            if (!cfg.enable_trace) {
+                break :blk false;
+            }
 
-        if (self.trace_config.print_stack) {
-            self.cpu.print_stack(self.trace_config.print_stack_limit);
-        }
-
-        if (self.trace_config.print_mem) {
-            self.cpu.bus.print_mem(start, @intCast(end));
-            self.cpu.bus.print_mem(0xc0, @intCast(0xc9));
-        }
-    }
-
-    fn print_debug_output(self: *Emulator) void {
-        if (self.trace_config.enable_trace and self.cpu.cycle_count >= self.trace_config.start_at_cycle) {
-            if (!self.trace_config.verbose) {
-                self.cpu.print_debug_info = false;
-                self.cpu.print_state_compact();
-                return;
-            } else if (self.trace_config.end_at_cycle) |end_cycle| {
-                if (self.cpu.cycle_count > end_cycle) {
-                    self.cpu.print_debug_info = false;
-                    self.trace_config.enable_trace = false;
-                    self._print_debug_output(); // print the output one last time to see the effect of the last instruction shown
-                    return;
+            if (cfg.end_at_cycle) |endc| {
+                if (cycle > endc) {
+                    break: blk false;
                 }
             }
-            if (self.trace_config.verbose) {
-                self.cpu.print_debug_info = true;
-                self._print_debug_output();
+
+            if (cfg.start_at_cycle > cfg.start_at_instr) {
+                break :blk cycle >= cfg.start_at_cycle;
+            } else {
+                break :blk instr >= cfg.start_at_instr;
+            }
+        };
+        
+        if (do_print_trace) {
+            if (cfg.verbose) {
+                const mem_window_size: i32 = @intCast(self.trace_config.print_mem_window_size);
+                const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - @divFloor(mem_window_size, 2)));
+                const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
+
+                if (self.trace_config.print_cpu_state) {
+                    self.cpu.print_state();
+                }
+
+                if (self.trace_config.print_stack) {
+                    self.cpu.print_stack(self.trace_config.print_stack_limit);
+                }
+
+                if (self.trace_config.print_mem) {
+                    self.cpu.bus.print_mem(start, @intCast(end));
+                    self.cpu.bus.print_mem(0xc0, @intCast(0xc9));
+                }
+            } else {
+                self.cpu.print_state_compact();
             }
         }
     }
