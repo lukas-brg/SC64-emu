@@ -45,11 +45,10 @@ pub const Emulator = struct {
     renderer: ?Renderer = null,
 
     pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
+        
         const bus = try allocator.create(Bus);
         bus.* = Bus.init();
         bus.enable_bank_switching = config.enable_bank_switching;
-        std.log.debug("Emulator.init() called", .{});
-        std.log.debug("Bank switching: {}", .{bus.enable_bank_switching});
         const cpu = try allocator.create(CPU);
 
         cpu.* = CPU.init(bus);
@@ -60,8 +59,12 @@ pub const Emulator = struct {
         };
 
         if (!config.headless) {
+            std.log.info("Starting emulator in windowed mode...", .{});
             emulator.renderer = Renderer.init(config.scaling_factor);
-        }
+        } else {
+            std.log.info("Starting emulator in headless mode...", .{});
+        } 
+        std.log.debug("Bank switching: {}", .{config.enable_bank_switching});
 
         cpu.print_debug_info = false; // This flag will be set based on the other parameters later in print_debug_output()
 
@@ -69,12 +72,12 @@ pub const Emulator = struct {
     }
 
     pub fn init_graphics(self: *Emulator) !void {
-        //try self.load_rom("data/c64_charset.bin", MemoryMap.character_rom_start);
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
         try self.load_character_rom("data/c64_charset.bin");
         self.clear_color_mem();
+        std.log.info("C64 graphics initialized", .{});
     }
 
     pub fn init_c64(self: *Emulator) !void {
@@ -90,7 +93,7 @@ pub const Emulator = struct {
         self.cpu.reset();
         try self.init_graphics();
         self.cpu.SP = 0xFF;
-        std.log.info("C64 init procedure complete", .{});
+        std.log.info("C64 init procedure completed", .{});
     }
 
     fn load_basic_rom(self: *Emulator) !void {
@@ -175,16 +178,15 @@ pub const Emulator = struct {
         self.cpu.clock_tick();
         self.print_debug_output();
 
-        if (self.renderer) |r| {
-            if (self.cycle_count % 10000 == 0) {
-                self.clear_screen_text_area(frame_buffer);
-                self.update_frame(frame_buffer);
-                const border_color = blk: {
-                    const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-                    break :blk colors.C64_COLOR_PALETTE[color_code];
-                };
-                r.render_frame(frame_buffer, border_color);
-            }
+        if (!self.config.headless and self.cycle_count % 10000 == 0) {
+            const r = self.renderer.?;
+            self.clear_screen_text_area(frame_buffer);
+            self.update_frame(frame_buffer);
+            const border_color = blk: {
+                const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
+                break :blk colors.C64_COLOR_PALETTE[color_code];
+            };
+            r.render_frame(frame_buffer, border_color);
 
             if (raylib.WindowShouldClose()) {
                 quit = true;
@@ -199,17 +201,32 @@ pub const Emulator = struct {
         self.cpu.reset();
 
         var frame_buffer: [3 * SCREEN_HEIGHT * SCREEN_WIDTH]u8 = undefined;
-        self.clear_screen_mem();
-        var quit = false;
 
+        if (!self.config.headless) self.clear_screen_mem();
+
+        var quit = false;
+        const starttime = std.time.milliTimestamp();
         while (!quit) {
             quit = self.step(&frame_buffer);
             if (limit_cycles) |max_cycles| {
                 if (self.cycle_count >= max_cycles) break;
             }
         }
+        const endtime = std.time.milliTimestamp();
 
-        std.log.info("{} cycles, {} instructions executed", .{ self.cpu._wait_cycles, self.cpu.cycle_count });
+        const runtime_ms = endtime - starttime;
+
+        const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
+        const freq_c = @as(f64, @floatFromInt(self.cpu._wait_cycles)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
+        const freq_i = @as(f64, @floatFromInt(self.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
+
+        std.log.info("Runtime: {d:0.3}s, {} cycles, {} instructions, avg. cycle freq: {d:0.3} MHz, avg instruction freq: {d:0.3} MHz", .{ 
+            runtime_s, 
+            self.cpu._wait_cycles, 
+            self.cpu.cycle_count, 
+            freq_c, 
+            freq_i, 
+        });
     }
 
     fn _print_debug_output(self: *Emulator) void {

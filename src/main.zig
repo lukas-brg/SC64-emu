@@ -90,8 +90,8 @@ pub fn main() !void {
         try emulator.init_graphics();
         defer emulator.deinit(allocator);
         const offset = res.args.offset orelse 0x1000;
+        emulator.cpu.set_reset_vector(res.args.pc orelse 0x1000);
         _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
-        //emulator.cpu.set_reset_vector(res.args.pc orelse 0x1000);
         try emulator.run(res.args.cycles);
         emulator.bus.print_mem(0x210, 0x211);
     } else {

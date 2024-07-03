@@ -125,7 +125,11 @@ pub const Bus = struct {
     fn access_mem_location(self: *Bus, addr: u16) MemoryLocation {
         const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port]);
         if (!self.enable_bank_switching) {
-            return .{ .val_ptr = @constCast(&self.ram[addr]), .read_only = false, .control_bits = banking_control_bits };
+            return .{
+                .val_ptr = @constCast(&self.ram[addr]),
+                .read_only = false,
+                .control_bits = banking_control_bits,
+            };
         }
 
         const ram_control_bits: u2 = @truncate(banking_control_bits & 3);
@@ -179,6 +183,10 @@ pub const Bus = struct {
             },
         }
 
-        return .{ .val_ptr = @constCast(val_ptr), .read_only = read_only, .control_bits = banking_control_bits };
+        return .{
+            .val_ptr = @constCast(val_ptr),
+            .read_only = read_only,
+            .control_bits = banking_control_bits,
+        };
     }
 };
