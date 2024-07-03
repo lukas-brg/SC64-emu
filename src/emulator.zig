@@ -49,7 +49,7 @@ pub const Emulator = struct {
     config: EmulatorConfig = .{},
     trace_config: DebugTraceConfig = .{},
     cycle_count: usize = 0,
-
+    renderer: ?Renderer = null,
 
     pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
         const bus = try allocator.create(Bus);
@@ -60,11 +60,15 @@ pub const Emulator = struct {
         const cpu = try allocator.create(CPU);
         
         cpu.* = CPU.init(bus);
-        const emulator: Emulator = .{
+        var emulator: Emulator = .{
             .bus = bus,
             .cpu = cpu,
             .config = config,
         };
+
+        if (!config.headless) {
+            emulator.renderer =  Renderer.init(config.scaling_factor);
+        }
 
         cpu.print_debug_info = false; // This flag will be set based on the other parameters later in print_debug_output()
 
@@ -88,8 +92,8 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
-        self.bus.write_16(0x00A0, 0x0800); // Points to BASIC start at $0801
-        self.bus.write_16(0x00A2, 0xA000); // Points to end of BASIC at $A000
+        // self.bus.write_16(0x00A0, 0x0800); // Points to BASIC start at $0801
+        // self.bus.write_16(0x00A2, 0xA000); // Points to end of BASIC at $A000
 
         self.cpu.reset();
         try self.init_graphics();        
@@ -119,9 +123,11 @@ pub const Emulator = struct {
         std.log.info("Loaded charset '{s}' into character rom", .{charset_path});
     }
 
+
     pub fn set_trace_config(self: *Emulator, config: DebugTraceConfig) void {
        self.trace_config = config;
     }
+
 
     fn load_kernal_rom(self: *Emulator) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -156,14 +162,14 @@ pub const Emulator = struct {
     pub fn clear_color_mem(self: *Emulator) void {
         @memset(
             self.bus.ram[MemoryMap.color_mem_start..MemoryMap.character_rom_end], 
-            self.bus.ram[MemoryMap.text_color]
+            self.bus.ram[MemoryMap.text_color],
         );  
     }
 
     pub fn clear_screen_mem(self: *Emulator) void {
         @memset(
             self.bus.ram[MemoryMap.screen_mem_start..MemoryMap.screen_mem_end], 
-            0x20
+            0x20,
         );       
     }
 
@@ -176,15 +182,48 @@ pub const Emulator = struct {
             frame_buffer[i*3+2] = bg_color.b;
         }
     }
-    
+
+
+    pub fn step(self: *Emulator, frame_buffer: []u8) bool {
+        var quit = false;
+        self.cpu.clock_tick();
+            self.print_debug_output();
+
+            if (self.renderer) |r| {
+                if (self.cycle_count % 10000 == 0){
+                    self.clear_screen_text_area(frame_buffer);
+                    self.update_frame(frame_buffer);
+                    const border_color = blk: {
+                        const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
+                        break :blk colors.C64_COLOR_PALETTE[color_code];
+                    };
+                    r.render_frame(frame_buffer, border_color);
+                }
+
+                if (raylib.WindowShouldClose()) {
+                    quit = true;
+                }
+            }
+
+            self.cycle_count += 1;
+            return quit;
+    }    
 
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
         self.cpu.reset();
-        if (self.config.headless) {
-            try self.run_headless(limit_cycles);
-        } else {
-            try self.run_windowed(limit_cycles);
+
+        var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
+        self.clear_screen_mem();
+        var quit = false;
+
+        while (!quit) {
+            quit = self.step(&frame_buffer);
+            if (limit_cycles) |max_cycles| {
+                if (self.cycle_count >= max_cycles) break;
+            }
         }
+
+        std.log.info("{} Cycles, {} Instructions executed", .{self.cpu._wait_cycles, self.cpu.cycle_count});
     }
 
 
@@ -232,53 +271,7 @@ pub const Emulator = struct {
     }
 
 
-    fn run_headless(self: *Emulator, limit_cycles: ?usize) !void {
-      
-        while (!self.cpu.halt) {
-            self.bus.write_io_ram(MemoryMap.raster_line_reg, 0);
-            self.cpu.clock_tick();
-            self.print_debug_output();
-         
-            self.cycle_count += 1;
-            if(limit_cycles) |max_cycles| {
-                if(self.cycle_count >= max_cycles) {
-                    break;
-                }
-            }
-        }
-        self.print_debug_output();
-    }
-    
 
-    pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
-        const renderer = Renderer.init(self.config.scaling_factor);
-        var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
-        self.clear_screen_mem();
-        
-        while (!raylib.WindowShouldClose() and !self.cpu.halt) {
-           
-            self.cpu.clock_tick();
-            self.print_debug_output();
-       
-            if (self.cycle_count % 10000 == 0){
-                self.clear_screen_text_area(&frame_buffer);
-                self.update_frame(&frame_buffer);
-                const border_color = blk: {
-                    const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-                    break :blk colors.C64_COLOR_PALETTE[color_code];
-                };
-                renderer.render_frame(&frame_buffer, border_color);
-            }
-
-            self.cycle_count += 1;
-            if (limit_cycles) |max_cycles| {
-                if (self.cycle_count >= max_cycles) break;
-            }
-        }
-
-        std.log.info("{} Cycles, {} Instructions executed", .{self.cpu._wait_cycles, self.cpu.cycle_count});
-    }   
-    
     
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
         self.bus.write_io_ram(MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
