@@ -187,27 +187,28 @@ pub const Emulator = struct {
     pub fn step(self: *Emulator, frame_buffer: []u8) bool {
         var quit = false;
         self.cpu.clock_tick();
-            self.print_debug_output();
+        self.print_debug_output();
 
-            if (self.renderer) |r| {
-                if (self.cycle_count % 10000 == 0){
-                    self.clear_screen_text_area(frame_buffer);
-                    self.update_frame(frame_buffer);
-                    const border_color = blk: {
-                        const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-                        break :blk colors.C64_COLOR_PALETTE[color_code];
-                    };
-                    r.render_frame(frame_buffer, border_color);
-                }
-
-                if (raylib.WindowShouldClose()) {
-                    quit = true;
-                }
+        if (self.renderer) |r| {
+            if (self.cycle_count % 10000 == 0){
+                self.clear_screen_text_area(frame_buffer);
+                self.update_frame(frame_buffer);
+                const border_color = blk: {
+                    const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
+                    break :blk colors.C64_COLOR_PALETTE[color_code];
+                };
+                r.render_frame(frame_buffer, border_color);
             }
 
-            self.cycle_count += 1;
-            return quit;
+            if (raylib.WindowShouldClose()) {
+                quit = true;
+            }
+        }
+
+        self.cycle_count += 1;
+        return quit;
     }    
+
 
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
         self.cpu.reset();
@@ -223,7 +224,7 @@ pub const Emulator = struct {
             }
         }
 
-        std.log.info("{} Cycles, {} Instructions executed", .{self.cpu._wait_cycles, self.cpu.cycle_count});
+        std.log.info("{} cycles, {} instructions executed", .{self.cpu._wait_cycles, self.cpu.cycle_count});
     }
 
 
@@ -271,8 +272,6 @@ pub const Emulator = struct {
     }
 
 
-
-    
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
         self.bus.write_io_ram(MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
                                                                         // as at some point it waits for the rasterline register to reach 0
