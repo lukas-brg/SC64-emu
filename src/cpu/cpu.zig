@@ -1,4 +1,3 @@
-
 const std = @import("std");
 const Bus = @import("../bus.zig").Bus;
 
@@ -9,7 +8,6 @@ const get_bit_at = @import("bitutils.zig").get_bit_at;
 const OpcodeInfo = @import("opcodes.zig").OpcodeInfo;
 const Instruction = @import("instruction.zig").Instruction;
 const get_instruction = @import("instruction.zig").get_instruction;
-
 
 const RESET_VECTOR = 0xFFFC;
 const IRQ_VECTOR = 0xFFFE;
@@ -28,32 +26,28 @@ pub const StatusFlag = enum(u3) {
     NEGATIVE,
 };
 
-
-pub fn print_disassembly_inline(cpu: CPU,  instruction: Instruction) void {
-    
+pub fn print_disassembly_inline(cpu: CPU, instruction: Instruction) void {
     const PC = instruction.instruction_addr;
     switch (instruction.addressing_mode) {
-        .ABSOLUTE => std.debug.print("{X:0>4}:  {s} ${X:0>4}{s: <4}", .{PC, instruction.mnemonic, instruction.operand_addr.?, ""}),
-        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X{s: <2}", .{PC, instruction.mnemonic, cpu.bus.read_16(PC+1), ""}),
-        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y{s: <2}", .{PC, instruction.mnemonic, cpu.bus.read_16(PC+1), ""}),
-        .IMPLIED, .ACCUMULATOR => std.debug.print("{X:0>4}:  {s}{s: <10}", .{PC, instruction.mnemonic,""}),
-        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4}){s: <2}", .{PC, instruction.mnemonic, cpu.bus.read_16(PC+1),""}),
-        .INDIRECT_Y => std.debug.print("{X:0>4}:  {s} (${X:0>2}),Y{s: <2}", .{PC, instruction.mnemonic, cpu.bus.read(PC+1),""}),
-        .INDIRECT_X => std.debug.print("{X:0>4}:  {s} (${X:0>2},X){s: <2}", .{PC, instruction.mnemonic, cpu.bus.read(PC+1),""}),
-        .IMMEDIATE => std.debug.print("{X:0>4}:  {s} #${X:0>2}{s: <5}", .{PC, instruction.mnemonic, instruction.operand.?,""}),
-        .ZEROPAGE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{PC, instruction.mnemonic, cpu.bus.read(PC+1),""}),
-        .ZEROPAGE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>2},Y{s: <4}", .{PC, instruction.mnemonic, cpu.bus.read(PC+1),""}),
-        .ZEROPAGE_X => std.debug.print("{X:0>4}:  {s} ${X:0>2},X{s: <4}", .{PC, instruction.mnemonic, cpu.bus.read(PC+1),""}),
-        .RELATIVE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{PC, instruction.mnemonic, cpu.bus.read(PC+1),""}),        
+        .ABSOLUTE => std.debug.print("{X:0>4}:  {s} ${X:0>4}{s: <4}", .{ PC, instruction.mnemonic, instruction.operand_addr.?, "" }),
+        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read_16(PC + 1), "" }),
+        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read_16(PC + 1), "" }),
+        .IMPLIED, .ACCUMULATOR => std.debug.print("{X:0>4}:  {s}{s: <10}", .{ PC, instruction.mnemonic, "" }),
+        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4}){s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read_16(PC + 1), "" }),
+        .INDIRECT_Y => std.debug.print("{X:0>4}:  {s} (${X:0>2}),Y{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
+        .INDIRECT_X => std.debug.print("{X:0>4}:  {s} (${X:0>2},X){s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
+        .IMMEDIATE => std.debug.print("{X:0>4}:  {s} #${X:0>2}{s: <5}", .{ PC, instruction.mnemonic, instruction.operand.?, "" }),
+        .ZEROPAGE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
+        .ZEROPAGE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>2},Y{s: <4}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
+        .ZEROPAGE_X => std.debug.print("{X:0>4}:  {s} ${X:0>2},X{s: <4}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
+        .RELATIVE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
     }
 }
 
-
-pub fn print_disassembly(cpu: CPU,  instruction: Instruction) void {
+pub fn print_disassembly(cpu: CPU, instruction: Instruction) void {
     print_disassembly_inline(cpu, instruction);
     std.debug.print("\n", .{});
 }
-
 
 pub const CPU = struct {
     /// Implementation of the 6502 microprocessor
@@ -88,7 +82,6 @@ pub const CPU = struct {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
         std.log.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
     }
-
 
     pub fn irq(self: *CPU) void {
         if (self.get_status_flag(StatusFlag.INTERRUPT_DISABLE) == 0) {
@@ -132,19 +125,16 @@ pub const CPU = struct {
         self.set_status_flag(StatusFlag.ZERO, @intFromBool(result == 0));
     }
 
-
     pub fn toggle_status_flag(self: *CPU, flag: StatusFlag) void {
         const bit_index = @intFromEnum(flag);
         self.status ^= (@as(u8, 1) << bit_index);
     }
 
-
     pub fn pop(self: *CPU) u8 {
         self.SP +%= 1;
-        if(self.SP == 0) std.log.warn("Stack overflow (Pop from empty stack)", .{});
+        if (self.SP == 0) std.log.warn("Stack overflow (Pop from empty stack)", .{});
         return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
-
 
     pub fn pop_16(self: *CPU) u16 {
         const low_byte = @as(u16, self.pop());
@@ -152,10 +142,9 @@ pub const CPU = struct {
         return (high_byte << 8) | low_byte;
     }
 
-
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
-        if(self.SP == 0) std.log.warn("Stack overflow (Push on full stack)", .{});
+        if (self.SP == 0) std.log.warn("Stack overflow (Push on full stack)", .{});
         self.SP -%= 1;
     }
 
@@ -174,72 +163,65 @@ pub const CPU = struct {
     pub fn set_reset_vector(self: *CPU, addr: u16) void {
         self.bus.write_16(RESET_VECTOR, addr);
     }
-    
+
     pub fn print_stack(self: *CPU, limit: usize) void {
         var sp_abs = STACK_BASE_POINTER + @as(u16, self.SP) + 1;
         var count: usize = 0;
         std.debug.print("STACK:\n", .{});
         while (sp_abs <= STACK_BASE_POINTER + 0xFF and count < limit) {
-            std.debug.print("{x:0>4}: {x:0>2}\n", .{sp_abs, self.bus.read(sp_abs)});
-            sp_abs+=1;
-            count+=1;
+            std.debug.print("{x:0>4}: {x:0>2}\n", .{ sp_abs, self.bus.read(sp_abs) });
+            sp_abs += 1;
+            count += 1;
         }
     }
 
-    
     pub fn clock_tick(self: *CPU) void {
-        
         const d_prev = self.get_status_flag(StatusFlag.DECIMAL);
-        if(self.print_debug_info) {
+        if (self.print_debug_info) {
             std.debug.print("==========================================================================================================================\n", .{});
-            std.debug.print("Clock Tick {} {}!\n", .{self.cycle_count, self._wait_cycles});
-            //std.debug.print("Reading instruction at 0x{x:0>4}\n", .{self.PC});
+            std.debug.print("Clock Tick {} {}!\n", .{ self.cycle_count, self._wait_cycles });
         }
         const opcode = self.fetch_byte();
-        const opcode_info = decode_opcode(opcode) orelse std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{opcode, self.PC});
+        const opcode_info = decode_opcode(opcode) orelse std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{ opcode, self.PC });
         const instruction_info = get_instruction(self, opcode_info);
         self.current_instruction = instruction_info;
-        
-        if(self.print_debug_info) {
-            //std.debug.print("Loaded opcode 0x{x:0>2}\n", .{opcode});
-            //std.debug.print("Instruction fetched ", .{});
+
+        if (self.print_debug_info) {
             print_disassembly(self.*, instruction_info);
             opcode_info.print();
             instruction_info.print();
         }
-        
+
         opcode_info.handler_fn(self, instruction_info);
         self.cycle_count += 1;
         const d_curr = self.get_status_flag(StatusFlag.DECIMAL);
-        if(d_curr != d_prev) {
-            if(d_curr == 1) {
+        if (d_curr != d_prev) {
+            if (d_curr == 1) {
                 std.log.debug("Decimal mode activated during instruction {s} no. {} at {X:0>4}", .{
                     instruction_info.mnemonic,
-                    self.cycle_count, 
-                    instruction_info.instruction_addr
+                    self.cycle_count,
+                    instruction_info.instruction_addr,
                 });
-
             } else {
                 std.log.debug("Decimal mode deactivated during instruction {s} no. {} at {X:0>4}", .{
-                    instruction_info.mnemonic, 
-                    self.cycle_count, 
-                    instruction_info.instruction_addr
+                    instruction_info.mnemonic,
+                    self.cycle_count,
+                    instruction_info.instruction_addr,
                 });
             }
         }
     }
 
-
     pub fn print_state_compact(self: CPU) void {
         const instruction = self.current_instruction orelse unreachable;
         print_disassembly_inline(self, instruction);
-        if(instruction.operand_addr) |addr| {
+        if (instruction.operand_addr) |addr| {
             std.debug.print(" {X:0>4}  ", .{addr});
         } else {
             std.debug.print("  --   ", .{});
         }
-        
-        if(instruction.operand) |op| {
+
+        if (instruction.operand) |op| {
             std.debug.print("{X:0>2}    ", .{op});
         } else {
             std.debug.print("--    ", .{});
@@ -259,14 +241,13 @@ pub const CPU = struct {
             self.cycle_count,
             self._wait_cycles,
         });
-        
-        for(instruction.instruction_addr..instruction.instruction_addr+instruction.bytes) |addr| {
+
+        for (instruction.instruction_addr..instruction.instruction_addr + instruction.bytes) |addr| {
             std.debug.print("{X:0>2} ", .{self.bus.read(@intCast(addr))});
         }
 
         std.debug.print("\n", .{});
     }
-
 
     pub fn print_state(self: CPU) void {
         std.debug.print("\n----------------------------------------------------", .{});
@@ -292,17 +273,8 @@ pub const CPU = struct {
 
         std.debug.print("\n\nSTATUS FLAGS:", .{});
         std.debug.print("\nN V - B D I Z C", .{});
-        
-        std.debug.print("\n{} {} {} {} {} {} {} {} ",.{
-            self.get_status_bit(7), 
-            self.get_status_bit(6), 
-            self.get_status_bit(5), 
-            self.get_status_bit(4), 
-            self.get_status_bit(3), 
-            self.get_status_bit(2), 
-            self.get_status_bit(1), 
-            self.get_status_bit(0) 
-        });
+
+        std.debug.print("\n{} {} {} {} {} {} {} {} ", .{ self.get_status_bit(7), self.get_status_bit(6), self.get_status_bit(5), self.get_status_bit(4), self.get_status_bit(3), self.get_status_bit(2), self.get_status_bit(1), self.get_status_bit(0) });
 
         std.debug.print("\n----------------------------------------------------\n\n", .{});
     }

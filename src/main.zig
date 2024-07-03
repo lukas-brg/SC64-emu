@@ -7,24 +7,20 @@ const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
 const DebugTraceConfig = @import("emulator.zig").DebugTraceConfig;
 const clap = @import("clap");
 
-
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const rom_data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
     return rom_data;
 }
 
-
 pub fn main() !void {
-    
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-   
+
     const allocator = gpa.allocator();
-    
+
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
-    
-    
+
     const params = comptime clap.parseParamsComptime(
         \\-h, --help             Display this help and exit.
         \\--ftest                Run a functional cpu test
@@ -52,65 +48,53 @@ pub fn main() !void {
         return err;
     };
     defer res.deinit();
-    
+
     const default_emu_config = EmulatorConfig{};
     const default_dbg_config = DebugTraceConfig{};
     const headless = res.args.headless != 0;
     const scaling_factor = res.args.scaling orelse default_emu_config.scaling_factor;
-    
+
     const trace_start = res.args.trace_start orelse default_dbg_config.start_at_cycle;
     const trace: bool = (res.args.trace != 0 or default_dbg_config.enable_trace) and (res.args.disable_trace == 0);
     const trace_end = res.args.trace_end;
-    
+
     const bank_switching = (res.args.nobankswitch == 0) and default_emu_config.enable_bank_switching;
     const verbose = (res.args.trace_verbose != 0) or default_dbg_config.verbose;
 
-    var emu_config = EmulatorConfig{
-        .headless = headless, 
-        .scaling_factor = scaling_factor, 
-        .enable_bank_switching = bank_switching
-    };
-    
-    const trace_config = DebugTraceConfig{
-        .enable_trace = trace, 
-        .start_at_cycle = trace_start, 
-        .end_at_cycle = trace_end, 
-        .verbose = verbose
-    };
-    
+    var emu_config = EmulatorConfig{ .headless = headless, .scaling_factor = scaling_factor, .enable_bank_switching = bank_switching };
+
+    const trace_config = DebugTraceConfig{ .enable_trace = trace, .start_at_cycle = trace_start, .end_at_cycle = trace_end, .verbose = verbose };
+
     if (res.args.help != 0) {
         return clap.help(std.io.getStdOut().writer(), clap.Help, &params, .{});
     }
 
-    if(res.args.ftest != 0) {
+    if (res.args.ftest != 0) {
         const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";
         const cycles = res.args.cycles;
-        
+
         emu_config.headless = true;
         var emulator = try Emulator.init(allocator, emu_config);
-        
+
         defer emulator.deinit(allocator);
         emulator.set_trace_config(trace_config);
         emulator.bus.enable_bank_switching = false;
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
         try emulator.run(cycles);
-    }                                                                          
-    else if (res.args.rom) |rom_path| {
-        
+    } else if (res.args.rom) |rom_path| {
         emu_config.enable_bank_switching = false;
         var emulator = try Emulator.init(allocator, emu_config);
-        
+
         emulator.set_trace_config(trace_config);
         try emulator.init_graphics();
         defer emulator.deinit(allocator);
         const offset = res.args.offset orelse 0x1000;
         _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
-        emulator.cpu.set_reset_vector( res.args.pc orelse 0x1000);
+        //emulator.cpu.set_reset_vector(res.args.pc orelse 0x1000);
         try emulator.run(res.args.cycles);
         emulator.bus.print_mem(0x210, 0x211);
-    }
-    else {
+    } else {
         var emulator = try Emulator.init(allocator, emu_config);
         emulator.set_trace_config(trace_config);
         defer emulator.deinit(allocator);
@@ -119,17 +103,15 @@ pub fn main() !void {
     }
 }
 
-
 fn test_init_reset_vector(bus: *Bus) void {
     // Reset vector to 0x2010
     bus.write(0xfffc, 0x10);
     bus.write(0xfffd, 0x20);
 }
 
-
 test "loading reset vector into pc" {
     const assert = std.debug.assert;
-    var bus = Bus{};  
+    var bus = Bus{};
     var cpu = c.CPU.init(&bus);
     test_init_reset_vector(&bus);
     cpu.reset();
@@ -165,7 +147,6 @@ test "stack operations" {
     assert(cpu.pop() == 0x4D);
 }
 
-
 test "test opcode lookup" {
     const assert = std.debug.assert;
     const decode_opcode = @import("cpu/opcodes.zig").decode_opcode;
@@ -176,7 +157,6 @@ test "test opcode lookup" {
     const instruction = decode_opcode(0xEA);
     assert(std.mem.eql(u8, instruction.op_name, "NOP"));
 }
-
 
 test "cpu and bus allocation" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -197,4 +177,4 @@ test "cpu and bus allocation" {
     std.debug.assert(emulator.bus == emulator.cpu.bus);
 
     emulator.deinit(allocator);
-} 
+}
