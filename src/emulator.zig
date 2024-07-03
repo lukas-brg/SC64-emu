@@ -1,26 +1,16 @@
 const std = @import("std");
-const CPU = @import("cpu/cpu.zig").CPU;
-const DEBUG_CPU = true;
-const Bus = @import("bus.zig").Bus;
 
+const raylib = @import("raylib.zig");
+
+const CPU = @import("cpu/cpu.zig").CPU;
+const Bus = @import("bus.zig").Bus;
 const MemoryMap = @import("bus.zig").MemoryMap;
 const bitutils = @import("cpu/bitutils.zig");
 const colors = @import("colors.zig");
 
 
-//const raylib = @import("raylib.zig");
-const raylib = @cImport({
-    @cInclude("raylib.h");
-});
-//const sdl = @import("sdl2");
-
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
-
-
-pub const FRAME_SIZE_X = 14;
-pub const FRAME_SIZE_Y = 12;
+pub const BORDER_SIZE_X = 14;
+pub const BORDER_SIZE_Y = 12;
 
 const SCREEN_WIDTH = 320;
 const SCREEN_HEIGHT = 200;
@@ -50,8 +40,8 @@ pub const DebugTraceConfig = struct {
     start_at_cycle: usize = 0,
     end_at_cycle: ?usize = null, 
     verbose: bool = false,
-
 };
+
 
 pub const Emulator = struct {
 
@@ -165,22 +155,24 @@ pub const Emulator = struct {
     }
 
     pub fn clear_color_mem(self: *Emulator) void {
-        for (MemoryMap.color_mem_start..MemoryMap.color_mem_end) |addr| {
-            self.bus.write(@intCast(addr), self.bus.read(MemoryMap.text_color));
-        }       
+        @memset(
+            self.bus.ram[MemoryMap.color_mem_start..MemoryMap.character_rom_end], 
+            self.bus.ram[MemoryMap.text_color]
+        );  
     }
 
     pub fn clear_screen_mem(self: *Emulator) void {
-        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end) |addr| {
-            self.bus.write(@intCast(addr), 0x20);
-        }       
+        @memset(
+            self.bus.ram[MemoryMap.screen_mem_start..MemoryMap.screen_mem_end], 
+            0x20
+        );       
     }
 
     pub fn clear_screen_text_area(self: *Emulator, frame_buffer: []u8) void {
         const color_code: u4 = @truncate(self.bus.read(MemoryMap.bg_color));
         const bg_color = colors.C64_COLOR_PALETTE[color_code];
         for (0..SCREEN_HEIGHT*SCREEN_WIDTH) |i| {
-            frame_buffer[i*3] = bg_color.r;
+            frame_buffer[i*3  ] = bg_color.r;
             frame_buffer[i*3+1] = bg_color.g; 
             frame_buffer[i*3+2] = bg_color.b;
         }
@@ -215,6 +207,7 @@ pub const Emulator = struct {
             self.cpu.bus.print_mem(0xc0, @intCast(0xc9));        
         }
     }
+
 
     fn print_debug_output(self: *Emulator) void {
         if(self.trace_config.enable_trace and self.cycle_count >= self.trace_config.start_at_cycle) {
@@ -256,104 +249,64 @@ pub const Emulator = struct {
         }
         self.print_debug_output();
     }
- 
-
+    
+    
     pub fn run_windowed(self: *Emulator, limit_cycles: ?usize) !void {
-        // const width = 800;
-        // const height = 450;
-
-        // raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT);
-        // raylib.InitWindow(width, height, "zig raylib example");
+        const scale = self.config.scaling_factor;
+        const win_w: c_int = @intFromFloat((SCREEN_WIDTH  + 2*BORDER_SIZE_X) * scale);
+        const win_h: c_int = @intFromFloat((SCREEN_HEIGHT + 2*BORDER_SIZE_Y) * scale);
+        raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT | raylib.FLAG_WINDOW_RESIZABLE);
+        raylib.InitWindow(win_w, win_h, "SC64 Emulator");
         
-        const pitch: c_int = SCREEN_WIDTH * 3;
-        if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
-            sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
-            return error.SDLInitializationFailed;
-        }
-        defer sdl.SDL_Quit();
-
-        const screen = sdl.SDL_CreateWindow("SC64 Emulator", 
-            sdl.SDL_WINDOWPOS_UNDEFINED, 
-            sdl.SDL_WINDOWPOS_UNDEFINED, 
-            @intFromFloat(@as(f16, (2*FRAME_SIZE_X+320)) * self.config.scaling_factor), 
-            @intFromFloat(@as(f16, (2*FRAME_SIZE_Y+200)) * self.config.scaling_factor), 
-            sdl.SDL_WINDOW_OPENGL) 
-        orelse {
-            sdl.SDL_Log("Unable to create window: %s", sdl.SDL_GetError());
-            return error.SDLInitializationFailed;
-        };
-        defer sdl.SDL_DestroyWindow(screen);
+        const texture = raylib.LoadTextureFromImage(raylib.Image{
+            .data = null,
+            .width = SCREEN_WIDTH,
+            .height = SCREEN_HEIGHT,
+            .mipmaps = 1,
+            .format = raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8,
+        });
         
-      
-        const renderer = sdl.SDL_CreateRenderer(screen, -1, sdl.SDL_RENDERER_ACCELERATED) orelse {
-            sdl.SDL_Log("Unable to create renderer: %s", sdl.SDL_GetError());
-            return error.SDLInitializationFailed;
-        };
-        defer sdl.SDL_DestroyRenderer(renderer);
-
-        const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-        const frame_color = colors.C64_COLOR_PALETTE[color_code];
-
-        _ = sdl.SDL_SetRenderDrawColor(renderer, frame_color.r, frame_color.g, frame_color.b, 255);
-
-        _ = sdl.SDL_RenderClear(renderer);
-        _ = sdl.SDL_RenderSetScale(renderer, self.config.scaling_factor, self.config.scaling_factor);
-        
-        const texture = sdl.SDL_CreateTexture(renderer, sdl.SDL_PIXELFORMAT_RGB24, sdl.SDL_TEXTUREACCESS_STREAMING, 320, 200) orelse {
-            sdl.SDL_Log("Unable to create texture: %s", sdl.SDL_GetError());
-            return error.SDLInitializationFailed;
-        };
-        defer sdl.SDL_DestroyTexture(texture);
-
-
         var frame_buffer: [3*SCREEN_HEIGHT*SCREEN_WIDTH]u8 = undefined;
-
-        const screen_rect = sdl.SDL_Rect{
-            .w = SCREEN_WIDTH, 
-            .h = SCREEN_HEIGHT, 
-            .x = FRAME_SIZE_X, 
-            .y = FRAME_SIZE_Y
-        };
- 
-
         self.clear_screen_mem();
-        //clear_screen_text_area(&frame_buffer);
-        var quit = false;
 
-        while (!self.cpu.halt and !quit) {
-            var event: sdl.SDL_Event = undefined;
-            while (sdl.SDL_PollEvent(&event) != 0) {
-                switch (event.type) {
-                    sdl.SDL_QUIT => {
-                        quit = true;
-                    },
-                    else => {},
-                }
-            }
-
-
+        while (!raylib.WindowShouldClose() and !self.cpu.halt) {
+           
             self.cpu.clock_tick();
             self.print_debug_output();
         
-            if(self.cycle_count % 10000 == 0){
-                _ = sdl.SDL_RenderClear(renderer);
+            if (self.cycle_count % 10000 == 0){
                 self.clear_screen_text_area(&frame_buffer);
                 self.update_frame(&frame_buffer);
-            
-                _ = sdl.SDL_UpdateTexture(texture, null, @ptrCast(&frame_buffer), pitch);
-                _ = sdl.SDL_RenderCopy(renderer, texture, null, &screen_rect);
-                sdl.SDL_RenderPresent(renderer);
+                raylib.UpdateTexture(texture, &frame_buffer);
+                
+                const border_color: raylib.Color = blk: {
+                    const ccode: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
+                    const color = colors.C64_COLOR_PALETTE[ccode];
+                    break :blk .{
+                        .r = color.r,
+                        .g = color.g,
+                        .b = color.b,
+                        .a = 255,
+                    };
+                };
+
+                raylib.BeginDrawing();
+                defer raylib.EndDrawing();
+                
+                raylib.ClearBackground(border_color);
+                raylib.DrawTextureEx(texture, raylib.Vector2{
+                    .x = BORDER_SIZE_X * scale,
+                    .y = BORDER_SIZE_Y * scale,
+                }, 0.0, scale, raylib.WHITE);
             }
 
             self.cycle_count += 1;
-            if(limit_cycles) |max_cycles| {
-                if(self.cycle_count >= max_cycles) {
-                    break;
-                }
+            if (limit_cycles) |max_cycles| {
+                if (self.cycle_count >= max_cycles) break;
             }
-        }    
+        }
 
-         
+        std.log.info("{} Cycles, {} Instructions executed", .{self.cpu._wait_cycles, self.cpu.cycle_count});
     }   
     
     

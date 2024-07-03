@@ -550,7 +550,37 @@ pub fn sbc(cpu: *CPU, instruction: Instruction) void {
         const v_flag: u1  = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
         cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
         cpu.update_zero(cpu.A);
-    } 
+
+    } else {
+        const operand = instruction.operand.?;
+
+        const carry = cpu.get_status_flag(StatusFlag.CARRY);
+        const temp_result = @addWithOverflow(cpu.A, operand);
+        const temp_result_with_carry = @addWithOverflow(temp_result[0], carry);
+
+        var result: u8 = temp_result_with_carry[0];
+        var carry_out: u1 = temp_result_with_carry[1];
+
+        const low_nibble = (result & 0x0F);
+        const high_nibble = (result >> 4);
+
+        if (low_nibble > 9) {
+            result = @addWithOverflow(result, 6)[0];
+        }
+        if (high_nibble > 9 or carry_out != 0) {
+            result = @addWithOverflow(result, 0x60)[0];
+            carry_out = 1; 
+        } else {
+            carry_out = 0; 
+        }
+
+        cpu.A = result & 0xFF;
+        cpu.set_status_flag(StatusFlag.CARRY, carry_out);
+        cpu.update_negative(cpu.A);
+        const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
+        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        cpu.update_zero(cpu.A);
+    }
     
     cpu.PC += instruction.bytes;
     cpu._wait_cycles += instruction.cycles;    
