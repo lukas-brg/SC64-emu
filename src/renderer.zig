@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const raylib = @import("raylib.zig");
 
 const MemoryMap = @import("bus.zig").MemoryMap;
@@ -20,6 +22,7 @@ pub const Renderer = struct {
     }
 
     pub fn init_window(self: *Renderer) void {
+        
         const scale = self.scale;
         const win_w: c_int = @intFromFloat((SCREEN_WIDTH + 2 * BORDER_SIZE_X) * scale);
         const win_h: c_int = @intFromFloat((SCREEN_HEIGHT + 2 * BORDER_SIZE_Y) * scale);
@@ -41,6 +44,7 @@ pub const Renderer = struct {
             .mipmaps = 1,
             .format = raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8,
         });
+       
     }
 
     pub fn render_frame(self: Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {

@@ -46,7 +46,7 @@ pub fn adc(cpu: *CPU, instruction: Instruction) void {
     cpu.update_zero(cpu.A);
 
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 // Zig won't let me use 'and' as a function name, hence the inconsistent naming
@@ -55,7 +55,7 @@ pub fn and_fn(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(cpu.A);
     cpu.update_zero(cpu.A);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn asl(cpu: *CPU, instruction: Instruction) void {
@@ -65,13 +65,13 @@ pub fn asl(cpu: *CPU, instruction: Instruction) void {
             result = cpu.A << 1;
             cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(cpu.A, 7));
             cpu.A = result;
-            cpu._wait_cycles += instruction.cycles;
+            cpu.instruction_remaining_cycles += instruction.cycles;
         },
         else => {
             result = instruction.operand.? << 1;
             cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(instruction.operand.?, 7));
             cpu.bus.write(instruction.operand_addr.?, result);
-            cpu._wait_cycles += instruction.cycles;
+            cpu.instruction_remaining_cycles += instruction.cycles;
         },
     }
 
@@ -84,80 +84,80 @@ pub fn asl(cpu: *CPU, instruction: Instruction) void {
 pub fn bcc(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
 pub fn bcs(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.CARRY) == 1) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
 pub fn beq(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.ZERO) == 1) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
 pub fn bmi(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 1) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
 pub fn bne(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.ZERO) == 0) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
 pub fn bpl(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 0) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
 pub fn bvc(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 0) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
 pub fn bvs(cpu: *CPU, instruction: Instruction) void {
     if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 1) {
         cpu.PC = instruction.operand_addr.?;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
         cpu.PC += instruction.bytes;
-        cpu._wait_cycles += instruction.cycles;
+        cpu.instruction_remaining_cycles += instruction.cycles;
     }
 }
 
@@ -169,7 +169,7 @@ pub fn brk(cpu: *CPU, instruction: Instruction) void {
     cpu.push(status_byte);
     cpu.set_status_flag(StatusFlag.INTERRUPT_DISABLE, 1);
 
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 
     //cpu.PC += instruction.bytes;
     cpu.PC = cpu.bus.read_16(0xFFFE);
@@ -182,31 +182,31 @@ pub fn bit(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.OVERFLOW, bitutils.get_bit_at(operand, 6));
     cpu.update_zero(operand & cpu.A);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn clc(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.CARRY, 0);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cld(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.DECIMAL, 0);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cli(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.INTERRUPT_DISABLE, 0);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn clv(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.OVERFLOW, 0);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cmp(cpu: *CPU, instruction: Instruction) void {
@@ -219,7 +219,7 @@ pub fn cmp(cpu: *CPU, instruction: Instruction) void {
     const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
     cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cpx(cpu: *CPU, instruction: Instruction) void {
@@ -232,7 +232,7 @@ pub fn cpx(cpu: *CPU, instruction: Instruction) void {
     const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
     cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cpy(cpu: *CPU, instruction: Instruction) void {
@@ -245,7 +245,7 @@ pub fn cpy(cpu: *CPU, instruction: Instruction) void {
     const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
     cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn dec(cpu: *CPU, instruction: Instruction) void {
@@ -254,7 +254,7 @@ pub fn dec(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn dex(cpu: *CPU, instruction: Instruction) void {
@@ -264,7 +264,7 @@ pub fn dex(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn dey(cpu: *CPU, instruction: Instruction) void {
@@ -273,7 +273,7 @@ pub fn dey(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn eor(cpu: *CPU, instruction: Instruction) void {
@@ -282,7 +282,7 @@ pub fn eor(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn inc(cpu: *CPU, instruction: Instruction) void {
@@ -291,7 +291,7 @@ pub fn inc(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn inx(cpu: *CPU, instruction: Instruction) void {
@@ -300,7 +300,7 @@ pub fn inx(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn iny(cpu: *CPU, instruction: Instruction) void {
@@ -309,24 +309,24 @@ pub fn iny(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn jmp(cpu: *CPU, instruction: Instruction) void {
     cpu.PC = instruction.operand_addr.?;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn jsr(cpu: *CPU, instruction: Instruction) void {
     cpu.push_16(cpu.PC + 2);
     cpu.PC = instruction.operand_addr.?;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn lda(cpu: *CPU, instruction: Instruction) void {
     cpu.A = instruction.operand.?;
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
     cpu.update_negative(cpu.A);
     cpu.update_zero(cpu.A);
 }
@@ -334,7 +334,7 @@ pub fn lda(cpu: *CPU, instruction: Instruction) void {
 pub fn ldx(cpu: *CPU, instruction: Instruction) void {
     cpu.X = instruction.operand.?;
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
     cpu.update_negative(cpu.X);
     cpu.update_zero(cpu.X);
 }
@@ -342,7 +342,7 @@ pub fn ldx(cpu: *CPU, instruction: Instruction) void {
 pub fn ldy(cpu: *CPU, instruction: Instruction) void {
     cpu.Y = instruction.operand.?;
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
     cpu.update_negative(cpu.Y);
     cpu.update_zero(cpu.Y);
 }
@@ -359,12 +359,12 @@ pub fn lsr(cpu: *CPU, instruction: Instruction) void {
     cpu.update_zero(result);
     cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(instruction.operand.?, 0));
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn nop(cpu: *CPU, instruction: Instruction) void {
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn ora(cpu: *CPU, instruction: Instruction) void {
@@ -373,14 +373,14 @@ pub fn ora(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(result);
     cpu.update_zero(result);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn pha(cpu: *CPU, instruction: Instruction) void {
     const accumulator = cpu.A;
     cpu.push(accumulator);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn php(cpu: *CPU, instruction: Instruction) void {
@@ -390,7 +390,7 @@ pub fn php(cpu: *CPU, instruction: Instruction) void {
     status = set_bit_at(status, 5, 1);
     cpu.push(status);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn pla(cpu: *CPU, instruction: Instruction) void {
@@ -398,7 +398,7 @@ pub fn pla(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(cpu.A);
     cpu.update_zero(cpu.A);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn plp(cpu: *CPU, instruction: Instruction) void {
@@ -407,7 +407,7 @@ pub fn plp(cpu: *CPU, instruction: Instruction) void {
     status = set_bit_at(status, 5, 1);
     cpu.status = status;
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn ror(cpu: *CPU, instruction: Instruction) void {
@@ -423,7 +423,7 @@ pub fn ror(cpu: *CPU, instruction: Instruction) void {
     }
 
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn rol(cpu: *CPU, instruction: Instruction) void {
@@ -440,7 +440,7 @@ pub fn rol(cpu: *CPU, instruction: Instruction) void {
     }
 
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn rti(cpu: *CPU, instruction: Instruction) void {
@@ -471,12 +471,12 @@ pub fn rti(cpu: *CPU, instruction: Instruction) void {
 
     cpu.status = status;
     cpu.PC = cpu.pop_16();
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn rts(cpu: *CPU, instruction: Instruction) void {
     cpu.PC = cpu.pop_16() + 1;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sbc(cpu: *CPU, instruction: Instruction) void {
@@ -527,45 +527,45 @@ pub fn sbc(cpu: *CPU, instruction: Instruction) void {
     }
 
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sec(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.CARRY, 1);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sed(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.DECIMAL, 1);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sei(cpu: *CPU, instruction: Instruction) void {
     cpu.set_status_flag(StatusFlag.INTERRUPT_DISABLE, 1);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sta(cpu: *CPU, instruction: Instruction) void {
     cpu.bus.write(instruction.operand_addr.?, cpu.A);
 
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn stx(cpu: *CPU, instruction: Instruction) void {
     cpu.bus.write(instruction.operand_addr.?, cpu.X);
 
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sty(cpu: *CPU, instruction: Instruction) void {
     cpu.bus.write(instruction.operand_addr.?, cpu.Y);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn tax(cpu: *CPU, instruction: Instruction) void {
@@ -573,7 +573,7 @@ pub fn tax(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(cpu.X);
     cpu.update_zero(cpu.X);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn tay(cpu: *CPU, instruction: Instruction) void {
@@ -581,7 +581,7 @@ pub fn tay(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(cpu.Y);
     cpu.update_zero(cpu.Y);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn tsx(cpu: *CPU, instruction: Instruction) void {
@@ -589,7 +589,7 @@ pub fn tsx(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(cpu.X);
     cpu.update_zero(cpu.X);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn txa(cpu: *CPU, instruction: Instruction) void {
@@ -597,13 +597,13 @@ pub fn txa(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(cpu.A);
     cpu.update_zero(cpu.A);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn txs(cpu: *CPU, instruction: Instruction) void {
     cpu.SP = cpu.X;
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn tya(cpu: *CPU, instruction: Instruction) void {
@@ -611,7 +611,7 @@ pub fn tya(cpu: *CPU, instruction: Instruction) void {
     cpu.update_negative(cpu.A);
     cpu.update_zero(cpu.A);
     cpu.PC += instruction.bytes;
-    cpu._wait_cycles += instruction.cycles;
+    cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn dummy(cpu: *CPU, instruction: Instruction) void {

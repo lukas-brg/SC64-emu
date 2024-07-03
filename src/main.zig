@@ -1,4 +1,4 @@
-const std = @import("std");
+pub const std = @import("std");
 const c = @import("cpu/cpu.zig");
 const Bus = @import("bus.zig").Bus;
 const CPU = @import("cpu/cpu.zig").CPU;
@@ -6,6 +6,16 @@ const Emulator = @import("emulator.zig").Emulator;
 const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
 const DebugTraceConfig = @import("emulator.zig").DebugTraceConfig;
 const clap = @import("clap");
+const builtin = @import("builtin");
+
+pub const std_options: std.Options = .{
+    .log_level = switch (builtin.mode) {
+        .Debug => std.log.Level.debug,
+        .ReleaseSafe, .ReleaseFast, .ReleaseSmall => .info,
+    },
+};
+
+
 
 pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const rom_data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
@@ -15,7 +25,7 @@ pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-
+   
     const allocator = gpa.allocator();
 
     const args = try std.process.argsAlloc(allocator);

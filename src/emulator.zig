@@ -41,7 +41,7 @@ pub const Emulator = struct {
     cpu: *CPU,
     config: EmulatorConfig = .{},
     trace_config: DebugTraceConfig = .{},
-    cycle_count: usize = 0,
+    instruction_count: usize = 0,
     renderer: ?Renderer = null,
 
     pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
@@ -52,7 +52,7 @@ pub const Emulator = struct {
         const cpu = try allocator.create(CPU);
 
         cpu.* = CPU.init(bus);
-        var emulator: Emulator = .{
+        const emulator: Emulator = .{
             .bus = bus,
             .cpu = cpu,
             .config = config,
@@ -60,7 +60,6 @@ pub const Emulator = struct {
 
         if (!config.headless) {
             std.log.info("Starting emulator in windowed mode...", .{});
-            emulator.renderer = Renderer.init(config.scaling_factor);
         } else {
             std.log.info("Starting emulator in headless mode...", .{});
         } 
@@ -175,10 +174,10 @@ pub const Emulator = struct {
 
     pub fn step(self: *Emulator, frame_buffer: []u8) bool {
         var quit = false;
-        self.cpu.clock_tick();
+        self.cpu.step();
         self.print_debug_output();
 
-        if (!self.config.headless and self.cycle_count % 10000 == 0) {
+        if (self.instruction_count % 10000 == 0 and !self.config.headless) {
             const r = self.renderer.?;
             self.clear_screen_text_area(frame_buffer);
             self.update_frame(frame_buffer);
@@ -193,7 +192,7 @@ pub const Emulator = struct {
             }
         }
 
-        self.cycle_count += 1;
+        self.instruction_count += 1;
         return quit;
     }
 
@@ -202,14 +201,19 @@ pub const Emulator = struct {
 
         var frame_buffer: [3 * SCREEN_HEIGHT * SCREEN_WIDTH]u8 = undefined;
 
-        if (!self.config.headless) self.clear_screen_mem();
+        if (!self.config.headless) {
+            self.clear_screen_mem();
+            std.log.info("Initializing renderer.......", .{});
+            self.renderer = Renderer.init(self.config.scaling_factor);
+            std.log.info("Renderer initialized!", .{});
+        }    
 
         var quit = false;
         const starttime = std.time.milliTimestamp();
         while (!quit) {
             quit = self.step(&frame_buffer);
             if (limit_cycles) |max_cycles| {
-                if (self.cycle_count >= max_cycles) break;
+                if (self.cpu.cycle_count >= max_cycles) break;
             }
         }
         const endtime = std.time.milliTimestamp();
@@ -217,15 +221,23 @@ pub const Emulator = struct {
         const runtime_ms = endtime - starttime;
 
         const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
-        const freq_c = @as(f64, @floatFromInt(self.cpu._wait_cycles)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
-        const freq_i = @as(f64, @floatFromInt(self.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
-
-        std.log.info("Runtime: {d:0.3}s, {} cycles, {} instructions, avg. cycle freq: {d:0.3} MHz, avg instruction freq: {d:0.3} MHz", .{ 
-            runtime_s, 
-            self.cpu._wait_cycles, 
-            self.cpu.cycle_count, 
-            freq_c, 
-            freq_i, 
+        const freq_c = @as(f64, @floatFromInt(self.cpu.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
+        const freq_i = @as(f64, @floatFromInt(self.instruction_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
+      
+        std.log.info(
+            \\Quitting Emulator.
+            \\         > Runtime:               {d:0.3}s
+            \\         > Cycles completed:      {} 
+            \\         > Instructions executed: {}
+            \\         > Avg. cycle freq:       {d:0.3} MHz
+            \\         > Avg. instruction freq: {d:0.3} MHz
+            ,
+            .{ 
+                runtime_s, 
+                self.cpu.cycle_count, 
+                self.cpu.instruction_count, 
+                freq_c, 
+                freq_i, 
         });
     }
 
@@ -249,13 +261,13 @@ pub const Emulator = struct {
     }
 
     fn print_debug_output(self: *Emulator) void {
-        if (self.trace_config.enable_trace and self.cycle_count >= self.trace_config.start_at_cycle) {
+        if (self.trace_config.enable_trace and self.cpu.cycle_count >= self.trace_config.start_at_cycle) {
             if (!self.trace_config.verbose) {
                 self.cpu.print_debug_info = false;
                 self.cpu.print_state_compact();
                 return;
             } else if (self.trace_config.end_at_cycle) |end_cycle| {
-                if (self.cycle_count > end_cycle) {
+                if (self.cpu.cycle_count > end_cycle) {
                     self.cpu.print_debug_info = false;
                     self.trace_config.enable_trace = false;
                     self._print_debug_output(); // print the output one last time to see the effect of the last instruction shown

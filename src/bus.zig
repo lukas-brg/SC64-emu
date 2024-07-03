@@ -67,7 +67,7 @@ pub const Bus = struct {
         if (!mem_location.read_only) {
             mem_location.val_ptr.* = val;
         } else {
-            std.log.warn("Trying to write to rom at {X}, writing to ram instead. Control bits: {b:0>3}", .{ addr, mem_location.control_bits });
+            std.log.debug("Trying to write to rom at {X}, writing to ram instead. Control bits: {b:0>3}", .{ addr, mem_location.control_bits });
             self.ram[addr] = val;
         }
     }
