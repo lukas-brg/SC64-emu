@@ -19,10 +19,8 @@ pub fn get_operand_address(cpu: *CPU, opcode: OpcodeInfo) u16 {
         .RELATIVE => blk: {
             const offset: u8 = cpu.bus.read(cpu.PC + 1);
             if ((offset & 0x80) != 0) {
-                //const signed_offset =  -1 * (0x100 - offset);
                 break :blk cpu.PC + opcode.bytes - (0x100 - @as(u16, offset));
-            }
-            else {
+            } else {
                 break :blk cpu.PC + opcode.bytes + offset;
             }
         },
@@ -65,7 +63,7 @@ pub const Instruction = struct {
 };
 
 fn page_boundary_crossed(cpu: *CPU, addr: u16) bool {
-    // A page boundary is crossed when the high byte changes
+    // A page boundary is crossed when the high byte differs
     return (cpu.PC & 0xFF00) != (addr & 0xFF00);
 }
 

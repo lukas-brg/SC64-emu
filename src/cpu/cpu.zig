@@ -188,40 +188,37 @@ pub const CPU = struct {
     pub fn step(self: *CPU) void {
         self.instruction_remaining_cycles = 0;
         const d_prev = self.get_status_flag(StatusFlag.DECIMAL);
-        if (self.print_debug_info) {
-            std.debug.print("==========================================================================================================================\n", .{});
-            std.debug.print("Clock Tick {} {}!\n", .{ self.instruction_count, self.cycle_count });
-        }
+      
         const opcode = self.fetch_byte();
         
         const opcode_info = decode_opcode(opcode) orelse { 
             std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{ opcode, self.PC });
         };
        
-        const instruction_info = get_instruction(self, opcode_info);
-        self.current_instruction = instruction_info;
+        const instruction = get_instruction(self, opcode_info);
+        self.current_instruction = instruction;
         if (self.print_debug_info) {
-            print_disassembly(self.*, instruction_info);
+            print_disassembly(self.*, instruction);
             opcode_info.print();
-            instruction_info.print();
+            instruction.print();
         }
 
-        opcode_info.handler_fn(self, instruction_info);
+        opcode_info.handler_fn(self, instruction);
         self.cycle_count += self.instruction_remaining_cycles;
         self.instruction_count += 1;
         const d_curr = self.get_status_flag(StatusFlag.DECIMAL);
         if (d_curr != d_prev) {
             if (d_curr == 1) {
                 std.log.debug("Decimal mode activated during instruction {s} no. {} at {X:0>4}", .{
-                    instruction_info.mnemonic,
+                    instruction.mnemonic,
                     self.instruction_count,
-                    instruction_info.instruction_addr,
+                    instruction.instruction_addr,
                 });
             } else {
                 std.log.debug("Decimal mode deactivated during instruction {s} no. {} at {X:0>4}", .{
-                    instruction_info.mnemonic,
+                    instruction.mnemonic,
                     self.instruction_count,
-                    instruction_info.instruction_addr,
+                    instruction.instruction_addr,
                 });
             }
         }

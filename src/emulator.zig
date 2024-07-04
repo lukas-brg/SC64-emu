@@ -13,6 +13,8 @@ const SCREEN_HEIGHT = @import("renderer.zig").SCREEN_HEIGHT;
 const BORDER_SIZE_X = @import("renderer.zig").BORDER_SIZE_X;
 const BORDER_SIZE_Y = @import("renderer.zig").BORDER_SIZE_Y;
 
+var sigint_recieved: std.atomic.Bool = false;
+
 fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
     return data;
@@ -88,8 +90,9 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
-        // self.bus.write_16(0x00A0, 0x0800); // Points to BASIC start at $0801
-        // self.bus.write_16(0x00A2, 0xA000); // Points to end of BASIC at $A000
+        self.bus.write_16(0x281, 0x0800); // Points to BASIC start at $0801
+        self.bus.write_16(0x283, 0xA000); // Points to BASIC start at $0801
+        //self.bus.write_16(0x00A2, 0xA000); // Points to end of BASIC at $A000
 
         self.cpu.reset();
         try self.init_graphics();
@@ -141,6 +144,7 @@ pub const Emulator = struct {
     pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
         allocator.destroy(self.bus);
         allocator.destroy(self.cpu);
+        std.log.info("All resources deallocated", .{});
     }
 
     pub fn load_rom(self: *Emulator, rom_path: []const u8, offset: u16) !void {
@@ -178,23 +182,32 @@ pub const Emulator = struct {
         }
     }
 
+    fn catch_sigint(self: *Emulator) void {
+        std.debug.print("\nReceived signal: {}\n", .{});
+        _ = self;
+        sigint_recieved = true;
+    }
+
+
     pub fn step(self: *Emulator, frame_buffer: []u8) bool {
         var quit = false;
         self.cpu.step();
         self.print_trace();
 
-        if (self.instruction_count % 10000 == 0 and !self.config.headless) {
-            const r = self.renderer.?;
-            self.clear_screen_text_area(frame_buffer);
-            self.update_frame(frame_buffer);
-            const border_color = blk: {
-                const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-                break :blk colors.C64_COLOR_PALETTE[color_code];
-            };
-            r.render_frame(frame_buffer, border_color);
+        if (self.instruction_count % 70000 == 0) {
+            if(self.renderer) |*r| {
+                self.clear_screen_text_area(frame_buffer);
+                self.update_frame(frame_buffer);
+                const border_color = blk: {
+                    const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
+                    break :blk colors.C64_COLOR_PALETTE[color_code];
+                };
+                r.render_frame(frame_buffer, border_color);
 
-            if (raylib.WindowShouldClose()) {
-                quit = true;
+                if (raylib.WindowShouldClose()) {
+                    std.log.info("Window close event detected - Stopping execution...", .{});
+                    quit = true;
+                } 
             }
         }
 
@@ -204,7 +217,7 @@ pub const Emulator = struct {
 
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
         self.cpu.reset();
-
+        // std.posix.sigaction(std.posix.SIG.INT, noalias act: ?*const Sigaction, noalias oact: ?*Sigaction)
         var frame_buffer: [3 * SCREEN_HEIGHT * SCREEN_WIDTH]u8 = undefined;
 
         if (!self.config.headless) {
@@ -219,7 +232,10 @@ pub const Emulator = struct {
         while (!quit) {
             quit = self.step(&frame_buffer);
             if (limit_cycles) |max_cycles| {
-                if (self.cpu.cycle_count >= max_cycles) break;
+                if (self.cpu.cycle_count >= max_cycles) {
+                    std.log.info("Cycle limit reached: {} >= {} - Stopping execution...", .{self.cpu.cycle_count, max_cycles});
+                    break;  
+                } 
             }
         }
         const endtime = std.time.milliTimestamp();
@@ -241,13 +257,25 @@ pub const Emulator = struct {
         const fmt_runtime_s: u6 = @intCast(@divTrunc(fmt_runtime_ms, 1000));
         fmt_runtime_ms = @rem(fmt_runtime_ms, 1000);
 
+        const n_frames: u64 = blk: {
+            if (self.renderer) |*r| {
+                break :blk @intCast(r.n_frames_rendered);
+            } else {
+                break :blk 0;
+            }
+        };
+
+        const framerate = @as(f64, @floatFromInt(n_frames)) / runtime_s;
+
         std.log.info(
-            \\Quitting Emulator.
-            \\         > Runtime:               {}:{d:0>2}:{d:0>2}:{d:0>3} / {d:0.3}s
-            \\         > Cycles completed:      {} 
-            \\         > Instructions executed: {}
-            \\         > Avg. cycle freq:       {d:0.3} MHz
-            \\         > Avg. instruction freq: {d:0.3} MHz
+            \\Emulator execution stopped:
+            \\       > Runtime: (h:m:s:ms)     {}:{d:0>2}:{d:0>2}:{d:0>3} / {d:0.3}s
+            \\       > Cycles completed:       {} 
+            \\       > Instructions executed:  {}
+            \\       > Avg. clock speed:       {d:0.3} MHz
+            \\       > Avg. instruction rate:  {d:0.3} MIPS
+            \\       > Frames rendered:        {}
+            \\       > Avg. framerate:         {d:0.2} FPS
             ,
             .{ 
                 fmt_runtime_h,
@@ -259,6 +287,8 @@ pub const Emulator = struct {
                 self.cpu.instruction_count, 
                 freq_c, 
                 freq_i, 
+                n_frames,
+                framerate,
         });
     }
 

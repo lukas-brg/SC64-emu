@@ -14,10 +14,12 @@ pub const SCREEN_HEIGHT = 200;
 pub const Renderer = struct {
     scale: f32,
     screen_texture: raylib.struct_Texture = undefined,
+    n_frames_rendered: usize = 0,
 
     pub fn init(scaling_factor: f32) Renderer {
         var renderer = Renderer{ .scale = scaling_factor };
         renderer.init_window();
+        std.debug.print("Renderer init\n", .{});
         return renderer;
     }
 
@@ -47,7 +49,7 @@ pub const Renderer = struct {
        
     }
 
-    pub fn render_frame(self: Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {
+    pub fn render_frame(self: *Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {
         raylib.UpdateTexture(self.screen_texture, frame_buffer.ptr);
 
         const ray_border_color: raylib.Color = .{
@@ -65,5 +67,6 @@ pub const Renderer = struct {
             .x = BORDER_SIZE_X * self.scale,
             .y = BORDER_SIZE_Y * self.scale,
         }, 0.0, self.scale, raylib.WHITE);
+        self.n_frames_rendered += 1;
     }
 };

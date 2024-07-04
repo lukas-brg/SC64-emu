@@ -1,10 +1,12 @@
 const Emulator = @import("emulator.zig").Emulator;
 const CPU = @import("cpu/cpu.zig").CPU;
 
-const DebuggerConfig = struct {
-    start_at_instruction: usize,
+const BreakPoint = union(enum) {
+    addr: u16, // Break at PC=addr;
+    instruction: usize, // Break at instruction no.
+    cycle: usize,  // Break at cycle no. 
+    disasm: []u8, // Break when disasm regex matches the dissassembly of an instruction
 };
 
-pub fn run_terminal_debugger(config: DebuggerConfig) !void {
-    _ = config;
+pub fn run_terminal_debugger() !void {
 }
