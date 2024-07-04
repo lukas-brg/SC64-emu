@@ -229,16 +229,31 @@ pub const Emulator = struct {
         const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
         const freq_c = @as(f64, @floatFromInt(self.cpu.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
         const freq_i = @as(f64, @floatFromInt(self.instruction_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
-      
+
+        
+        // Casting to unsigned values because otherwise the formatter will display '+' signs
+        var fmt_runtime_ms: u64 = @intCast(runtime_ms);
+        
+        const fmt_runtime_h: u16 = @intCast(@divTrunc(fmt_runtime_ms, 3600000));
+        fmt_runtime_ms = @rem(fmt_runtime_ms, 3600000);
+        const fmt_runtime_m: u6 = @intCast(@divTrunc(fmt_runtime_ms, 60000));
+        fmt_runtime_ms = @rem(fmt_runtime_ms, 60000);
+        const fmt_runtime_s: u6 = @intCast(@divTrunc(fmt_runtime_ms, 1000));
+        fmt_runtime_ms = @rem(fmt_runtime_ms, 1000);
+
         std.log.info(
             \\Quitting Emulator.
-            \\         > Runtime:               {d:0.3}s
+            \\         > Runtime:               {}:{d:0>2}:{d:0>2}:{d:0>3} / {d:0.3}s
             \\         > Cycles completed:      {} 
             \\         > Instructions executed: {}
             \\         > Avg. cycle freq:       {d:0.3} MHz
             \\         > Avg. instruction freq: {d:0.3} MHz
             ,
             .{ 
+                fmt_runtime_h,
+                fmt_runtime_m,
+                fmt_runtime_s,
+                fmt_runtime_ms,
                 runtime_s, 
                 self.cpu.cycle_count, 
                 self.cpu.instruction_count, 
@@ -251,6 +266,7 @@ pub const Emulator = struct {
     fn print_trace(self: *Emulator) void {
        
         const cfg = self.trace_config;
+        
         const do_print_trace: bool = blk: {
             const cycle = self.cpu.cycle_count;
             const instr = self.cpu.instruction_count;

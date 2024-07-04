@@ -12,7 +12,6 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
-    
     });
     
     exe.root_module.addAnonymousImport("clap", .{ .root_source_file =  b.path("lib/clap/clap.zig")});

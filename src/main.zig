@@ -39,7 +39,7 @@ pub fn main() !void {
         \\-o, --offset <u16>         Specify the starting position of the custom rom
         \\-s, --scaling <f32>        Specify a scaling factor, as 320x200 will be very small on modern screens
         \\-c, --cycles <usize>       Specify the number of cycles to be executed
-        \\-i, --instructions         Specify the number of instructions to be executed
+        \\-i, --instructions <usize> Specify the number of instructions to be executed
         \\-d, --disable_trace        Disable debug trace
         \\-t, --trace                Enable debug trace
         \\--trace_start <usize>      Start debug trace at cycle no 

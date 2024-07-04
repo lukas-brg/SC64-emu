@@ -13,7 +13,7 @@ pub const SCREEN_HEIGHT = 200;
 
 pub const Renderer = struct {
     scale: f32,
-    texture: raylib.struct_Texture = undefined,
+    screen_texture: raylib.struct_Texture = undefined,
 
     pub fn init(scaling_factor: f32) Renderer {
         var renderer = Renderer{ .scale = scaling_factor };
@@ -37,7 +37,7 @@ pub const Renderer = struct {
         const y = @divFloor(monitor_h, 2) - @divFloor(win_h, 2);
         raylib.SetWindowPosition(x, y);
 
-        self.texture = raylib.LoadTextureFromImage(raylib.Image{
+        self.screen_texture = raylib.LoadTextureFromImage(raylib.Image{
             .data = null,
             .width = SCREEN_WIDTH,
             .height = SCREEN_HEIGHT,
@@ -48,7 +48,7 @@ pub const Renderer = struct {
     }
 
     pub fn render_frame(self: Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {
-        raylib.UpdateTexture(self.texture, frame_buffer.ptr);
+        raylib.UpdateTexture(self.screen_texture, frame_buffer.ptr);
 
         const ray_border_color: raylib.Color = .{
             .r = border_color.r,
@@ -61,7 +61,7 @@ pub const Renderer = struct {
         defer raylib.EndDrawing();
 
         raylib.ClearBackground(ray_border_color);
-        raylib.DrawTextureEx(self.texture, raylib.Vector2{
+        raylib.DrawTextureEx(self.screen_texture, raylib.Vector2{
             .x = BORDER_SIZE_X * self.scale,
             .y = BORDER_SIZE_Y * self.scale,
         }, 0.0, self.scale, raylib.WHITE);

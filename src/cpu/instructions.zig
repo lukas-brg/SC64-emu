@@ -455,19 +455,19 @@ pub fn rti(cpu: *CPU, instruction: Instruction) void {
             @intFromEnum(StatusFlag.BREAK),
         ),
     );
-    status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.UNUSED), get_bit_at(cpu.status, @intFromEnum(StatusFlag.UNUSED)));
+   // status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.UNUSED), get_bit_at(cpu.status, @intFromEnum(StatusFlag.UNUSED)));
 
-    // status = blk: {
-    //     const nbit = @intFromEnum(StatusFlag.BREAK);
-    //     const statusbit = bitutils.get_bit_at(cpu.status, nbit);
-    //     break :blk bitutils.set_bit_at(status, nbit, statusbit);
-    // };
+    status = blk: {
+        const nbit = @intFromEnum(StatusFlag.BREAK);
+        const statusbit = bitutils.get_bit_at(cpu.status, nbit);
+        break :blk bitutils.set_bit_at(status, nbit, statusbit);
+    };
 
-    // status = blk: {
-    //     const nbit = @intFromEnum(StatusFlag.UNUSED);
-    //     const statusbit = bitutils.get_bit_at(cpu.status, nbit);
-    //     break :blk bitutils.set_bit_at(status, nbit, statusbit);
-    // };
+    status = blk: {
+        const nbit = @intFromEnum(StatusFlag.UNUSED);
+        const statusbit = bitutils.get_bit_at(cpu.status, nbit);
+        break :blk bitutils.set_bit_at(status, nbit, statusbit);
+    };
 
     cpu.status = status;
     cpu.PC = cpu.pop_16();
