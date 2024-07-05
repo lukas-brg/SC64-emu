@@ -1,6 +1,8 @@
 const std = @import("std");
 const bitutils = @import("cpu/bitutils.zig");
 
+const log_bus = std.log.scoped(.bus);
+
 const MEM_SIZE: u17 = 0x10000;
 
 pub const MemoryMap = enum {
@@ -56,18 +58,18 @@ pub const Bus = struct {
     pub fn write(self: *Bus, addr: u16, val: u8) void {
         const mem_location = self.access_mem_location(addr);
         if (addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
-            std.debug.print("Writing to character rom {X:0>4}\n", .{addr});
+            log_bus.err("Writing to character rom at {X:0>4}\n", .{addr});
         }
 
         if (addr == MemoryMap.processor_port and ((val & 7) != (self.ram[addr] & 7))) {
             const new_control_bits: u3 = @truncate(val);
-            std.log.debug("Bank switch. Control bits changed from {b:0>3} to {b:0>3}", .{ mem_location.control_bits, new_control_bits });
+            log_bus.debug("Bank switch. Control bits changed from [{b:0>3}] to [{b:0>3}]", .{ mem_location.control_bits, new_control_bits });
         }
 
         if (!mem_location.read_only) {
             mem_location.val_ptr.* = val;
         } else {
-            std.log.debug("Trying to write to rom at {X}, writing to ram instead. Control bits: {b:0>3}", .{ addr, mem_location.control_bits });
+            log_bus.debug("Trying to write to rom at ({X}), writing to ram instead. Control bits: [{b:0>3}]", .{ addr, mem_location.control_bits });
             self.ram[addr] = val;
         }
     }

@@ -9,6 +9,9 @@ const OpcodeInfo = @import("opcodes.zig").OpcodeInfo;
 const Instruction = @import("instruction.zig").Instruction;
 const get_instruction = @import("instruction.zig").get_instruction;
 
+const log_cpu = std.log.scoped(.cpu);
+
+
 const RESET_VECTOR = 0xFFFC;
 const IRQ_VECTOR = 0xFFFE;
 const NMI_VECTOR = 0xFFFA;
@@ -81,7 +84,7 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
-        std.log.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
+        log_cpu.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
     }
 
     pub fn irq(self: *CPU) void {
@@ -90,9 +93,9 @@ pub const CPU = struct {
             self.status = bitutils.set_bit_at(self.status, StatusFlag.UNUSED, 0);
             self.push(self.status);
             self.PC = self.bus.read_16(IRQ_VECTOR);
-            std.log.debug("IRQ");
+            log_cpu.debug("IRQ");
         } else {
-            std.log.debug("IRQ (masked)");
+            log_cpu.debug("IRQ (masked)");
         }
     }
 
@@ -101,7 +104,7 @@ pub const CPU = struct {
         self.status = bitutils.set_bit_at(self.status, StatusFlag.UNUSED, 0);
         self.push(self.status);
         self.PC = self.bus.read_16(NMI_VECTOR);
-        std.log.debug("NMI");
+        log_cpu.debug("NMI");
     }
 
     fn get_status_bit(self: CPU, bit_index: u3) u1 {
@@ -133,7 +136,12 @@ pub const CPU = struct {
 
     pub fn pop(self: *CPU) u8 {
         self.SP +%= 1;
-        if (self.SP == 0) std.log.warn("Stack overflow (Pop from empty stack)", .{});
+        if (self.SP == 0) log_cpu.debug("Stack overflow (Pop)  [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+                    self.current_instruction.?.instruction_addr,
+                    self.current_instruction.?.mnemonic,
+                    self.cycle_count,
+                    self.instruction_count,
+                });
         return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
 
@@ -145,7 +153,12 @@ pub const CPU = struct {
 
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
-        if (self.SP == 0) std.log.warn("Stack overflow (Push on full stack)", .{});
+        if (self.SP == 0) log_cpu.debug("Stack overflow (Push) [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+                    self.current_instruction.?.instruction_addr,
+                    self.current_instruction.?.mnemonic,
+                    self.cycle_count,
+                    self.instruction_count,
+                });
         self.SP -%= 1;
     }
 
@@ -209,16 +222,18 @@ pub const CPU = struct {
         const d_curr = self.get_status_flag(StatusFlag.DECIMAL);
         if (d_curr != d_prev) {
             if (d_curr == 1) {
-                std.log.debug("Decimal mode activated during instruction {s} no. {} at {X:0>4}", .{
-                    instruction.mnemonic,
-                    self.instruction_count,
+                log_cpu.debug("Decimal mode activated.   [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
                     instruction.instruction_addr,
+                    instruction.mnemonic,
+                    self.cycle_count,
+                    self.instruction_count,
                 });
             } else {
-                std.log.debug("Decimal mode deactivated during instruction {s} no. {} at {X:0>4}", .{
-                    instruction.mnemonic,
-                    self.instruction_count,
+                log_cpu.debug("Decimal mode deactivated. [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
                     instruction.instruction_addr,
+                    instruction.mnemonic,
+                    self.cycle_count,
+                    self.instruction_count,
                 });
             }
         }
@@ -234,12 +249,12 @@ pub const CPU = struct {
         }
 
         if (instruction.operand) |op| {
-            std.debug.print("{X:0>2}    ", .{op});
+            std.debug.print("{X:0>2}  ", .{op});
         } else {
-            std.debug.print("--    ", .{});
+            std.debug.print("--  ", .{});
         }
 
-        std.debug.print("AC={X:0>2}  XR={X:0>2}  YR={X:0>2}  SP={X:0>2}  |  n={} v={} d={} i={} z={} c={}  |  {} {}   ", .{
+        std.debug.print("|  AC={X:0>2}  XR={X:0>2}  YR={X:0>2}  SP={X:0>2}  |  n={} v={} d={} i={} z={} c={}  |  {} {}  |  ", .{
             self.A,
             self.X,
             self.Y,

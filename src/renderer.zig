@@ -11,16 +11,24 @@ pub const BORDER_SIZE_Y = 12;
 pub const SCREEN_WIDTH = 320;
 pub const SCREEN_HEIGHT = 200;
 
+const log_renderer = std.log.scoped(.renderer);
+
 pub const Renderer = struct {
     scale: f32,
     screen_texture: raylib.struct_Texture = undefined,
     n_frames_rendered: usize = 0,
+    __window_close: bool = false,
 
     pub fn init(scaling_factor: f32) Renderer {
+        log_renderer.info("Initializing Renderer...", .{});
         var renderer = Renderer{ .scale = scaling_factor };
         renderer.init_window();
-        std.debug.print("Renderer init\n", .{});
+        log_renderer.info("Renderer initialized" ,.{});
         return renderer;
+    }
+
+    pub fn window_should_close(self: *Renderer) bool {
+        return self.__window_close;
     }
 
     pub fn init_window(self: *Renderer) void {
@@ -46,10 +54,16 @@ pub const Renderer = struct {
             .mipmaps = 1,
             .format = raylib.PIXELFORMAT_UNCOMPRESSED_R8G8B8,
         });
-       
+
+        log_renderer.info("Window created successfully.", .{});
     }
 
     pub fn render_frame(self: *Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {
+        if(raylib.WindowShouldClose()) {
+            self.__window_close = true;
+            return;
+        }
+        
         raylib.UpdateTexture(self.screen_texture, frame_buffer.ptr);
 
         const ray_border_color: raylib.Color = .{
