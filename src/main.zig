@@ -111,7 +111,6 @@ pub fn main() !void {
     } else if (res.args.rom) |rom_path| {
         emu_config.enable_bank_switching = false;
         var emulator = try Emulator.init(allocator, emu_config);
-
         emulator.set_trace_config(trace_config);
         try emulator.init_graphics();
         defer emulator.deinit(allocator);

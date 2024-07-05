@@ -1,4 +1,6 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
 const raylib = @import("raylib.zig");
 
 const CPU = @import("cpu/cpu.zig").CPU;
@@ -13,7 +15,12 @@ const SCREEN_HEIGHT = @import("renderer.zig").SCREEN_HEIGHT;
 const BORDER_SIZE_X = @import("renderer.zig").BORDER_SIZE_X;
 const BORDER_SIZE_Y = @import("renderer.zig").BORDER_SIZE_Y;
 
-var sigint_recieved: std.atomic.Bool = false;
+var sigint_received: bool = false;
+
+export fn catch_sigint(_: i32) void {
+    sigint_received = true;
+}
+
 
 fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
@@ -78,14 +85,14 @@ pub const Emulator = struct {
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
-        try self.load_character_rom("data/c64_charset.bin");
+        self.load_character_rom("data/c64_charset.bin");
         self.clear_color_mem();
         std.log.info("C64 graphics initialized", .{});
     }
 
     pub fn init_c64(self: *Emulator) !void {
-        try self.load_basic_rom();
-        try self.load_kernal_rom();
+        self.load_basic_rom() catch std.debug.panic("Couldn't load BASIC rom", .{});
+        self.load_kernal_rom() catch std.debug.panic("Couldn't load BASIC rom", .{});
 
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
@@ -111,12 +118,16 @@ pub const Emulator = struct {
         std.log.info("Loaded BASIC rom", .{});
     }
 
-    fn load_character_rom(self: *Emulator, charset_path: []const u8) !void {
+    fn load_character_rom(self: *Emulator, charset_path: []const u8) void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
         const allocator = gpa.allocator();
-        const rom_data = try load_file_data(charset_path, allocator);
+        
+        const rom_data = load_file_data(charset_path, allocator) catch {
+            std.debug.panic("Couldn't load charset {s}", .{charset_path});
+        };
+
         @memcpy(self.bus.character_rom[0..], rom_data);
         allocator.free(rom_data);
         std.log.info("Loaded charset '{s}' into character rom", .{charset_path});
@@ -182,12 +193,6 @@ pub const Emulator = struct {
         }
     }
 
-    fn catch_sigint(self: *Emulator) void {
-        std.debug.print("\nReceived signal: {}\n", .{});
-        _ = self;
-        sigint_recieved = true;
-    }
-
 
     pub fn step(self: *Emulator, frame_buffer: []u8) bool {
         var quit = false;
@@ -214,10 +219,22 @@ pub const Emulator = struct {
         self.instruction_count += 1;
         return quit;
     }
-
+    
+ 
     pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
+       
+        var act = std.posix.Sigaction{ 
+            .handler = .{ .handler = catch_sigint },
+            .mask = std.posix.empty_sigset,
+            .flags = 0,
+        };
+
+        std.posix.sigaction(std.posix.SIG.INT, &act, null) catch {
+            std.log.warn("Unable to create SIGINT handler on os: {s}", .{@tagName(builtin.os.tag)});
+        };
+        
         self.cpu.reset();
-        // std.posix.sigaction(std.posix.SIG.INT, noalias act: ?*const Sigaction, noalias oact: ?*Sigaction)
+        
         var frame_buffer: [3 * SCREEN_HEIGHT * SCREEN_WIDTH]u8 = undefined;
 
         if (!self.config.headless) {
@@ -230,7 +247,7 @@ pub const Emulator = struct {
         var quit = false;
         const starttime = std.time.milliTimestamp();
         while (!quit) {
-            quit = self.step(&frame_buffer);
+            quit = self.step(&frame_buffer) or sigint_received;
             if (limit_cycles) |max_cycles| {
                 if (self.cpu.cycle_count >= max_cycles) {
                     std.log.info("Cycle limit reached: {} >= {} - Stopping execution...", .{self.cpu.cycle_count, max_cycles});
@@ -238,6 +255,11 @@ pub const Emulator = struct {
                 } 
             }
         }
+
+        if (sigint_received) {
+            std.log.info("Received signal SIGINT - Stopping execution...", .{});
+        }
+
         const endtime = std.time.milliTimestamp();
 
         const runtime_ms = endtime - starttime;
