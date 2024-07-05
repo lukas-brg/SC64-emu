@@ -107,7 +107,7 @@ pub fn main() !void {
         emulator.bus.enable_bank_switching = false;
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
-        try emulator.run(cycles);
+        try emulator.run_ftest(cycles);
     } else if (res.args.rom) |rom_path| {
         emu_config.enable_bank_switching = false;
         var emulator = try Emulator.init(allocator, emu_config);

@@ -479,6 +479,9 @@ pub fn rts(cpu: *CPU, instruction: Instruction) void {
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
+
+
+
 pub fn sbc(cpu: *CPU, instruction: Instruction) void {
     const a_operand = cpu.A;
 
@@ -496,34 +499,32 @@ pub fn sbc(cpu: *CPU, instruction: Instruction) void {
         cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
         cpu.update_zero(cpu.A);
     } else {
+        const c_in = cpu.get_status_flag(StatusFlag.CARRY);
         const operand = instruction.operand.?;
+        const carry_in_add = @addWithOverflow(~operand, c_in);
 
-        const carry = cpu.get_status_flag(StatusFlag.CARRY);
-        const temp_result = @addWithOverflow(cpu.A, operand);
-        const temp_result_with_carry = @addWithOverflow(temp_result[0], carry);
-
-        var result: u8 = temp_result_with_carry[0];
-        var carry_out: u1 = temp_result_with_carry[1];
-
-        const low_nibble = (result & 0x0F);
-        const high_nibble = (result >> 4);
-
-        if (low_nibble > 9) {
-            result = @addWithOverflow(result, 6)[0];
-        }
-        if (high_nibble > 9 or carry_out != 0) {
-            result = @addWithOverflow(result, 0x60)[0];
-            carry_out = 1;
-        } else {
-            carry_out = 0;
-        }
-
-        cpu.A = result & 0xFF;
-        cpu.set_status_flag(StatusFlag.CARRY, carry_out);
+        const result_carry = @addWithOverflow(cpu.A, carry_in_add[0]);
+        const binres = result_carry[0];
+        cpu.A = result_carry[0];
+        const c_out: u1 = result_carry[1] | carry_in_add[1];
+        cpu.set_status_flag(StatusFlag.CARRY, c_out);
         cpu.update_negative(cpu.A);
         const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
         cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
         cpu.update_zero(cpu.A);
+
+        var decres = binres;
+
+        if (bitutils.did_carry_into_bit(a_operand, operand, binres, 4)) {
+            //res_lo +%= 0xA;
+            decres = (binres & 0xf0) | ((binres +% 0xfa) & 0xf);
+        }
+
+        if (c_out == 0) {
+            decres -= 0x60;
+        }
+
+        cpu.A = decres;
     }
 
     cpu.PC += instruction.bytes;

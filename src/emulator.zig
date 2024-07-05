@@ -9,6 +9,8 @@ const MemoryMap = @import("bus.zig").MemoryMap;
 const bitutils = @import("cpu/bitutils.zig");
 const colors = @import("colors.zig");
 const Renderer = @import("renderer.zig").Renderer;
+const instruction = @import("cpu/instruction.zig");
+const print_disassembly_inline = @import("cpu/cpu.zig").print_disassembly_inline;
 
 const SCREEN_WIDTH = @import("renderer.zig").SCREEN_WIDTH;
 const SCREEN_HEIGHT = @import("renderer.zig").SCREEN_HEIGHT;
@@ -219,11 +221,9 @@ pub const Emulator = struct {
         self.instruction_count += 1;
         return quit;
     }
-    
- 
-    pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
-       
-        var act = std.posix.Sigaction{ 
+
+    fn create_sigint_handler() void {
+         var act = std.posix.Sigaction{ 
             .handler = .{ .handler = catch_sigint },
             .mask = std.posix.empty_sigset,
             .flags = 0,
@@ -232,6 +232,12 @@ pub const Emulator = struct {
         std.posix.sigaction(std.posix.SIG.INT, &act, null) catch {
             std.log.warn("Unable to create SIGINT handler on os: {s}", .{@tagName(builtin.os.tag)});
         };
+    }
+    
+
+    pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
+       
+        create_sigint_handler();
         
         self.cpu.reset();
         
@@ -255,63 +261,55 @@ pub const Emulator = struct {
                 } 
             }
         }
+        const endtime = std.time.milliTimestamp();
 
         if (sigint_received) {
             std.log.info("Received signal SIGINT - Stopping execution...", .{});
         }
 
+        const runtime_ms = endtime - starttime;
+        self.log_runtime_stats(runtime_ms);
+    }
+
+
+    /// Like run but automatically detects infinite loop and stops execution
+    pub fn run_ftest(self: *Emulator, limit_cycles: ?usize) !void {
+        create_sigint_handler();
+        self.cpu.reset();
+        var frame_buffer: [3 * SCREEN_HEIGHT * SCREEN_WIDTH]u8 = undefined;
+        var quit = false;
+        
+        const starttime = std.time.milliTimestamp();
+        var pc_prev: u16 = undefined;
+        var cpu_state_prev: CPU = self.cpu.*;
+        while (!quit) {
+            pc_prev = self.cpu.PC;
+            quit = self.step(&frame_buffer) or sigint_received;
+            if (pc_prev == self.cpu.PC) {
+                std.log.err("Functional test failed! - Stopping execution", .{});
+                cpu_state_prev.print_state_compact();
+                self.cpu.print_state_compact();
+                break;
+            }
+
+            cpu_state_prev = self.cpu.*; // Todo: make tracing functions return strings, so a list of recent traces can be stored
+                                          // instead of copying the whole cpu
+
+            if (limit_cycles) |max_cycles| {
+                if (self.cpu.cycle_count >= max_cycles) {
+                    std.log.info("Cycle limit reached: {} >= {} - Stopping execution...", .{self.cpu.cycle_count, max_cycles});
+                    break;  
+                } 
+            }
+        }
         const endtime = std.time.milliTimestamp();
 
+        if (sigint_received) {
+            std.log.info("Received signal SIGINT - Stopping execution...", .{});
+        }
+
         const runtime_ms = endtime - starttime;
-
-        const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
-        const freq_c = @as(f64, @floatFromInt(self.cpu.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
-        const freq_i = @as(f64, @floatFromInt(self.instruction_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
-
-        
-        // Casting to unsigned values because otherwise the formatter will display '+' signs
-        var fmt_runtime_ms: u64 = @intCast(runtime_ms);
-        
-        const fmt_runtime_h: u16 = @intCast(@divTrunc(fmt_runtime_ms, 3600000));
-        fmt_runtime_ms = @rem(fmt_runtime_ms, 3600000);
-        const fmt_runtime_m: u6 = @intCast(@divTrunc(fmt_runtime_ms, 60000));
-        fmt_runtime_ms = @rem(fmt_runtime_ms, 60000);
-        const fmt_runtime_s: u6 = @intCast(@divTrunc(fmt_runtime_ms, 1000));
-        fmt_runtime_ms = @rem(fmt_runtime_ms, 1000);
-
-        const n_frames: u64 = blk: {
-            if (self.renderer) |*r| {
-                break :blk @intCast(r.n_frames_rendered);
-            } else {
-                break :blk 0;
-            }
-        };
-
-        const framerate = @as(f64, @floatFromInt(n_frames)) / runtime_s;
-
-        std.log.info(
-            \\Emulator execution stopped:
-            \\       > Runtime: (h:m:s:ms)     {}:{d:0>2}:{d:0>2}:{d:0>3} / {d:0.3}s
-            \\       > Cycles completed:       {} 
-            \\       > Instructions executed:  {}
-            \\       > Avg. clock speed:       {d:0.3} MHz
-            \\       > Avg. instruction rate:  {d:0.3} MIPS
-            \\       > Frames rendered:        {}
-            \\       > Avg. framerate:         {d:0.2} FPS
-            ,
-            .{ 
-                fmt_runtime_h,
-                fmt_runtime_m,
-                fmt_runtime_s,
-                fmt_runtime_ms,
-                runtime_s, 
-                self.cpu.cycle_count, 
-                self.cpu.instruction_count, 
-                freq_c, 
-                freq_i, 
-                n_frames,
-                framerate,
-        });
+        self.log_runtime_stats(runtime_ms);
     }
 
 
@@ -369,6 +367,61 @@ pub const Emulator = struct {
             }
         }
     }
+
+        
+        
+    fn log_runtime_stats(self: *Emulator, runtime_ms: i64) void {
+        const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
+        const freq_c = @as(f64, @floatFromInt(self.cpu.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
+        const freq_i = @as(f64, @floatFromInt(self.instruction_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
+
+        
+        // Casting to unsigned values because otherwise the formatter will display '+' signs
+        var fmt_runtime_ms: u64 = @intCast(runtime_ms);
+        
+        const fmt_runtime_h: u16 = @intCast(@divTrunc(fmt_runtime_ms, 3600000));
+        fmt_runtime_ms = @rem(fmt_runtime_ms, 3600000);
+        const fmt_runtime_m: u6 = @intCast(@divTrunc(fmt_runtime_ms, 60000));
+        fmt_runtime_ms = @rem(fmt_runtime_ms, 60000);
+        const fmt_runtime_s: u6 = @intCast(@divTrunc(fmt_runtime_ms, 1000));
+        fmt_runtime_ms = @rem(fmt_runtime_ms, 1000);
+
+        const n_frames: u64 = blk: {
+            if (self.renderer) |*r| {
+                break :blk @intCast(r.n_frames_rendered);
+            } else {
+                break :blk 0;
+            }
+        };
+
+        const framerate = @as(f64, @floatFromInt(n_frames)) / runtime_s;
+
+        std.log.info(
+            \\Emulator execution stopped:
+            \\       > Runtime: (h:m:s:ms)     {}:{d:0>2}:{d:0>2}:{d:0>3} / {d:0.3}s
+            \\       > Cycles completed:       {} 
+            \\       > Instructions executed:  {}
+            \\       > Avg. clock speed:       {d:0.3} MHz
+            \\       > Avg. instruction rate:  {d:0.3} MIPS
+            \\       > Frames rendered:        {}
+            \\       > Avg. framerate:         {d:0.2} FPS
+            ,
+            .{ 
+                fmt_runtime_h,
+                fmt_runtime_m,
+                fmt_runtime_s,
+                fmt_runtime_ms,
+                runtime_s, 
+                self.cpu.cycle_count, 
+                self.cpu.instruction_count, 
+                freq_c, 
+                freq_i, 
+                n_frames,
+                framerate,
+        });
+    }
+
+
 
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
         self.bus.write_io_ram(MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
