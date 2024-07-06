@@ -40,3 +40,7 @@ pub inline fn split_into_nibbles(byte: u8) [2]u4 {
 pub inline fn did_carry_into_bit(a: u8, b: u8, res: u8, comptime nbit: u3) bool {
     return (1 << nbit) & (a ^ b ^ res) != 0;
 }
+
+pub inline fn did_carry_out_of_bit(a: u8, b: u8, res: u8, comptime nbit: u3) bool {
+    return (1 << nbit) & (a | b) & ((a & b) | ~res) != 0;
+}

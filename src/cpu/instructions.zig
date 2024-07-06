@@ -26,21 +26,31 @@ pub fn adc(cpu: *CPU, instruction: Instruction) void {
         cpu.update_negative(cpu.A);
         const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
         cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+
     } else {
-        var AL = (cpu.A & 0xF) + (operand & 0xF) + cpu.get_status_flag(StatusFlag.CARRY);
-        var AH = (cpu.A >> 4) + (operand >> 4) + @intFromBool(AL > 15);
+        const c_in = cpu.get_status_flag(StatusFlag.CARRY);
+        const binres =  cpu.A +% operand +% c_in;
+        var c_out = @intFromBool(bitutils.did_carry_out_of_bit(cpu.A, operand, binres, 7));
 
-        if (AL > 9) AL += 6;
-        const N: u1 = @intFromBool(AH & 8 != 0);
-        const V = @intFromBool(((((AH << 4) ^ cpu.A) & 0x80) != 0) and !(((cpu.A ^ operand) & 0x80) != 0));
+        var decres = binres;
+        if (bitutils.did_carry_into_bit(cpu.A, operand, binres, 4)) {
+            decres = (decres & 0xf0) | ((decres +% 0x06) & 0x0f);
+        } else if ((decres & 0xf) > 0x9) {
+            c_out |= @intFromBool(decres >= (0x100 - 0x6));
+            decres +%= 0x06;
+        }
+        cpu.update_negative(decres);
 
-        cpu.set_status_flag(StatusFlag.OVERFLOW, V);
-        cpu.set_status_flag(StatusFlag.NEGATIVE, N);
+        //const v_flag: u1 = @intFromBool(((((decres ^ cpu.A) & (decres ^ operand) ) & 0x80) >> 1) > 0);
+        const v_flag: u1 = @intCast((((decres ^ cpu.A) & (decres ^ operand)) & 0x80) >> 7);
+        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        c_out |= @intFromBool(decres >= 0xa0);
+        cpu.set_status_flag(StatusFlag.CARRY, c_out);
 
-        if (AH > 9) AH += 6;
-        const C: u1 = @intFromBool(AH > 15);
-        cpu.set_status_flag(StatusFlag.CARRY, C);
-        cpu.A = (AH << 4) | (AL & 0xF);
+        if (c_out == 1) {
+            decres +%= 0x60;
+        }
+        cpu.A = decres;
     }
 
     cpu.update_zero(cpu.A);
@@ -455,7 +465,6 @@ pub fn rti(cpu: *CPU, instruction: Instruction) void {
             @intFromEnum(StatusFlag.BREAK),
         ),
     );
-   // status = bitutils.set_bit_at(status, @intFromEnum(StatusFlag.UNUSED), get_bit_at(cpu.status, @intFromEnum(StatusFlag.UNUSED)));
 
     status = blk: {
         const nbit = @intFromEnum(StatusFlag.BREAK);
@@ -479,9 +488,6 @@ pub fn rts(cpu: *CPU, instruction: Instruction) void {
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
-
-
-
 pub fn sbc(cpu: *CPU, instruction: Instruction) void {
     const a_operand = cpu.A;
 
@@ -498,30 +504,28 @@ pub fn sbc(cpu: *CPU, instruction: Instruction) void {
         const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
         cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
         cpu.update_zero(cpu.A);
-    } else {
-        const c_in = cpu.get_status_flag(StatusFlag.CARRY);
-        const operand = instruction.operand.?;
-        const carry_in_add = @addWithOverflow(~operand, c_in);
 
-        const result_carry = @addWithOverflow(cpu.A, carry_in_add[0]);
-        const binres = result_carry[0];
-        cpu.A = result_carry[0];
-        const c_out: u1 = result_carry[1] | carry_in_add[1];
-        cpu.set_status_flag(StatusFlag.CARRY, c_out);
-        cpu.update_negative(cpu.A);
-        const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
-        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
-        cpu.update_zero(cpu.A);
+    } else {
+
+        const operand: u8 = ~instruction.operand.?;
+        const c_in = cpu.get_status_flag(StatusFlag.CARRY);
+        const binres = cpu.A +% operand +% c_in; 
 
         var decres = binres;
+        cpu.update_zero(binres);
 
-        if (bitutils.did_carry_into_bit(a_operand, operand, binres, 4)) {
-            //res_lo +%= 0xA;
-            decres = (binres & 0xf0) | ((binres +% 0xfa) & 0xf);
-        }
+        const c_out: u1 = @intFromBool(bitutils.did_carry_out_of_bit(cpu.A, operand, binres, 7));
+        cpu.set_status_flag(StatusFlag.CARRY, c_out);
+        cpu.update_negative(binres);
+        const v_flag: u1 = @intCast(((((binres ^ cpu.A) & (binres ^ operand) ) & 0x80) >> 7));
+        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        
+        if (!bitutils.did_carry_into_bit(a_operand, operand, binres, 4)) {
+            decres = (decres & 0xf0) | ((decres +% 0xfa) & 0xf);
+        }        
 
         if (c_out == 0) {
-            decres -= 0x60;
+            decres +%= 0xA0;
         }
 
         cpu.A = decres;

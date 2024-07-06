@@ -19,6 +19,7 @@ const BORDER_SIZE_Y = @import("renderer.zig").BORDER_SIZE_Y;
 
 const log_emu = std.log.scoped(.emu_core);
 
+const FTEST_SUCCESS_ADDR = 0x3469;
 
 var sigint_received: bool = false;
 
@@ -297,10 +298,16 @@ pub const Emulator = struct {
             pc_prev = self.cpu.PC;
             quit = self.step(&frame_buffer) or sigint_received;
             if (pc_prev == self.cpu.PC) {
-                log_emu.err("Functional test failed! - Stopping execution...", .{});
-                cpu_state_prev.print_state_compact();
-                self.cpu.print_state_compact();
-                break;
+                if (self.cpu.PC == FTEST_SUCCESS_ADDR) {
+                    log_emu .info("Functional test completed successfully! - Stopping execution...", .{});
+                    self.cpu.print_state_compact();
+                    break;
+                } else {
+                    log_emu.err("Functional test failed! - Stopping execution...", .{});
+                    cpu_state_prev.print_state_compact();
+                    self.cpu.print_state_compact();
+                    break;
+                }
             }
 
             cpu_state_prev = self.cpu.*; // Todo: make tracing functions generate strings, so a list of recent traces can be stored
