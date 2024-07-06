@@ -136,12 +136,14 @@ pub const CPU = struct {
 
     pub fn pop(self: *CPU) u8 {
         self.SP +%= 1;
-        if (self.SP == 0) log_cpu.debug("Stack overflow (Pop)  [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
-                    self.current_instruction.?.instruction_addr,
-                    self.current_instruction.?.mnemonic,
-                    self.cycle_count,
-                    self.instruction_count,
-                });
+        if (self.SP == 0) {
+            log_cpu.debug("Stack overflow (Pop)  [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+                self.current_instruction.?.instruction_addr,
+                self.current_instruction.?.mnemonic,
+                self.cycle_count,
+                self.instruction_count,
+            });
+        } 
         return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
 
@@ -153,12 +155,14 @@ pub const CPU = struct {
 
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
-        if (self.SP == 0) log_cpu.debug("Stack overflow (Push) [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
-                    self.current_instruction.?.instruction_addr,
-                    self.current_instruction.?.mnemonic,
-                    self.cycle_count,
-                    self.instruction_count,
-                });
+        if (self.SP == 0) {
+            log_cpu.debug("Stack overflow (Push) [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+                self.current_instruction.?.instruction_addr,
+                self.current_instruction.?.mnemonic,
+                self.cycle_count,
+                self.instruction_count,
+            });
+        }
         self.SP -%= 1;
     }
 

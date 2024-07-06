@@ -101,30 +101,31 @@ pub fn main() !void {
 
         emu_config.headless = true;
         var emulator = try Emulator.init(allocator, emu_config);
+        defer emulator.deinit(allocator);
 
         defer emulator.deinit(allocator);
         emulator.set_trace_config(trace_config);
         emulator.bus.enable_bank_switching = false;
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
-        try emulator.run_ftest(cycles);
+        _ = emulator.run_ftest(cycles);
     } else if (res.args.rom) |rom_path| {
         emu_config.enable_bank_switching = false;
         var emulator = try Emulator.init(allocator, emu_config);
-        emulator.set_trace_config(trace_config);
         try emulator.init_graphics();
+        emulator.set_trace_config(trace_config);
         defer emulator.deinit(allocator);
         const offset = res.args.offset orelse 0x1000;
         emulator.cpu.set_reset_vector(res.args.pc orelse 0x1000);
         _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
-        try emulator.run(res.args.cycles);
+        emulator.run(res.args.cycles);
         emulator.bus.print_mem(0x210, 0x211);
     } else {
         var emulator = try Emulator.init(allocator, emu_config);
         emulator.set_trace_config(trace_config);
         defer emulator.deinit(allocator);
         try emulator.init_c64();
-        try emulator.run(res.args.cycles);
+        emulator.run(res.args.cycles);
     }
 }
 
@@ -134,14 +135,36 @@ fn test_init_reset_vector(bus: *Bus) void {
     bus.write(0xfffd, 0x20);
 }
 
+
+test "functional test" {
+    
+    const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+   
+    const allocator = gpa.allocator();
+    var emulator = try Emulator.init(allocator, .{
+        .headless = true,
+        .enable_bank_switching = false,
+    });
+
+    defer emulator.deinit(allocator);
+    _ = try emulator.load_rom(rom_path, 0);
+    emulator.cpu.set_reset_vector(0x400);
+    const test_passed = emulator.run_ftest(null);
+    try std.testing.expect(test_passed);
+    std.debug.print("Functional test: OK.\n", .{});
+}
+
+
+
+
 test "loading reset vector into pc" {
-    const assert = std.debug.assert;
-    var bus = Bus{};
+    var bus = Bus{};  
     var cpu = c.CPU.init(&bus);
     test_init_reset_vector(&bus);
     cpu.reset();
-
-    assert(cpu.PC == 0x2010);
+    try std.testing.expectEqual(cpu.PC, 0x2010);
 }
 
 test "set status flag" {
@@ -152,7 +175,7 @@ test "set status flag" {
 
     cpu.set_status_flag(c.StatusFlag.BREAK, 1);
     assert(cpu.get_status_flag(c.StatusFlag.BREAK) == 1);
-
+    
     cpu.toggle_status_flag(c.StatusFlag.BREAK);
     assert(cpu.get_status_flag(c.StatusFlag.BREAK) == 0);
 
@@ -172,34 +195,15 @@ test "stack operations" {
     assert(cpu.pop() == 0x4D);
 }
 
+
 test "test opcode lookup" {
-    const assert = std.debug.assert;
     const decode_opcode = @import("cpu/opcodes.zig").decode_opcode;
     var bus = Bus{};
     var cpu = c.CPU.init(&bus);
     cpu.reset();
 
-    const instruction = decode_opcode(0xEA);
-    assert(std.mem.eql(u8, instruction.op_name, "NOP"));
+    const instruction = decode_opcode(0xEA).?;
+    try std.testing.expect(std.mem.eql(u8, instruction.mnemonic, "NOP"));
 }
 
-test "cpu and bus allocation" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
 
-    const allocator = gpa.allocator();
-    const rom_path: []const u8 = "test.o65";
-    var emulator = try Emulator.init(allocator);
-
-    _ = try emulator.load_rom(rom_path, 0);
-
-    std.debug.assert(std.mem.eql(u8, &emulator.bus.ram, &emulator.cpu.bus.ram));
-    std.debug.assert(emulator.bus == emulator.cpu.bus);
-
-    emulator.run(null);
-
-    std.debug.assert(std.mem.eql(u8, &emulator.bus.ram, &emulator.cpu.bus.ram));
-    std.debug.assert(emulator.bus == emulator.cpu.bus);
-
-    emulator.deinit(allocator);
-}

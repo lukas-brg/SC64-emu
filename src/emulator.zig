@@ -246,7 +246,7 @@ pub const Emulator = struct {
     }
     
 
-    pub fn run(self: *Emulator, limit_cycles: ?usize) !void {
+    pub fn run(self: *Emulator, limit_cycles: ?usize) void {
        
         create_sigint_handler();
         
@@ -283,7 +283,7 @@ pub const Emulator = struct {
 
 
     /// Like run but automatically detects infinite loop and stops execution
-    pub fn run_ftest(self: *Emulator, limit_cycles: ?usize) !void {
+    pub fn run_ftest(self: *Emulator, limit_cycles: ?usize) bool {
         create_sigint_handler();
         self.cpu.reset();
         var frame_buffer: [3 * SCREEN_HEIGHT * SCREEN_WIDTH]u8 = undefined;
@@ -292,7 +292,7 @@ pub const Emulator = struct {
         var pc_prev: u16 = undefined;
         var cpu_state_prev: CPU = self.cpu.*;
         log_emu.info("Starting execution of functional test...", .{});
-        
+        var passed = false;
         const starttime_ms = std.time.milliTimestamp();
         while (!quit) {
             pc_prev = self.cpu.PC;
@@ -301,6 +301,7 @@ pub const Emulator = struct {
                 if (self.cpu.PC == FTEST_SUCCESS_ADDR) {
                     log_emu .info("Functional test completed successfully! - Stopping execution...", .{});
                     self.cpu.print_state_compact();
+                    passed = true;
                     break;
                 } else {
                     log_emu.err("Functional test failed! - Stopping execution...", .{});
@@ -328,6 +329,7 @@ pub const Emulator = struct {
 
         const runtime_ms = endtime_ms - starttime_ms;
         self.log_runtime_stats(runtime_ms);
+        return passed;
     }
 
 

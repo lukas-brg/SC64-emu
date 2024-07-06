@@ -14,6 +14,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     
+    exe.linkLibC();
     exe.root_module.addAnonymousImport("clap", .{ .root_source_file =  b.path("lib/clap/clap.zig")});
     
     
@@ -31,6 +32,7 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
+    
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
@@ -42,9 +44,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     
+    exe_unit_tests.linkLibrary(raylib_dep.artifact("raylib"));
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-
     const test_step = b.step("test", "Run unit tests");
+    
     test_step.dependOn(&run_exe_unit_tests.step);
 }
