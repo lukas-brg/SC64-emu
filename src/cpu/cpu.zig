@@ -214,11 +214,6 @@ pub const CPU = struct {
        
         const instruction = get_instruction(self, opcode_info);
         self.current_instruction = instruction;
-        if (self.print_debug_info) {
-            print_disassembly(self.*, instruction);
-            opcode_info.print();
-            instruction.print();
-        }
 
         opcode_info.handler_fn(self, instruction);
         self.cycle_count += self.instruction_remaining_cycles;

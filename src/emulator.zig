@@ -19,8 +19,6 @@ const BORDER_SIZE_Y = @import("renderer.zig").BORDER_SIZE_Y;
 
 const log_emu = std.log.scoped(.emu_core);
 
-const FTEST_SUCCESS_ADDR = 0x3469;
-
 var sigint_received: bool = false;
 
 export fn catch_sigint(_: i32) void {
@@ -163,7 +161,7 @@ pub const Emulator = struct {
     pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
         allocator.destroy(self.bus);
         allocator.destroy(self.cpu);
-        log_emu.info("All resources deallocated\n", .{});
+        log_emu.info("All resources deallocated", .{});
     }
 
     pub fn load_rom(self: *Emulator, rom_path: []const u8, offset: u16) !void {
@@ -178,9 +176,10 @@ pub const Emulator = struct {
     }
 
     pub fn clear_color_mem(self: *Emulator) void {
+        const bgcolor_code = self.bus.ram[MemoryMap.text_color];
         @memset(
             self.bus.ram[MemoryMap.color_mem_start..MemoryMap.character_rom_end],
-            self.bus.ram[MemoryMap.text_color],
+            bgcolor_code,
         );
     }
 
@@ -229,8 +228,8 @@ pub const Emulator = struct {
     }
 
     fn create_sigint_handler() void {
-        switch (builtin.os.tag) {
-            .windows => log_emu.warn("Windows sigint handler is not supported yet.", .{}),
+        switch (comptime builtin.os.tag) {
+            .windows => log_emu.warn("SIGINT handler not supported on Windows yet.", .{}),
             else => {
                 var act = std.posix.Sigaction{ 
                     .handler = .{ .handler = catch_sigint },
@@ -283,7 +282,7 @@ pub const Emulator = struct {
 
 
     /// Like run but automatically detects infinite loop and stops execution
-    pub fn run_ftest(self: *Emulator, limit_cycles: ?usize) bool {
+    pub fn run_ftest(self: *Emulator, limit_cycles: ?usize, addr_success: u16) bool {
         create_sigint_handler();
         self.cpu.reset();
         var frame_buffer: [3 * SCREEN_HEIGHT * SCREEN_WIDTH]u8 = undefined;
@@ -298,13 +297,20 @@ pub const Emulator = struct {
             pc_prev = self.cpu.PC;
             quit = self.step(&frame_buffer) or sigint_received;
             if (pc_prev == self.cpu.PC) {
-                if (self.cpu.PC == FTEST_SUCCESS_ADDR) {
-                    log_emu .info("Functional test completed successfully! - Stopping execution...", .{});
-                    self.cpu.print_state_compact();
+                if (self.cpu.PC == addr_success) {
+                    std.debug.print("\x1b[32mFunctional test success!\x1b[0m [PC={X:0>4}, Cycle={}, #Instruction: {}]\n", .{
+                        self.cpu.PC,
+                        self.cpu.cycle_count,
+                        self.cpu.instruction_count,
+                    });
                     passed = true;
                     break;
                 } else {
-                    log_emu.err("Functional test failed! - Stopping execution...", .{});
+                    std.debug.print("\x1b[31mFunctional test failed!\x1b[0m [PC={X:0>4}, Cycle={}, #Instruction: {}]\n", .{
+                        self.cpu.PC,
+                        self.cpu.cycle_count,
+                        self.cpu.instruction_count,
+                    });
                     cpu_state_prev.print_state_compact();
                     self.cpu.print_state_compact();
                     break;

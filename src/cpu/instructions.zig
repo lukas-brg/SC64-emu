@@ -16,19 +16,19 @@ pub fn adc(cpu: *CPU, instruction: Instruction) void {
 
     const a_operand = cpu.A;
 
-    if (cpu.get_status_flag(StatusFlag.DECIMAL) == 0) {
-        const carry_in_add = @addWithOverflow(operand, cpu.get_status_flag(StatusFlag.CARRY));
+    if (cpu.get_status_flag(.DECIMAL) == 0) {
+        const carry_in_add = @addWithOverflow(operand, cpu.get_status_flag(.CARRY));
 
         const result_carry = @addWithOverflow(cpu.A, carry_in_add[0]);
         cpu.A = result_carry[0];
         const carry_out: u1 = result_carry[1] | carry_in_add[1];
-        cpu.set_status_flag(StatusFlag.CARRY, carry_out);
+        cpu.set_status_flag(.CARRY, carry_out);
         cpu.update_negative(cpu.A);
         const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
-        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        cpu.set_status_flag(.OVERFLOW, v_flag);
 
     } else {
-        const c_in = cpu.get_status_flag(StatusFlag.CARRY);
+        const c_in = cpu.get_status_flag(.CARRY);
         const binres =  cpu.A +% operand +% c_in;
         var c_out = @intFromBool(bitutils.did_carry_out_of_bit(cpu.A, operand, binres, 7));
 
@@ -43,9 +43,9 @@ pub fn adc(cpu: *CPU, instruction: Instruction) void {
 
         //const v_flag: u1 = @intFromBool(((((decres ^ cpu.A) & (decres ^ operand) ) & 0x80) >> 1) > 0);
         const v_flag: u1 = @intCast((((decres ^ cpu.A) & (decres ^ operand)) & 0x80) >> 7);
-        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        cpu.set_status_flag(.OVERFLOW, v_flag);
         c_out |= @intFromBool(decres >= 0xa0);
-        cpu.set_status_flag(StatusFlag.CARRY, c_out);
+        cpu.set_status_flag(.CARRY, c_out);
 
         if (c_out == 1) {
             decres +%= 0x60;
@@ -73,13 +73,13 @@ pub fn asl(cpu: *CPU, instruction: Instruction) void {
     switch (instruction.addressing_mode) {
         .ACCUMULATOR => {
             result = cpu.A << 1;
-            cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(cpu.A, 7));
+            cpu.set_status_flag(.CARRY, get_bit_at(cpu.A, 7));
             cpu.A = result;
             cpu.instruction_remaining_cycles += instruction.cycles;
         },
         else => {
             result = instruction.operand.? << 1;
-            cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(instruction.operand.?, 7));
+            cpu.set_status_flag(.CARRY, get_bit_at(instruction.operand.?, 7));
             cpu.bus.write(instruction.operand_addr.?, result);
             cpu.instruction_remaining_cycles += instruction.cycles;
         },
@@ -92,7 +92,7 @@ pub fn asl(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bcc(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.CARRY) == 0) {
+    if (cpu.get_status_flag(.CARRY) == 0) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -102,7 +102,7 @@ pub fn bcc(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bcs(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.CARRY) == 1) {
+    if (cpu.get_status_flag(.CARRY) == 1) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -112,7 +112,7 @@ pub fn bcs(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn beq(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.ZERO) == 1) {
+    if (cpu.get_status_flag(.ZERO) == 1) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -122,7 +122,7 @@ pub fn beq(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bmi(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 1) {
+    if (cpu.get_status_flag(.NEGATIVE) == 1) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -132,7 +132,7 @@ pub fn bmi(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bne(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.ZERO) == 0) {
+    if (cpu.get_status_flag(.ZERO) == 0) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -142,7 +142,7 @@ pub fn bne(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bpl(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.NEGATIVE) == 0) {
+    if (cpu.get_status_flag(.NEGATIVE) == 0) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -152,7 +152,7 @@ pub fn bpl(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bvc(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 0) {
+    if (cpu.get_status_flag(.OVERFLOW) == 0) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -162,7 +162,7 @@ pub fn bvc(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn bvs(cpu: *CPU, instruction: Instruction) void {
-    if (cpu.get_status_flag(StatusFlag.OVERFLOW) == 1) {
+    if (cpu.get_status_flag(.OVERFLOW) == 1) {
         cpu.PC = instruction.operand_addr.?;
         cpu.instruction_remaining_cycles += instruction.cycles;
     } else {
@@ -177,7 +177,7 @@ pub fn brk(cpu: *CPU, instruction: Instruction) void {
     var status_byte = bitutils.set_bit_at(cpu.status, @intFromEnum(StatusFlag.BREAK), 1);
     status_byte = bitutils.set_bit_at(status_byte, @intFromEnum(StatusFlag.UNUSED), 1);
     cpu.push(status_byte);
-    cpu.set_status_flag(StatusFlag.INTERRUPT_DISABLE, 1);
+    cpu.set_status_flag(.INTERRUPT_DISABLE, 1);
 
     cpu.instruction_remaining_cycles += instruction.cycles;
 
@@ -188,33 +188,33 @@ pub fn brk(cpu: *CPU, instruction: Instruction) void {
 
 pub fn bit(cpu: *CPU, instruction: Instruction) void {
     const operand = instruction.operand.?;
-    cpu.set_status_flag(StatusFlag.NEGATIVE, bitutils.get_bit_at(operand, 7));
-    cpu.set_status_flag(StatusFlag.OVERFLOW, bitutils.get_bit_at(operand, 6));
+    cpu.set_status_flag(.NEGATIVE, bitutils.get_bit_at(operand, 7));
+    cpu.set_status_flag(.OVERFLOW, bitutils.get_bit_at(operand, 6));
     cpu.update_zero(operand & cpu.A);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn clc(cpu: *CPU, instruction: Instruction) void {
-    cpu.set_status_flag(StatusFlag.CARRY, 0);
+    cpu.set_status_flag(.CARRY, 0);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cld(cpu: *CPU, instruction: Instruction) void {
-    cpu.set_status_flag(StatusFlag.DECIMAL, 0);
+    cpu.set_status_flag(.DECIMAL, 0);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cli(cpu: *CPU, instruction: Instruction) void {
-    cpu.set_status_flag(StatusFlag.INTERRUPT_DISABLE, 0);
+    cpu.set_status_flag(.INTERRUPT_DISABLE, 0);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn clv(cpu: *CPU, instruction: Instruction) void {
-    cpu.set_status_flag(StatusFlag.OVERFLOW, 0);
+    cpu.set_status_flag(.OVERFLOW, 0);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
@@ -226,8 +226,8 @@ pub fn cmp(cpu: *CPU, instruction: Instruction) void {
 
     cpu.update_negative(result);
     cpu.update_zero(result);
-    const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
-    cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
+    const carry_flag: u1 = cpu.get_status_flag(.NEGATIVE) ^ 1;
+    cpu.set_status_flag(.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
@@ -239,8 +239,8 @@ pub fn cpx(cpu: *CPU, instruction: Instruction) void {
 
     cpu.update_negative(result);
     cpu.update_zero(result);
-    const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
-    cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
+    const carry_flag: u1 = cpu.get_status_flag(.NEGATIVE) ^ 1;
+    cpu.set_status_flag(.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
@@ -252,8 +252,8 @@ pub fn cpy(cpu: *CPU, instruction: Instruction) void {
 
     cpu.update_negative(result);
     cpu.update_zero(result);
-    const carry_flag: u1 = cpu.get_status_flag(StatusFlag.NEGATIVE) ^ 1;
-    cpu.set_status_flag(StatusFlag.CARRY, carry_flag);
+    const carry_flag: u1 = cpu.get_status_flag(.NEGATIVE) ^ 1;
+    cpu.set_status_flag(.CARRY, carry_flag);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
@@ -365,9 +365,9 @@ pub fn lsr(cpu: *CPU, instruction: Instruction) void {
         else => cpu.bus.write(instruction.operand_addr.?, result),
     }
 
-    cpu.set_status_flag(StatusFlag.NEGATIVE, 0);
+    cpu.set_status_flag(.NEGATIVE, 0);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(instruction.operand.?, 0));
+    cpu.set_status_flag(.CARRY, get_bit_at(instruction.operand.?, 0));
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
@@ -422,10 +422,10 @@ pub fn plp(cpu: *CPU, instruction: Instruction) void {
 
 pub fn ror(cpu: *CPU, instruction: Instruction) void {
     var result = bitutils.rotate_right(instruction.operand.?, 1);
-    result = bitutils.set_bit_at(result, 7, cpu.get_status_flag(StatusFlag.CARRY));
+    result = bitutils.set_bit_at(result, 7, cpu.get_status_flag(.CARRY));
     cpu.update_negative(result);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(instruction.operand.?, 0));
+    cpu.set_status_flag(.CARRY, get_bit_at(instruction.operand.?, 0));
 
     switch (instruction.addressing_mode) {
         .ACCUMULATOR => cpu.A = result,
@@ -438,11 +438,11 @@ pub fn ror(cpu: *CPU, instruction: Instruction) void {
 
 pub fn rol(cpu: *CPU, instruction: Instruction) void {
     var result = bitutils.rotate_left(instruction.operand.?, 1);
-    result = bitutils.set_bit_at(result, 0, cpu.get_status_flag(StatusFlag.CARRY));
+    result = bitutils.set_bit_at(result, 0, cpu.get_status_flag(.CARRY));
 
     cpu.update_negative(result);
     cpu.update_zero(result);
-    cpu.set_status_flag(StatusFlag.CARRY, get_bit_at(instruction.operand.?, 7));
+    cpu.set_status_flag(.CARRY, get_bit_at(instruction.operand.?, 7));
 
     switch (instruction.addressing_mode) {
         .ACCUMULATOR => cpu.A = result,
@@ -491,34 +491,34 @@ pub fn rts(cpu: *CPU, instruction: Instruction) void {
 pub fn sbc(cpu: *CPU, instruction: Instruction) void {
     const a_operand = cpu.A;
 
-    if (cpu.get_status_flag(StatusFlag.DECIMAL) == 0) {
+    if (cpu.get_status_flag(.DECIMAL) == 0) {
         //SBC in binary mode is just ADC with the second operand negated
         const operand = ~instruction.operand.?;
-        const carry_in_add = @addWithOverflow(operand, cpu.get_status_flag(StatusFlag.CARRY));
+        const carry_in_add = @addWithOverflow(operand, cpu.get_status_flag(.CARRY));
 
         const result_carry = @addWithOverflow(cpu.A, carry_in_add[0]);
         cpu.A = result_carry[0];
         const carry_out: u1 = result_carry[1] | carry_in_add[1];
-        cpu.set_status_flag(StatusFlag.CARRY, carry_out);
+        cpu.set_status_flag(.CARRY, carry_out);
         cpu.update_negative(cpu.A);
         const v_flag: u1 = @intCast(((a_operand ^ cpu.A) & (operand ^ cpu.A) & 0x80) >> 7);
-        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        cpu.set_status_flag(.OVERFLOW, v_flag);
         cpu.update_zero(cpu.A);
 
     } else {
 
         const operand: u8 = ~instruction.operand.?;
-        const c_in = cpu.get_status_flag(StatusFlag.CARRY);
+        const c_in = cpu.get_status_flag(.CARRY);
         const binres = cpu.A +% operand +% c_in; 
 
         var decres = binres;
         cpu.update_zero(binres);
 
         const c_out: u1 = @intFromBool(bitutils.did_carry_out_of_bit(cpu.A, operand, binres, 7));
-        cpu.set_status_flag(StatusFlag.CARRY, c_out);
+        cpu.set_status_flag(.CARRY, c_out);
         cpu.update_negative(binres);
         const v_flag: u1 = @intCast(((((binres ^ cpu.A) & (binres ^ operand) ) & 0x80) >> 7));
-        cpu.set_status_flag(StatusFlag.OVERFLOW, v_flag);
+        cpu.set_status_flag(.OVERFLOW, v_flag);
         
         if (!bitutils.did_carry_into_bit(a_operand, operand, binres, 4)) {
             decres = (decres & 0xf0) | ((decres +% 0xfa) & 0xf);
@@ -536,19 +536,19 @@ pub fn sbc(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn sec(cpu: *CPU, instruction: Instruction) void {
-    cpu.set_status_flag(StatusFlag.CARRY, 1);
+    cpu.set_status_flag(.CARRY, 1);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sed(cpu: *CPU, instruction: Instruction) void {
-    cpu.set_status_flag(StatusFlag.DECIMAL, 1);
+    cpu.set_status_flag(.DECIMAL, 1);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn sei(cpu: *CPU, instruction: Instruction) void {
-    cpu.set_status_flag(StatusFlag.INTERRUPT_DISABLE, 1);
+    cpu.set_status_flag(.INTERRUPT_DISABLE, 1);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }

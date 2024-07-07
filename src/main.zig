@@ -8,6 +8,8 @@ const DebugTraceConfig = @import("emulator.zig").DebugTraceConfig;
 const clap = @import("clap");
 const builtin = @import("builtin");
 
+const FTEST_SUCCESS_ADDR = 0x3469;
+
 pub const std_options: std.Options = .{
     .log_level = switch (builtin.mode) {
         .Debug => std.log.Level.debug,
@@ -23,9 +25,9 @@ pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 }
 
 pub fn main() !void {
+   
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-   
     const allocator = gpa.allocator();
 
     const args = try std.process.argsAlloc(allocator);
@@ -103,12 +105,11 @@ pub fn main() !void {
         var emulator = try Emulator.init(allocator, emu_config);
         defer emulator.deinit(allocator);
 
-        defer emulator.deinit(allocator);
         emulator.set_trace_config(trace_config);
         emulator.bus.enable_bank_switching = false;
         _ = try emulator.load_rom(rom_path, 0);
         emulator.cpu.set_reset_vector(0x400);
-        _ = emulator.run_ftest(cycles);
+        _ = emulator.run_ftest(cycles, FTEST_SUCCESS_ADDR);
     } else if (res.args.rom) |rom_path| {
         emu_config.enable_bank_switching = false;
         var emulator = try Emulator.init(allocator, emu_config);
@@ -136,7 +137,7 @@ fn test_init_reset_vector(bus: *Bus) void {
 }
 
 
-test "functional test" {
+test "cpu functional test" {
     
     const rom_path: []const u8 = "test_files/6502_65C02_functional_tests/bin_files/6502_functional_test.bin";
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -151,9 +152,8 @@ test "functional test" {
     defer emulator.deinit(allocator);
     _ = try emulator.load_rom(rom_path, 0);
     emulator.cpu.set_reset_vector(0x400);
-    const test_passed = emulator.run_ftest(null);
+    const test_passed = emulator.run_ftest(null, FTEST_SUCCESS_ADDR);
     try std.testing.expect(test_passed);
-    std.debug.print("Functional test: OK.\n", .{});
 }
 
 
@@ -194,6 +194,7 @@ test "stack operations" {
     cpu.push(0x4D);
     assert(cpu.pop() == 0x4D);
 }
+
 
 
 test "test opcode lookup" {
