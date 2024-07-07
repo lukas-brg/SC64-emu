@@ -52,11 +52,38 @@ pub fn print_disassembly(cpu: CPU, instruction: Instruction) void {
     std.debug.print("\n", .{});
 }
 
+const StatusRegister = packed struct(u8) {
+    carry: u1 = 0,
+    zero: u1 = 0,
+    interrupt_disable: u1 = 1,
+    decimal: u1 = 0,
+    break_flag: u1 = 0,
+    unused: u1 = 1,
+    overflow: u1 = 0,
+    negative: u1 = 0,
+
+    pub fn to_byte(self: StatusRegister) u8 {
+        return @bitCast(self);
+    }
+    
+    pub fn update(self: *StatusRegister, byte: u8) void {
+        self.* =  @bitCast(byte);
+    }
+
+    pub fn from_byte(value: u8) StatusRegister {
+        return @bitCast(value);
+    }
+
+  
+};
+
+
+
 pub const CPU = struct {
     /// Implementation of the 6502 microprocessor
     PC: u16,
     SP: u8,
-    status: u8,
+    status: StatusRegister = .{},
     A: u8,
     X: u8,
     Y: u8,
@@ -72,7 +99,6 @@ pub const CPU = struct {
         const cpu = CPU{
             .PC = 0,
             .SP = 0xFF,
-            .status = 0b00100100,
             .A = 0,
             .X = 0,
             .Y = 0,
@@ -108,7 +134,7 @@ pub const CPU = struct {
     }
 
     fn get_status_bit(self: CPU, bit_index: u3) u1 {
-        return @intCast((self.status >> bit_index) & 1);
+        return @intCast((self.status.to_byte() >> bit_index) & 1);
     }
 
     pub fn get_status_flag(self: CPU, flag: StatusFlag) u1 {
@@ -117,8 +143,18 @@ pub const CPU = struct {
 
     pub fn set_status_flag(self: *CPU, flag: StatusFlag, val: u1) void {
         const bit_index = @intFromEnum(flag);
-        self.status &= ~(@as(u8, 1) << bit_index); // clear bit
-        self.status |= (@as(u8, val) << bit_index); // set bit
+        var status = self.status.to_byte();
+        status &= ~(@as(u8, 1) << bit_index); // clear bit
+        status |= (@as(u8, val) << bit_index); // set bit
+        self.status.update(status);
+    }
+
+    pub fn set_status_register(self: *CPU, val: u8) void {
+        self.status.update(val);
+    }
+    
+    pub fn get_status_register_val(self: *CPU) u8 {
+        return self.status.to_byte();
     }
 
     pub fn update_negative(self: *CPU, result: u8) void {
@@ -127,11 +163,6 @@ pub const CPU = struct {
 
     pub fn update_zero(self: *CPU, result: u8) void {
         self.set_status_flag(StatusFlag.ZERO, @intFromBool(result == 0));
-    }
-
-    pub fn toggle_status_flag(self: *CPU, flag: StatusFlag) void {
-        const bit_index = @intFromEnum(flag);
-        self.status ^= (@as(u8, 1) << bit_index);
     }
 
     pub fn pop(self: *CPU) u8 {
@@ -285,8 +316,8 @@ pub const CPU = struct {
         std.debug.print("\nSP:         {b:0>8}", .{self.SP});
         std.debug.print("      {x:0>2}", .{self.SP});
 
-        std.debug.print("\nP:          {b:0>8}", .{self.status});
-        std.debug.print("      {x:0>2}", .{self.status});
+        std.debug.print("\nP:          {b:0>8}", .{self.status.to_byte()});
+        std.debug.print("      {x:0>2}", .{self.status.to_byte()});
 
         std.debug.print("\nA:          {b:0>8}", .{self.A});
         std.debug.print("      {x:0>2}", .{self.A});
