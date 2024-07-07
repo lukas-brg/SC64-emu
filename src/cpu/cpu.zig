@@ -62,19 +62,25 @@ const StatusRegister = packed struct(u8) {
     overflow: u1 = 0,
     negative: u1 = 0,
 
-    pub fn to_byte(self: StatusRegister) u8 {
+    pub inline fn to_byte(self: StatusRegister) u8 {
         return @bitCast(self);
     }
     
-    pub fn update(self: *StatusRegister, byte: u8) void {
-        self.* =  @bitCast(byte);
+    pub inline fn update(self: *StatusRegister, byte: u8) void {
+        self.* = @bitCast(byte);
     }
 
     pub fn from_byte(value: u8) StatusRegister {
         return @bitCast(value);
     }
 
-  
+    pub inline fn update_negative(self: *StatusRegister, result: u8) void {
+        self.negative = get_bit_at(result, 7);
+    }
+
+    pub inline fn update_zero(self: *StatusRegister, result: u8) void {
+        self.zero = @intFromBool(result == 0);
+    }
 };
 
 
@@ -114,10 +120,11 @@ pub const CPU = struct {
     }
 
     pub fn irq(self: *CPU) void {
-        if (self.get_status_flag(StatusFlag.INTERRUPT_DISABLE) == 0) {
+        if (self.status.interrupt_disable == 0) {
             self.push_16(self.PC);
-            self.status = bitutils.set_bit_at(self.status, StatusFlag.UNUSED, 0);
-            self.push(self.status);
+            var status = self.status;
+            status.break_flag = 0;
+            self.push(status.to_byte());
             self.PC = self.bus.read_16(IRQ_VECTOR);
             log_cpu.debug("IRQ");
         } else {
@@ -127,43 +134,13 @@ pub const CPU = struct {
 
     pub fn nmi(self: *CPU) void {
         self.push_16(self.PC);
-        self.status = bitutils.set_bit_at(self.status, StatusFlag.UNUSED, 0);
-        self.push(self.status);
+        var status = self.status;
+        status.break_flag = 0;
+        self.push(status.to_byte());
         self.PC = self.bus.read_16(NMI_VECTOR);
         log_cpu.debug("NMI");
     }
 
-    fn get_status_bit(self: CPU, bit_index: u3) u1 {
-        return @intCast((self.status.to_byte() >> bit_index) & 1);
-    }
-
-    pub fn get_status_flag(self: CPU, flag: StatusFlag) u1 {
-        return self.get_status_bit(@intFromEnum(flag));
-    }
-
-    pub fn set_status_flag(self: *CPU, flag: StatusFlag, val: u1) void {
-        const bit_index = @intFromEnum(flag);
-        var status = self.status.to_byte();
-        status &= ~(@as(u8, 1) << bit_index); // clear bit
-        status |= (@as(u8, val) << bit_index); // set bit
-        self.status.update(status);
-    }
-
-    pub fn set_status_register(self: *CPU, val: u8) void {
-        self.status.update(val);
-    }
-    
-    pub fn get_status_register_val(self: *CPU) u8 {
-        return self.status.to_byte();
-    }
-
-    pub fn update_negative(self: *CPU, result: u8) void {
-        self.set_status_flag(StatusFlag.NEGATIVE, get_bit_at(result, 7));
-    }
-
-    pub fn update_zero(self: *CPU, result: u8) void {
-        self.set_status_flag(StatusFlag.ZERO, @intFromBool(result == 0));
-    }
 
     pub fn pop(self: *CPU) u8 {
         self.SP +%= 1;
@@ -235,7 +212,7 @@ pub const CPU = struct {
     /// Executes the next instruction in a single step
     pub fn step(self: *CPU) void {
         self.instruction_remaining_cycles = 0;
-        const d_prev = self.get_status_flag(StatusFlag.DECIMAL);
+        const d_prev = self.status.decimal;
       
         const opcode = self.fetch_byte();
         
@@ -249,7 +226,7 @@ pub const CPU = struct {
         opcode_info.handler_fn(self, instruction);
         self.cycle_count += self.instruction_remaining_cycles;
         self.instruction_count += 1;
-        const d_curr = self.get_status_flag(StatusFlag.DECIMAL);
+        const d_curr = self.status.decimal;
         if (d_curr != d_prev) {
             if (d_curr == 1) {
                 log_cpu.debug("Decimal mode activated.   [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
@@ -289,12 +266,12 @@ pub const CPU = struct {
             self.X,
             self.Y,
             self.SP,
-            self.get_status_flag(StatusFlag.NEGATIVE),
-            self.get_status_flag(StatusFlag.OVERFLOW),
-            self.get_status_flag(StatusFlag.DECIMAL),
-            self.get_status_flag(StatusFlag.INTERRUPT_DISABLE),
-            self.get_status_flag(StatusFlag.ZERO),
-            self.get_status_flag(StatusFlag.CARRY),
+            self.status.negative,
+            self.status.overflow,
+            self.status.decimal,
+            self.status.interrupt_disable,
+            self.status.zero,
+            self.status.carry,
             self.instruction_count,
             self.cycle_count,
         });
@@ -332,14 +309,14 @@ pub const CPU = struct {
         std.debug.print("\nN V - B D I Z C", .{});
 
         std.debug.print("\n{} {} {} {} {} {} {} {} ", .{ 
-            self.get_status_bit(7), 
-            self.get_status_bit(6), 
-            self.get_status_bit(5), 
-            self.get_status_bit(4), 
-            self.get_status_bit(3), 
-            self.get_status_bit(2), 
-            self.get_status_bit(1),
-            self.get_status_bit(0), 
+            self.status.negative,
+            self.status.overflow,
+            self.status.unused,
+            self.status.break_flag,
+            self.status.decimal, 
+            self.status.interrupt_disable, 
+            self.status.zero,
+            self.status.carry,
         });
 
         std.debug.print("\n----------------------------------------------------\n\n", .{});
