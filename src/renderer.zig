@@ -5,11 +5,10 @@ const raylib = @import("raylib.zig");
 const MemoryMap = @import("bus.zig").MemoryMap;
 const colors = @import("colors.zig");
 
-pub const BORDER_SIZE_X = 14;
-pub const BORDER_SIZE_Y = 12;
-
-pub const SCREEN_WIDTH = 320;
-pub const SCREEN_HEIGHT = 200;
+const SCREEN_WIDTH = @import("graphics.zig").SCREEN_WIDTH;
+const SCREEN_HEIGHT = @import("graphics.zig").SCREEN_HEIGHT;
+const BORDER_SIZE_X = @import("graphics.zig").BORDER_SIZE_X;
+const BORDER_SIZE_Y = @import("graphics.zig").BORDER_SIZE_Y;
 
 const log_renderer = std.log.scoped(.renderer);
 
@@ -36,7 +35,7 @@ pub const Renderer = struct {
         const scale = self.scale;
         const win_w: c_int = @intFromFloat((SCREEN_WIDTH + 2 * BORDER_SIZE_X) * scale);
         const win_h: c_int = @intFromFloat((SCREEN_HEIGHT + 2 * BORDER_SIZE_Y) * scale);
-        raylib.SetConfigFlags(raylib.FLAG_MSAA_4X_HINT | raylib.FLAG_VSYNC_HINT | raylib.FLAG_WINDOW_RESIZABLE);
+        raylib.SetConfigFlags(raylib.FLAG_WINDOW_RESIZABLE);
         raylib.InitWindow(win_w, win_h, "SC64 Emulator");
 
         // center window

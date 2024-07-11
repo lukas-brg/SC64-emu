@@ -76,7 +76,7 @@ pub const Bus = struct {
     }
 
     pub fn write_io_ram(self: *Bus, addr: u16, val: u8) void {
-        const index = addr - MemoryMap.io_ram_start;
+        const index = addr - comptime MemoryMap.io_ram_start;
         self.io_ram[index] = val;
     }
 
@@ -176,7 +176,6 @@ pub const Bus = struct {
                             },
                             1 => {
                                 val_ptr = &self.io_ram[addr - MemoryMap.character_rom_start];
-                                //val_ptr = &self.ram[addr];
                             },
                         }
                     },

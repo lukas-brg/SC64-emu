@@ -126,9 +126,9 @@ pub const CPU = struct {
             status.break_flag = 0;
             self.push(status.to_byte());
             self.PC = self.bus.read_16(IRQ_VECTOR);
-            log_cpu.debug("IRQ");
+            //log_cpu.debug("IRQ", .{});
         } else {
-            log_cpu.debug("IRQ (masked)");
+            //log_cpu.debug("IRQ (masked)", .{});
         }
     }
 
@@ -138,7 +138,7 @@ pub const CPU = struct {
         status.break_flag = 0;
         self.push(status.to_byte());
         self.PC = self.bus.read_16(NMI_VECTOR);
-        log_cpu.debug("NMI");
+        log_cpu.debug("NMI", .{});
     }
 
 
@@ -221,13 +221,11 @@ pub const CPU = struct {
        
         const instruction = get_instruction(self, opcode_info);
         self.current_instruction = instruction;
-
         opcode_info.handler_fn(self, instruction);
         self.cycle_count += self.instruction_remaining_cycles;
         self.instruction_count += 1;
-        if (self.PC == 0xA408) std.debug.print("OOM {}\n", .{self.cycle_count});
-    
         const d_curr = self.status.decimal;
+
         if (d_curr != d_prev) {
             if (d_curr == 1) {
                 log_cpu.debug("Decimal mode activated.   [PC={X:0>4}, OP={s}, Cycle={}, #Instruction={}]", .{
