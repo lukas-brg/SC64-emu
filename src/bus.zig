@@ -66,6 +66,7 @@ pub const Bus = struct {
             log_bus.debug("Bank switch. Control bits changed from [{b:0>3}] to [{b:0>3}]", .{ mem_location.control_bits, new_control_bits });
         }
 
+     
         if (!mem_location.read_only) {
             mem_location.val_ptr.* = val;
         } else {
@@ -175,6 +176,7 @@ pub const Bus = struct {
                             },
                             1 => {
                                 val_ptr = &self.io_ram[addr - MemoryMap.character_rom_start];
+                                //val_ptr = &self.ram[addr];
                             },
                         }
                     },

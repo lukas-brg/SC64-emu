@@ -113,20 +113,20 @@ pub fn main() !void {
     } else if (res.args.rom) |rom_path| {
         emu_config.enable_bank_switching = false;
         var emulator = try Emulator.init(allocator, emu_config);
+        defer emulator.deinit(allocator);
         try emulator.init_graphics();
         emulator.set_trace_config(trace_config);
-        defer emulator.deinit(allocator);
         const offset = res.args.offset orelse 0x1000;
         emulator.cpu.set_reset_vector(res.args.pc orelse 0x1000);
         _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
-        emulator.run(res.args.cycles);
+        emulator.run(res.args.cycles, res.args.instructions);
         emulator.bus.print_mem(0x210, 0x211);
     } else {
         var emulator = try Emulator.init(allocator, emu_config);
-        emulator.set_trace_config(trace_config);
         defer emulator.deinit(allocator);
+        emulator.set_trace_config(trace_config);
         try emulator.init_c64();
-        emulator.run(res.args.cycles);
+        emulator.run(res.args.cycles, res.args.instructions);
     }
 }
 

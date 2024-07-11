@@ -9,3 +9,4 @@ test_files/AllSuiteA*
 .zig-cache/**
 .vscode/**
 zig-out/**
+kernal_commented.asm

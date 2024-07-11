@@ -4,7 +4,6 @@ const Bus = @import("../bus.zig").Bus;
 const bitutils = @import("bitutils.zig");
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
-const get_bit_at = @import("bitutils.zig").get_bit_at;
 const OpcodeInfo = @import("opcodes.zig").OpcodeInfo;
 const Instruction = @import("instruction.zig").Instruction;
 const get_instruction = @import("instruction.zig").get_instruction;
@@ -75,7 +74,7 @@ const StatusRegister = packed struct(u8) {
     }
 
     pub inline fn update_negative(self: *StatusRegister, result: u8) void {
-        self.negative = get_bit_at(result, 7);
+        self.negative = bitutils.get_bit_at(result, 7);
     }
 
     pub inline fn update_zero(self: *StatusRegister, result: u8) void {
@@ -116,6 +115,7 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
+        self.PC = self.bus.read_16(RESET_VECTOR);
         log_cpu.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
     }
 
@@ -145,7 +145,7 @@ pub const CPU = struct {
     pub fn pop(self: *CPU) u8 {
         self.SP +%= 1;
         if (self.SP == 0) {
-            log_cpu.debug("Stack overflow (Pop)  [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+            log_cpu.debug("Stack overflow (Pop)  [PC={X:0>4}, OP={s}, Cycle={}, #Instruction={}]", .{
                 self.current_instruction.?.instruction_addr,
                 self.current_instruction.?.mnemonic,
                 self.cycle_count,
@@ -156,15 +156,13 @@ pub const CPU = struct {
     }
 
     pub fn pop_16(self: *CPU) u16 {
-        const low_byte = @as(u16, self.pop());
-        const high_byte = @as(u16, self.pop());
-        return (high_byte << 8) | low_byte;
+        return bitutils.combine_bytes(self.pop(), self.pop());
     }
 
     pub fn push(self: *CPU, val: u8) void {
         self.bus.write(STACK_BASE_POINTER + self.SP, val);
         if (self.SP == 0) {
-            log_cpu.debug("Stack overflow (Push) [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+            log_cpu.debug("Stack overflow (Push) [PC={X:0>4}, OP={s}, Cycle={}, #Instruction={}]", .{
                 self.current_instruction.?.instruction_addr,
                 self.current_instruction.?.mnemonic,
                 self.cycle_count,
@@ -173,7 +171,7 @@ pub const CPU = struct {
         }
         self.SP -%= 1;
     }
-
+   
     pub fn push_16(self: *CPU, val: u16) void {
         const high_byte: u8 = @intCast(val >> 8);
         self.push(high_byte);
@@ -209,6 +207,7 @@ pub const CPU = struct {
         }
     }
 
+
     /// Executes the next instruction in a single step
     pub fn step(self: *CPU) void {
         self.instruction_remaining_cycles = 0;
@@ -226,17 +225,19 @@ pub const CPU = struct {
         opcode_info.handler_fn(self, instruction);
         self.cycle_count += self.instruction_remaining_cycles;
         self.instruction_count += 1;
+        if (self.PC == 0xA408) std.debug.print("OOM {}\n", .{self.cycle_count});
+    
         const d_curr = self.status.decimal;
         if (d_curr != d_prev) {
             if (d_curr == 1) {
-                log_cpu.debug("Decimal mode activated.   [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+                log_cpu.debug("Decimal mode activated.   [PC={X:0>4}, OP={s}, Cycle={}, #Instruction={}]", .{
                     instruction.instruction_addr,
                     instruction.mnemonic,
                     self.cycle_count,
                     self.instruction_count,
                 });
             } else {
-                log_cpu.debug("Decimal mode deactivated. [PC: {X:0>4}, OP: {s}, Cycle: {}, #Instruction: {}]", .{
+                log_cpu.debug("Decimal mode deactivated. [PC={X:0>4}, OP={s}, Cycle={}, #Instruction={}]", .{
                     instruction.instruction_addr,
                     instruction.mnemonic,
                     self.cycle_count,

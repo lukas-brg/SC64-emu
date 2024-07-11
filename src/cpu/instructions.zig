@@ -215,29 +215,31 @@ pub fn clv(cpu: *CPU, instruction: Instruction) void {
 }
 
 pub fn cmp(cpu: *CPU, instruction: Instruction) void {
-    const result = cpu.A -% instruction.operand.?;
+    const operand = instruction.operand.?;
+    const result = cpu.A -% operand;
     cpu.status.update_negative(result);
     cpu.status.update_zero(result);
-    cpu.status.carry = cpu.status.negative ^ 1;
+    cpu.status.carry = @intFromBool(cpu.A >= operand);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cpx(cpu: *CPU, instruction: Instruction) void {
-    const result = cpu.X -% instruction.operand.?;
+    const operand = instruction.operand.?;
+    const result = cpu.X -% operand;
     cpu.status.update_negative(result);
     cpu.status.update_zero(result);
-    cpu.status.carry = cpu.status.negative ^ 1;
+    cpu.status.carry = @intFromBool(cpu.X >= operand);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }
 
 pub fn cpy(cpu: *CPU, instruction: Instruction) void {
-    const result = cpu.Y -% instruction.operand.?;
-
+    const operand = instruction.operand.?;
+    const result = cpu.Y -% operand;
     cpu.status.update_negative(result);
     cpu.status.update_zero(result);
-    cpu.status.carry = cpu.status.negative ^ 1;
+    cpu.status.carry = @intFromBool(cpu.Y >= operand);
     cpu.PC += instruction.bytes;
     cpu.instruction_remaining_cycles += instruction.cycles;
 }

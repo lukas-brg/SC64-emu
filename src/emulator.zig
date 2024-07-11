@@ -103,8 +103,8 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
-        self.bus.write_16(0x281, 0x0800); // Points to BASIC start at $0801
-        self.bus.write_16(0x283, 0xA000); // Points to BASIC start at $0801
+        // self.bus.write_16(0x281, 0x0800); // Points to BASIC start at $0801
+        // self.bus.write_16(0x283, 0xA000); // Points to BASIC start at $0801
         //self.bus.write_16(0x00A2, 0xA000); // Points to end of BASIC at $A000
 
         self.cpu.reset();
@@ -245,7 +245,7 @@ pub const Emulator = struct {
     }
     
 
-    pub fn run(self: *Emulator, limit_cycles: ?usize) void {
+    pub fn run(self: *Emulator, limit_cycles: ?usize, limit_instructions: ?usize) void {
        
         create_sigint_handler();
         
@@ -263,6 +263,14 @@ pub const Emulator = struct {
         while (!quit) {
             const sigint = @atomicLoad(bool, &sigint_received, std.builtin.AtomicOrder.acquire);
             quit = self.step(&frame_buffer) or sigint;
+            
+             if (limit_instructions) |max_instr| {
+                if (self.cpu.instruction_count >= max_instr) {
+                    log_emu.info("Instruction limit reached: {} >= {} - Stopping execution...", .{self.cpu.instruction_count, max_instr});
+                    break;  
+                } 
+            }
+
             if (limit_cycles) |max_cycles| {
                 if (self.cpu.cycle_count >= max_cycles) {
                     log_emu.info("Cycle limit reached: {} >= {} - Stopping execution...", .{self.cpu.cycle_count, max_cycles});
@@ -365,6 +373,7 @@ pub const Emulator = struct {
                 }
             }
 
+
             if (cfg.start_at_cycle > cfg.start_at_instr) {
                 break :blk cycle >= cfg.start_at_cycle;
             } else {
@@ -454,16 +463,17 @@ pub const Emulator = struct {
     pub fn update_frame(self: *Emulator, frame_buffer: []u8) void {
         self.bus.write_io_ram(MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
         // as at some point it waits for the rasterline register to reach 0
-        var bus = self.bus;
-        for (MemoryMap.screen_mem_start..MemoryMap.screen_mem_end, MemoryMap.color_mem_start..MemoryMap.color_mem_end) |screen_mem_addr, color_mem_addr| {
-            const screen_code = @as(u16, bus.read(@intCast(screen_mem_addr)));
-
+        for (0..MemoryMap.screen_mem_end-MemoryMap.screen_mem_start) |char_count| {
+            const screen_mem_addr = char_count + MemoryMap.screen_mem_start;
+            const screen_code = @as(u16, self.bus.ram[screen_mem_addr]);
+           
             if (screen_code == 0x20) continue;
 
+            const color_mem_addr = char_count + MemoryMap.color_mem_start;
+            const color_code: u4 = @truncate(self.bus.ram[color_mem_addr]);
+            const color = colors.C64_COLOR_PALETTE[color_code];
+
             const char_addr_start: u16 = (screen_code * 8);
-
-            const char_count = screen_mem_addr - MemoryMap.screen_mem_start;
-
             // coordinates of upper left corner of char
             const char_x = (char_count % 40) * 8;
             const char_y = (char_count / 40) * 8;
@@ -471,20 +481,16 @@ pub const Emulator = struct {
             for (0..8) |char_row_idx| {
                 const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
 
-                //const char_row_byte = self.bus.read(char_row_addr);
                 const char_row_byte = self.bus.character_rom[char_row_addr];
 
                 for (0..8) |char_col_idx| { // The leftmost pixel is represented by the most significant bit
                     const pixel: u1 = bitutils.get_bit_at(char_row_byte, @intCast(7 - char_col_idx));
                     const char_pixel_x = char_x + char_col_idx;
                     const char_pixel_y = char_y + char_row_idx;
-
                     const fbuf_idx: usize = (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
-
+                    
                     if (pixel == 1) {
-                        const color_code: u4 = @truncate(self.bus.read(@intCast(color_mem_addr)));
-                        const color = colors.C64_COLOR_PALETTE[color_code];
-                        frame_buffer[fbuf_idx] = color.r;
+                        frame_buffer[fbuf_idx    ] = color.r;
                         frame_buffer[fbuf_idx + 1] = color.g;
                         frame_buffer[fbuf_idx + 2] = color.b;
                     }
