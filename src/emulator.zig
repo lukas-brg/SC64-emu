@@ -11,6 +11,7 @@ const colors = @import("colors.zig");
 const Renderer = @import("renderer.zig").Renderer;
 const instruction = @import("cpu/instruction.zig");
 const graphics = @import("graphics.zig");
+const cia = @import("cia.zig");
 const print_disassembly_inline = @import("cpu/cpu.zig").print_disassembly_inline;
 
 
@@ -58,6 +59,7 @@ pub const Emulator = struct {
     config: EmulatorConfig = .{},
     trace_config: DebugTraceConfig = .{},
     instruction_count: usize = 0,
+    cia1: cia.CiaI,
     vic: ?graphics.VicII = null,
     __tracing_active: bool = false,
 
@@ -73,6 +75,7 @@ pub const Emulator = struct {
             .bus = bus,
             .cpu = cpu,
             .config = config,
+            .cia1 = cia.CiaI.init(bus),
         };
 
         if (!config.headless) {
@@ -178,7 +181,6 @@ pub const Emulator = struct {
 
         const quit = false;
         
-        keyboard.update_keyboard_state(self);
         self.cpu.mutex.lock();
         self.cpu.step();
         self.cpu.mutex.unlock();
@@ -188,6 +190,7 @@ pub const Emulator = struct {
         //self.bus.io_ram_mutex.unlock();
 
         if (self.instruction_count % 20000 == 0) {
+            keyboard.update_keyboard_state(self);
             //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
         }
 

@@ -30,8 +30,6 @@ pub const VicII = struct {
     scaling_factor: f32,
 
     pub fn init(bus: *b.Bus, cpu: *c.CPU, scaling_factor: f32) VicII {
-        
-       
         const frame_buffer: [SCREEN_WIDTH * SCREEN_HEIGHT * 3]u8 = undefined;
     
         var vic: VicII = .{
@@ -144,14 +142,11 @@ pub const VicII = struct {
             }
         }
 
-        
-       
-
         self.renderer.render_frame(&self.frame_buffer, border_color);
-        self.n_frames_rendered += 1;
-        
         self.cpu.mutex.lock();
         self.cpu.irq();
         self.cpu.mutex.unlock();
+        self.n_frames_rendered += 1;
+     
     }
 };
