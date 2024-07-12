@@ -176,27 +176,33 @@ pub const Emulator = struct {
 
     pub fn step(self: *Emulator) bool {
 
-        var quit = false;
+        const quit = false;
+        
+        keyboard.update_keyboard_state(self);
+        self.cpu.mutex.lock();
         self.cpu.step();
+        self.cpu.mutex.unlock();
+        
         self.print_trace();
+        //self.bus.io_ram_mutex.lock();
+        //self.bus.io_ram_mutex.unlock();
 
         if (self.instruction_count % 20000 == 0) {
-            keyboard.update_keyboard_state(self);
-            std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
+            //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
         }
 
-        if (self.instruction_count % 70000 == 0) {
-            if(self.vic) |*vic| {
+        // if (self.instruction_count % 70000 == 0) {
+        //     if(self.vic) |*vic| {
                 
-                vic.update_screen();
-                self.cpu.irq();
+        //         //vic.update_screen();
+        //         //self.cpu.irq();
+        //         if (vic.renderer.window_should_close()) {
+        //             log_emu.info("Window close event detected - Stopping execution...", .{});
+        //             quit = true;
+        //         } 
 
-                if (vic.renderer.window_should_close()) {
-                    log_emu.info("Window close event detected - Stopping execution...", .{});
-                    quit = true;
-                } 
-            }
-        }
+        //     }
+        // }
 
         self.instruction_count += 1;
         return quit;
@@ -223,12 +229,11 @@ pub const Emulator = struct {
     pub fn run(self: *Emulator, limit_cycles: ?usize, limit_instructions: ?usize) void {
        
         create_sigint_handler();
-        
         self.cpu.reset();
         
-        if (!self.config.headless) {
-            self.vic = graphics.VicII.init(self.bus, self.config.scaling_factor);
-        }    
+        var vic = graphics.VicII.init(self.bus, self.cpu, self.config.scaling_factor);
+        const thread = std.Thread.spawn(.{}, graphics.VicII.run, .{&vic}) catch std.debug.panic("Thread fail", .{});
+        defer thread.detach();
 
         var quit = false;
         log_emu.info("Starting execution...", .{});
@@ -258,6 +263,7 @@ pub const Emulator = struct {
         }
 
         const runtime_ms = endtime_ms - starttime_ms;
+        self.vic = vic;
         self.log_runtime_stats(runtime_ms);
     }
 

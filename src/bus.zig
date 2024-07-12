@@ -5,6 +5,9 @@ const log_bus = std.log.scoped(.bus);
 
 const MEM_SIZE: u17 = 0x10000;
 
+var bus_s = std.Thread.Semaphore{};
+var bus_m = std.Thread.Mutex{};
+
 pub const MemoryMap = enum {
     pub const screen_mem_start = 0x0400;
     pub const screen_mem_end = 0x07E7;
@@ -34,12 +37,16 @@ pub const MemoryMap = enum {
 pub const MemoryLocation = struct {
     val_ptr: *u8,
     read_only: bool,
-    control_bits: u3, // This is intended to help debugging
+    control_bits: u3, // This is intended to help debugging,
+   
 };
 
 pub const Bus = struct {
     ram: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
-
+    mutex: std.Thread.Mutex = .{},
+    ram_mutex: std.Thread.Mutex = .{},
+    io_ram_mutex: std.Thread.Mutex = .{},
+    
     mem_size: u17 = MEM_SIZE,
 
     character_rom: [MemoryMap.character_rom_end - MemoryMap.character_rom_start + 1]u8 = std.mem.zeroes([MemoryMap.character_rom_end - MemoryMap.character_rom_start + 1]u8),
@@ -56,6 +63,8 @@ pub const Bus = struct {
     }
 
     pub fn write(self: *Bus, addr: u16, val: u8) void {
+        self.mutex.lock();
+        defer self.mutex.unlock();
         const mem_location = self.access_mem_location(addr);
         if (addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
             log_bus.err("Writing to character rom at {X:0>4}\n", .{addr});
@@ -77,7 +86,40 @@ pub const Bus = struct {
 
     pub fn write_io_ram(self: *Bus, addr: u16, val: u8) void {
         const index = addr - comptime MemoryMap.io_ram_start;
+        self.io_ram_mutex.lock();
         self.io_ram[index] = val;
+        self.io_ram_mutex.unlock();
+    }
+
+    pub fn read_io_ram(self: *Bus, addr: u16) u8 {
+        const index = addr - comptime MemoryMap.io_ram_start;
+        self.io_ram_mutex.lock();
+        const val = self.io_ram[index];
+        self.io_ram_mutex.unlock();
+        return val;
+    }
+
+    pub fn aquire_io_ram(self: *Bus) []u8 {
+        self.io_ram_mutex.lock();
+        return self.io_ram;
+    }
+
+    pub fn write_ram(self: *Bus, addr: u16, val: u8) void {
+        self.ram_mutex.lock();
+        self.io_ram[addr] = val;
+        self.ram_mutex.unlock();
+    }
+
+    pub fn read_ram(self: *Bus, addr: u16) u8 {
+        self.ram_mutex.lock();
+        const val = self.ram[addr];
+        self.ram_mutex.unlock();
+        return val;
+    }
+
+    pub fn aquire_ram(self: *Bus) []u8 {
+        self.ram_mutex.lock();
+        return self.ram;
     }
 
     pub fn write_16(self: *Bus, addr: u16, val: u16) void {

@@ -1,5 +1,8 @@
+const std = @import("std");
+
 const r = @import("renderer.zig");
 const b = @import("bus.zig");
+const c = @import("cpu/cpu.zig");
 const emu = @import("emulator.zig");
 const colors = @import("colors.zig");
 const bitutils = @import("cpu/bitutils.zig");
@@ -14,22 +17,28 @@ pub const BORDER_SIZE_Y = 12;
 pub const SCREEN_WIDTH = 320;
 pub const SCREEN_HEIGHT = 200;
 
+pub const ROWS = 25;
+pub const COLS = 40;
+
 
 pub const VicII = struct {
-    renderer: r.Renderer,
+    renderer: r.Renderer = undefined,
     bus: *b.Bus,
     frame_buffer: [SCREEN_WIDTH * SCREEN_HEIGHT * 3]u8,
     n_frames_rendered: usize = 0,
+    cpu: *c.CPU,
+    scaling_factor: f32,
 
-    pub fn init(bus: *b.Bus, scaling_factor: f32) VicII {
+    pub fn init(bus: *b.Bus, cpu: *c.CPU, scaling_factor: f32) VicII {
         
-        const renderer = r.Renderer.init(scaling_factor);
+       
         const frame_buffer: [SCREEN_WIDTH * SCREEN_HEIGHT * 3]u8 = undefined;
     
         var vic: VicII = .{
-            .renderer = renderer,
             .bus = bus,
             .frame_buffer = frame_buffer,
+            .cpu = cpu,
+            .scaling_factor = scaling_factor,
         };
         
         vic.clear_color_mem();
@@ -38,15 +47,31 @@ pub const VicII = struct {
         return vic;
     }
 
-    pub fn clear_color_mem(self: *VicII) void {
-        const bgcolor_code = self.bus.ram[MemoryMap.text_color];
-        @memset(
-            self.bus.ram[MemoryMap.color_mem_start..MemoryMap.character_rom_end+1],
-            bgcolor_code,
-        );
+
+    pub fn run(self: *VicII) void {
+        self.renderer = r.Renderer.init(self.scaling_factor);
+        while (true) {
+            const start = std.time.nanoTimestamp();
+            self.update_screen();
+            std.time.sleep(@intCast(@max(0, 16666666 - ((std.time.nanoTimestamp() - start)))));
+        }
     }
 
-    pub fn clear_screen_mem(self: *VicII) void {
+    fn clear_color_mem(self: *VicII) void {
+        
+        self.bus.ram_mutex.lock();
+        //const bgcolor_code = self.bus.ram[MemoryMap.text_color];
+        const bgcolor_code = self.bus.read(MemoryMap.text_color);
+        @memset(
+            self.bus.ram[MemoryMap.color_mem_start..MemoryMap.color_mem_end+1],
+            bgcolor_code,
+        );
+        self.bus.ram_mutex.unlock();
+    }
+
+    fn clear_screen_mem(self: *VicII) void {
+        self.bus.mutex.lock();
+        defer self.bus.mutex.unlock();
         @memset(
             self.bus.ram[MemoryMap.screen_mem_start..MemoryMap.screen_mem_end+1],
             0x20,
@@ -54,7 +79,7 @@ pub const VicII = struct {
     }
 
 
-    pub fn clear_screen_text_area(self: *VicII) void {
+    fn clear_screen_text_area(self: *VicII) void {
         const color_code: u4 = @truncate(self.bus.read(MemoryMap.bg_color));
         const bg_color = colors.C64_COLOR_PALETTE[color_code];
         for (0..SCREEN_HEIGHT * SCREEN_WIDTH) |i| {
@@ -67,18 +92,31 @@ pub const VicII = struct {
     
     pub fn update_screen(self: *VicII) void {
        // self.clear_screen_mem();
+        
+        
         self.clear_screen_text_area();
+        //self.clear_color_mem();
+      
         self.bus.write_io_ram(b.MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
+         const border_color = blk: {
+            const color_code: u4 = @truncate(self.bus.read_io_ram(MemoryMap.frame_color));
+            break :blk colors.C64_COLOR_PALETTE[color_code];
+        };
+        
+      
+
         // as at some point it waits for the rasterline register to reach 0
         var frame_buffer = &self.frame_buffer;
         for (0..MemoryMap.screen_mem_end-MemoryMap.screen_mem_start) |char_count| {
-            const screen_mem_addr = char_count + MemoryMap.screen_mem_start;
-            const screen_code = @as(u16, self.bus.ram[screen_mem_addr]);
+            const screen_mem_addr: u16 = @intCast(char_count + MemoryMap.screen_mem_start);
+            const color_mem_addr: u16 = @intCast(char_count + MemoryMap.color_mem_start);
+            
            
+            const color_code: u4 = @truncate(self.bus.read_io_ram(color_mem_addr));
+            
+            const screen_code = @as(u16, self.bus.read_ram(screen_mem_addr));
             if (screen_code == 0x20) continue;
-
-            const color_mem_addr = char_count + MemoryMap.color_mem_start;
-            const color_code: u4 = @truncate(self.bus.ram[color_mem_addr]);
+            //std.debug.print("color {any}\n", .{color_code});
             const color = colors.C64_COLOR_PALETTE[color_code];
 
             const char_addr_start: u16 = (screen_code * 8);
@@ -90,7 +128,7 @@ pub const VicII = struct {
                 const char_row_addr: u16 = @intCast(char_addr_start + char_row_idx);
 
                 const char_row_byte = self.bus.character_rom[char_row_addr];
-
+   
                 for (0..8) |char_col_idx| { // The leftmost pixel is represented by the most significant bit
                     const pixel: u1 = bitutils.get_bit_at(char_row_byte, @intCast(7 - char_col_idx));
                     const char_pixel_x = char_x + char_col_idx;
@@ -106,12 +144,14 @@ pub const VicII = struct {
             }
         }
 
-        const border_color = blk: {
-            const color_code: u4 = @truncate(self.bus.read(MemoryMap.frame_color));
-            break :blk colors.C64_COLOR_PALETTE[color_code];
-        };
+        
+       
 
         self.renderer.render_frame(&self.frame_buffer, border_color);
         self.n_frames_rendered += 1;
+        
+        self.cpu.mutex.lock();
+        self.cpu.irq();
+        self.cpu.mutex.unlock();
     }
 };

@@ -1,6 +1,7 @@
 const std = @import("std");
 const Bus = @import("../bus.zig").Bus;
 
+
 const bitutils = @import("bitutils.zig");
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
@@ -99,6 +100,7 @@ pub const CPU = struct {
     current_instruction: ?Instruction = null,
     halt: bool = false,
     print_debug_info: bool = true,
+    mutex: std.Thread.Mutex = .{},
 
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
@@ -212,7 +214,6 @@ pub const CPU = struct {
     pub fn step(self: *CPU) void {
         self.instruction_remaining_cycles = 0;
         const d_prev = self.status.decimal;
-      
         const opcode = self.fetch_byte();
         
         const opcode_info = decode_opcode(opcode) orelse { 

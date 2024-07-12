@@ -30,6 +30,7 @@ pub const Renderer = struct {
         return self.__window_close;
     }
 
+
     pub fn init_window(self: *Renderer) void {
         
         const scale = self.scale;
