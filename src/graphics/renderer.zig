@@ -2,13 +2,13 @@ const std = @import("std");
 
 const raylib = @import("raylib.zig");
 
-const MemoryMap = @import("bus.zig").MemoryMap;
+const MemoryMap = @import("../bus.zig").MemoryMap;
 const colors = @import("colors.zig");
 
-const SCREEN_WIDTH = @import("graphics.zig").SCREEN_WIDTH;
-const SCREEN_HEIGHT = @import("graphics.zig").SCREEN_HEIGHT;
-const BORDER_SIZE_X = @import("graphics.zig").BORDER_SIZE_X;
-const BORDER_SIZE_Y = @import("graphics.zig").BORDER_SIZE_Y;
+const SCREEN_WIDTH = @import("vic.zig").SCREEN_WIDTH;
+const SCREEN_HEIGHT = @import("vic.zig").SCREEN_HEIGHT;
+const BORDER_SIZE_X = @import("vic.zig").BORDER_SIZE_X;
+const BORDER_SIZE_Y = @import("vic.zig").BORDER_SIZE_Y;
 
 const log_renderer = std.log.scoped(.renderer);
 

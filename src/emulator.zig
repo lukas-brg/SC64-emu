@@ -1,16 +1,16 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const graphics = @import("graphics.zig");
 
-const raylib = @import("raylib.zig");
+const raylib = graphics.raylib;
 
 const CPU = @import("cpu/cpu.zig").CPU;
 const Bus = @import("bus.zig").Bus;
 const MemoryMap = @import("bus.zig").MemoryMap;
 const bitutils = @import("cpu/bitutils.zig");
-const colors = @import("colors.zig");
-const Renderer = @import("renderer.zig").Renderer;
+const colors = graphics.colors;
+const Renderer = graphics.Renderer;
 const instruction = @import("cpu/instruction.zig");
-const graphics = @import("graphics.zig");
 const cia = @import("cia.zig");
 const keyboard = @import("keyboard.zig");
 

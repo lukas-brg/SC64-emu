@@ -1,12 +1,12 @@
 const std = @import("std");
 
-const raylib = @import("raylib.zig");
-
+const graphics = @import("graphics.zig");
 const emu = @import("emulator.zig");
 const cia = @import("cia.zig");
 const bus = @import("bus.zig");
 
 const log_io = std.log.scoped(.io);
+const raylib = graphics.raylib;
 
 pub fn update_keyboard_state(emulator: *emu.Emulator) void {
     

@@ -128,10 +128,7 @@ pub fn main() !void {
         try emulator.init_c64();
         emulator.run(res.args.cycles, res.args.instructions);
     }
-    // std.log.info("Rendering loops exited", .{});
-    // const stdout_file = std.io.getStdOut().writer();
-    // var bw = std.io.bufferedWriter(stdout_file);
-    // bw.flush() catch std.debug.print("error flushing\n", .{}); // don't forget to flush!
+    
 }
 
 fn test_init_reset_vector(bus: *Bus) void {
