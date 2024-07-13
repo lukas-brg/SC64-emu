@@ -28,6 +28,7 @@ pub const VicII = struct {
     n_frames_rendered: usize = 0,
     cpu: *c.CPU,
     scaling_factor: f32,
+    termination_requested: bool = false,
 
     pub fn init(bus: *b.Bus, cpu: *c.CPU, scaling_factor: f32) VicII {
         const frame_buffer: [SCREEN_WIDTH * SCREEN_HEIGHT * 3]u8 = undefined;
@@ -48,11 +49,13 @@ pub const VicII = struct {
 
     pub fn run(self: *VicII) void {
         self.renderer = r.Renderer.init(self.scaling_factor);
-        while (true) {
+        
+        while (!@atomicLoad(bool, &self.termination_requested, .acquire)) {
             const start = std.time.nanoTimestamp();
             self.update_screen();
             std.time.sleep(@intCast(@max(0, 16666666 - ((std.time.nanoTimestamp() - start)))));
         }
+        std.log.info("Rendering loops exited", .{});
     }
 
     fn clear_color_mem(self: *VicII) void {
@@ -89,27 +92,22 @@ pub const VicII = struct {
     
     
     pub fn update_screen(self: *VicII) void {
-       // self.clear_screen_mem();
-        
-        
         self.clear_screen_text_area();
-        //self.clear_color_mem();
       
-        self.bus.write_io_ram(b.MemoryMap.raster_line_reg, 0); //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
-         const border_color = blk: {
+        //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
+        @atomicStore(u8, &self.bus.io_ram[comptime (b.MemoryMap.raster_line_reg - b.MemoryMap.io_ram_start)], 0, .unordered);
+
+        const border_color = blk: {
             const color_code: u4 = @truncate(self.bus.read_io_ram(MemoryMap.frame_color));
             break :blk colors.C64_COLOR_PALETTE[color_code];
         };
         
-      
-
         // as at some point it waits for the rasterline register to reach 0
         var frame_buffer = &self.frame_buffer;
         for (0..MemoryMap.screen_mem_end-MemoryMap.screen_mem_start) |char_count| {
             const screen_mem_addr: u16 = @intCast(char_count + MemoryMap.screen_mem_start);
             const color_mem_addr: u16 = @intCast(char_count + MemoryMap.color_mem_start);
-            
-           
+                       
             const color_code: u4 = @truncate(self.bus.read_io_ram(color_mem_addr));
             
             const screen_code = @as(u16, self.bus.read_ram(screen_mem_addr));
@@ -143,10 +141,15 @@ pub const VicII = struct {
         }
 
         self.renderer.render_frame(&self.frame_buffer, border_color);
-        self.cpu.mutex.lock();
         self.cpu.irq();
-        self.cpu.mutex.unlock();
         self.n_frames_rendered += 1;
-     
+        if (self.renderer.window_should_close()) {
+            @atomicStore(
+                bool, 
+                &self.termination_requested, 
+                true, 
+                .unordered,
+            );
+        }
     }
 };

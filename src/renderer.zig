@@ -19,6 +19,7 @@ pub const Renderer = struct {
     __window_close: bool = false,
 
     pub fn init(scaling_factor: f32) Renderer {
+        raylib.SetTraceLogLevel(raylib.LOG_WARNING);
         log_renderer.info("Initializing Renderer...", .{});
         var renderer = Renderer{ .scale = scaling_factor };
         renderer.init_window();

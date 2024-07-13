@@ -6,45 +6,6 @@ const AddressingMode = @import("opcodes.zig").AddressingMode;
 const bitutils = @import("bitutils.zig");
 
 
-pub fn get_operand_address(cpu: *CPU, opcode: OpcodeInfo) u16 {
-
-    const address: u16 = switch (opcode.addressing_mode) {
-        .IMMEDIATE => cpu.PC + 1,
-        .ABSOLUTE => cpu.bus.read_16(cpu.PC+1),
-        .ABSOLUTE_X => cpu.bus.read_16(cpu.PC+1) +% cpu.X,
-        .ABSOLUTE_Y => cpu.bus.read_16(cpu.PC+1) +%  cpu.Y,
-        .ZEROPAGE => @as(u16, cpu.bus.read(cpu.PC+1)),
-        .ZEROPAGE_X => @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.X),
-        .ZEROPAGE_Y => @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.Y),
-        .RELATIVE => blk: {
-            const offset: u8 = cpu.bus.read(cpu.PC + 1);
-            if ((offset & 0x80) != 0) {
-                break :blk cpu.PC + opcode.bytes - (0x100 - @as(u16, offset));
-            } else {
-                break :blk cpu.PC + opcode.bytes + offset;
-            }
-        },
-        .INDIRECT => blk: {
-            const lookup_addr = cpu.bus.read_16(cpu.PC+1);
-            const addr = cpu.bus.read_16(lookup_addr);
-            break :blk addr;
-        },
-        .INDIRECT_X => blk: {
-            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1) +% cpu.X);
-            const addr = cpu.bus.read_16(lookup_addr);
-            break :blk addr;
-        },
-        .INDIRECT_Y => blk: {
-            const lookup_addr: u16 = @as(u16, cpu.bus.read(cpu.PC+1));
-            const addr = cpu.bus.read_16(lookup_addr)  +% cpu.Y;
-            break :blk addr;
-        },
-        .IMPLIED => undefined,
-        .ACCUMULATOR => undefined,
-    };
-   
-    return address;
-}
 
 pub const Instruction = struct {
     operand: ?u8 = null,
@@ -62,59 +23,106 @@ pub const Instruction = struct {
     }
 };
 
-fn page_boundary_crossed(cpu: *CPU, addr: u16) bool {
+inline fn page_boundary_crossed(pc: u16, addr: u16) bool {
     // A page boundary is crossed when the high byte differs
-    return (cpu.PC & 0xFF00) != (addr & 0xFF00);
+    return (pc & 0xFF00) != (addr & 0xFF00);
 }
 
 pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
+    var address: ?u16 = null;
+    var operand: ?u8 = null;
+    var page_crossed = false;
+    const pc = cpu.PC;
 
-    const operand_info: Instruction = switch (opcode.addressing_mode) {
-        .ACCUMULATOR => .{
-            .operand = cpu.A,
-            .operand_addr = null,
-            .page_crossed = false,
-            .cycles = opcode.cycles,
-            .instruction_addr = cpu.PC,
-            .mnemonic=opcode.mnemonic,
-            .addressing_mode=opcode.addressing_mode,
-            .bytes=opcode.bytes,
-            
+    switch (opcode.addressing_mode) {
+        .IMMEDIATE => {
+            const addr = pc + 1;
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
         },
-
-        .IMPLIED => .{
-            .operand = null,
-            .operand_addr = null,
-            .page_crossed = false,
-            .cycles = opcode.cycles,
-            .instruction_addr = cpu.PC,
-            .mnemonic=opcode.mnemonic,
-            .addressing_mode=opcode.addressing_mode,
-            .bytes=opcode.bytes,
+        .ABSOLUTE => {
+            const addr = cpu.bus.read_16(pc+1);
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
         },
+        .ABSOLUTE_X => {
+            const addr = cpu.bus.read_16(pc+1) +% cpu.X;
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
+        },
+        .ABSOLUTE_Y => {
+            const addr = cpu.bus.read_16(pc+1) +%  cpu.Y;
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
 
-        else => blk: {
-            const address = get_operand_address(cpu, opcode);
-            const operand = cpu.bus.read(address);
-            const page_crossed = page_boundary_crossed(cpu, address);
-            const cycles = opcode.cycles + @intFromBool(page_crossed); // If a page cross happens instructions take one cycle more to execute
+        },
+        .ZEROPAGE => {
+            const addr = @as(u16, cpu.bus.read(pc+1));
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
+        },
+        .ZEROPAGE_X => {
+            const addr = @as(u16, cpu.bus.read(pc+1) +% cpu.X);
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
+        },
+        .ZEROPAGE_Y => {
+            const addr = @as(u16, cpu.bus.read(pc+1) +% cpu.Y);
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
+        },
+        .RELATIVE => {
+            const offset: u8 = cpu.bus.read(pc + 1);
+            if ((offset & 0x80) != 0) {
+                address = pc + opcode.bytes - (0x100 - @as(u16, offset));
+            } else {
+                address = pc + opcode.bytes + offset;
+            }
+            operand = cpu.bus.read(address.?);
+            page_crossed = page_boundary_crossed(pc, address.?);
+        },
+        .INDIRECT => {
+            const lookup_addr = cpu.bus.read_16(pc+1);
+            const addr = cpu.bus.read_16(lookup_addr);
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
+        },
+        .INDIRECT_X => {
+            const lookup_addr: u16 = @as(u16, cpu.bus.read(pc+1) +% cpu.X);
+            const addr = cpu.bus.read_16(lookup_addr);
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
+        },
+        .INDIRECT_Y => {
+            const lookup_addr: u16 = @as(u16, cpu.bus.read(pc+1));
+            const addr = cpu.bus.read_16(lookup_addr)  +% cpu.Y;
+            operand = cpu.bus.read(addr);
+            page_crossed = page_boundary_crossed(pc, addr);
+            address = addr;
+        },
+        .ACCUMULATOR => {
+            operand = cpu.A;
+        },
+        else => {},
+    }
 
-            break :blk .{
-                .operand=operand, 
-                .operand_addr=address, 
-                .page_crossed=page_crossed, 
-                .cycles=cycles, 
-                .instruction_addr  =cpu.PC,
-                .mnemonic=opcode.mnemonic,
-                .addressing_mode=opcode.addressing_mode,
-                .bytes=opcode.bytes,
-            };
-        }
+    return .{
+        .operand = operand, 
+        .operand_addr = address, 
+        .page_crossed = page_crossed, 
+        .cycles = opcode.cycles + @intFromBool(page_crossed), 
+        .instruction_addr  = pc,
+        .mnemonic = opcode.mnemonic,
+        .addressing_mode = opcode.addressing_mode,
+        .bytes = opcode.bytes,
     };
-
-    // if (cpu.print_debug_info) {
-    //     operand_info.print();
-    // }
-   
-    return operand_info;
 }

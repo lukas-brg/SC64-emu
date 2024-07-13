@@ -123,11 +123,13 @@ pub const CPU = struct {
 
     pub fn irq(self: *CPU) void {
         if (self.status.interrupt_disable == 0) {
+            self.mutex.lock();
             self.push_16(self.PC);
             var status = self.status;
             status.break_flag = 0;
             self.push(status.to_byte());
             self.PC = self.bus.read_16(IRQ_VECTOR);
+            self.mutex.unlock();
             //log_cpu.debug("IRQ", .{});
         } else {
             //log_cpu.debug("IRQ (masked)", .{});
@@ -212,6 +214,7 @@ pub const CPU = struct {
 
     /// Executes the next instruction in a single step
     pub fn step(self: *CPU) void {
+        self.mutex.lock();
         self.instruction_remaining_cycles = 0;
         const d_prev = self.status.decimal;
         const opcode = self.fetch_byte();
@@ -226,6 +229,7 @@ pub const CPU = struct {
         self.cycle_count += self.instruction_remaining_cycles;
         self.instruction_count += 1;
         const d_curr = self.status.decimal;
+        self.mutex.unlock();
 
         if (d_curr != d_prev) {
             if (d_curr == 1) {
