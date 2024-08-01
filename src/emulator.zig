@@ -277,7 +277,9 @@ pub const Emulator = struct {
         const starttime_ms = std.time.milliTimestamp();
         while (!quit) {
             pc_prev = self.cpu.PC;
-            self.step();
+            self.cpu.step();
+            self.print_trace();
+            self.step_count += 1;
             quit = sigint_received;
             if (pc_prev == self.cpu.PC) {
                 if (self.cpu.PC == addr_success) {
