@@ -3,7 +3,7 @@ const CPU = @import("cpu.zig").CPU;
 const instructions = @import("instructions.zig");
 const instruction = @import("instruction.zig");
 
-const HandlerFn = fn(*CPU, instruction.Instruction) void;
+const HandlerFn = fn(*CPU, *instruction.Instruction) void;
 
 
 const opcode_lookup_table: [256]?OpcodeInfo = blk: {

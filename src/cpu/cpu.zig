@@ -99,6 +99,7 @@ pub const CPU = struct {
     current_instruction: ?Instruction = null,
     halt: bool = false,
     print_debug_info: bool = true,
+    mutex: std.Thread.Mutex = .{},
 
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
@@ -121,11 +122,13 @@ pub const CPU = struct {
 
     pub fn irq(self: *CPU) void {
         if (self.status.interrupt_disable == 0) {
+            self.mutex.lock();
             self.push_16(self.PC);
             var status = self.status;
             status.break_flag = 0;
             self.push(status.to_byte());
             self.PC = self.bus.read_16(IRQ_VECTOR);
+            self.mutex.unlock();
             //log_cpu.debug("IRQ", .{});
         } else {
             //log_cpu.debug("IRQ (masked)", .{});
@@ -200,6 +203,7 @@ pub const CPU = struct {
     }
 
     pub fn clock_tick(self: *CPU) void {
+        
         if (self.instruction_remaining_cycles > 0) {
             self.instruction_remaining_cycles -= 1;
         } else {
@@ -210,21 +214,23 @@ pub const CPU = struct {
 
     /// Executes the next instruction in a single step
     pub fn step(self: *CPU) void {
-        self.instruction_remaining_cycles = 0;
+        self.mutex.lock();
         const d_prev = self.status.decimal;
-      
         const opcode = self.fetch_byte();
         
         const opcode_info = decode_opcode(opcode) orelse { 
             std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{ opcode, self.PC });
         };
        
-        const instruction = get_instruction(self, opcode_info);
+        self.instruction_remaining_cycles = 0;
+        var instruction = get_instruction(self, opcode_info);
         self.current_instruction = instruction;
-        opcode_info.handler_fn(self, instruction);
-        self.cycle_count += self.instruction_remaining_cycles;
+        opcode_info.handler_fn(self, &instruction);
+        self.instruction_remaining_cycles = instruction.cycles - 1;
+        self.cycle_count += instruction.cycles;
         self.instruction_count += 1;
         const d_curr = self.status.decimal;
+        self.mutex.unlock();
 
         if (d_curr != d_prev) {
             if (d_curr == 1) {

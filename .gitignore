@@ -10,3 +10,4 @@ test_files/AllSuiteA*
 .vscode/**
 zig-out/**
 kernal_commented.asm
+callgrind_*.*

@@ -128,6 +128,7 @@ pub fn main() !void {
         try emulator.init_c64();
         emulator.run(res.args.cycles, res.args.instructions);
     }
+    
 }
 
 fn test_init_reset_vector(bus: *Bus) void {

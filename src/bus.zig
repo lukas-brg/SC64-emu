@@ -5,6 +5,9 @@ const log_bus = std.log.scoped(.bus);
 
 const MEM_SIZE: u17 = 0x10000;
 
+var bus_s = std.Thread.Semaphore{};
+var bus_m = std.Thread.Mutex{};
+
 pub const MemoryMap = enum {
     pub const screen_mem_start = 0x0400;
     pub const screen_mem_end = 0x07E7;
@@ -29,17 +32,25 @@ pub const MemoryMap = enum {
     pub const raster_line_reg = 0xD012;
 
     pub const processor_port = 1;
+
+    pub const cia1_start = 0xDC00;
+    pub const cia1_mirrored_start = 0xDC10;
+    pub const cia1_end = 0xDCFF;
 };
 
 pub const MemoryLocation = struct {
     val_ptr: *u8,
     read_only: bool,
-    control_bits: u3, // This is intended to help debugging
+    control_bits: u3, // This is intended to help debugging,
+   
 };
 
 pub const Bus = struct {
     ram: [MEM_SIZE]u8 = std.mem.zeroes([MEM_SIZE]u8),
-
+    mutex: std.Thread.Mutex = .{},
+    ram_mutex: std.Thread.Mutex = .{},
+    io_ram_mutex: std.Thread.Mutex = .{},
+    
     mem_size: u17 = MEM_SIZE,
 
     character_rom: [MemoryMap.character_rom_end - MemoryMap.character_rom_start + 1]u8 = std.mem.zeroes([MemoryMap.character_rom_end - MemoryMap.character_rom_start + 1]u8),
@@ -56,6 +67,8 @@ pub const Bus = struct {
     }
 
     pub fn write(self: *Bus, addr: u16, val: u8) void {
+        //self.mutex.lock();
+       // defer self.mutex.unlock();
         const mem_location = self.access_mem_location(addr);
         if (addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
             log_bus.err("Writing to character rom at {X:0>4}\n", .{addr});
@@ -77,11 +90,48 @@ pub const Bus = struct {
 
     pub fn write_io_ram(self: *Bus, addr: u16, val: u8) void {
         const index = addr - comptime MemoryMap.io_ram_start;
+      //  self.io_ram_mutex.lock();
         self.io_ram[index] = val;
+      //  self.io_ram_mutex.unlock();
+    }
+
+    pub fn read_io_ram(self: *Bus, addr: u16) u8 {
+        const index = addr - comptime MemoryMap.io_ram_start;
+     //   self.io_ram_mutex.lock();
+        const val = self.io_ram[index];
+     //   self.io_ram_mutex.unlock();
+        return val;
+    }
+
+    pub fn aquire_io_ram(self: *Bus) []u8 {
+       self.io_ram_mutex.lock();
+        return self.io_ram;
+    }
+
+    pub fn write_ram(self: *Bus, addr: u16, val: u8) void {
+      //  self.ram_mutex.lock();
+        self.io_ram[addr] = val;
+     //   self.ram_mutex.unlock();
+    }
+
+    pub fn read_ram(self: *Bus, addr: u16) u8 {
+      //  self.ram_mutex.lock();
+        const val = self.ram[addr];
+      //  self.ram_mutex.unlock();
+        return val;
+    }
+
+    pub fn aquire_ram(self: *Bus) []u8 {
+        self.ram_mutex.lock();
+        return self.ram;
     }
 
     pub fn write_16(self: *Bus, addr: u16, val: u16) void {
-        if (addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});
+        //if (addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});
+        // const mem_location = self.access_mem_location(addr);
+        // const ptr16: *u16 = @ptrCast(@alignCast(mem_location.val_ptr));
+        // ptr16.* = val;
+        
         const bytes = bitutils.split_into_bytes(val);
         self.write(addr, bytes[0]);
         self.write(addr + 1, bytes[1]);
@@ -93,7 +143,12 @@ pub const Bus = struct {
     }
 
     pub fn read_16(self: *Bus, addr: u16) u16 {
-        if (addr > MEM_SIZE - 2) std.debug.panic("Trying to read from out of bounds at {X:0>4}", .{addr});
+        // if (addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});
+        // const mem_location = self.access_mem_location(addr);
+        // std.log.debug("addr {X:0>4}", .{addr});
+        // const ptr16: *u16 = @ptrCast(@alignCast(mem_location.val_ptr));
+        // return ptr16.*; 
+        //if (addr > MEM_SIZE - 2) std.debug.panic("Trying to read from out of bounds at {X:0>4}", .{addr});
         const low = self.read(addr);
         const high = self.read(addr + 1);
         return bitutils.combine_bytes(low, high);
@@ -135,7 +190,7 @@ pub const Bus = struct {
             };
         }
 
-        const ram_control_bits: u2 = @truncate(banking_control_bits & 3);
+        const ram_control_bits: u2 = @truncate(banking_control_bits);
 
         var val_ptr: *u8 = undefined;
         var read_only = false;
@@ -175,7 +230,14 @@ pub const Bus = struct {
                                 read_only = true;
                             },
                             1 => {
-                                val_ptr = &self.io_ram[addr - MemoryMap.character_rom_start];
+                                switch (addr) {
+                                    MemoryMap.cia1_mirrored_start...MemoryMap.cia1_end => {
+                                        const offset = (addr - MemoryMap.cia1_mirrored_start) % 16;
+                                        const io_idx = offset + comptime (MemoryMap.cia1_start - MemoryMap.io_ram_start);
+                                        val_ptr = &self.io_ram[io_idx];
+                                    },
+                                    else => val_ptr = &self.io_ram[addr - MemoryMap.character_rom_start]                      
+                                }
                             },
                         }
                     },

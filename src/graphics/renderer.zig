@@ -2,13 +2,13 @@ const std = @import("std");
 
 const raylib = @import("raylib.zig");
 
-const MemoryMap = @import("bus.zig").MemoryMap;
+const MemoryMap = @import("../bus.zig").MemoryMap;
 const colors = @import("colors.zig");
 
-const SCREEN_WIDTH = @import("graphics.zig").SCREEN_WIDTH;
-const SCREEN_HEIGHT = @import("graphics.zig").SCREEN_HEIGHT;
-const BORDER_SIZE_X = @import("graphics.zig").BORDER_SIZE_X;
-const BORDER_SIZE_Y = @import("graphics.zig").BORDER_SIZE_Y;
+const SCREEN_WIDTH = @import("vic.zig").SCREEN_WIDTH;
+const SCREEN_HEIGHT = @import("vic.zig").SCREEN_HEIGHT;
+const BORDER_SIZE_X = @import("vic.zig").BORDER_SIZE_X;
+const BORDER_SIZE_Y = @import("vic.zig").BORDER_SIZE_Y;
 
 const log_renderer = std.log.scoped(.renderer);
 
@@ -19,6 +19,7 @@ pub const Renderer = struct {
     __window_close: bool = false,
 
     pub fn init(scaling_factor: f32) Renderer {
+        raylib.SetTraceLogLevel(raylib.LOG_WARNING);
         log_renderer.info("Initializing Renderer...", .{});
         var renderer = Renderer{ .scale = scaling_factor };
         renderer.init_window();
@@ -29,6 +30,7 @@ pub const Renderer = struct {
     pub fn window_should_close(self: *Renderer) bool {
         return self.__window_close;
     }
+
 
     pub fn init_window(self: *Renderer) void {
         
