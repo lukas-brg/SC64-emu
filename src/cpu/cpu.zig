@@ -1,7 +1,6 @@
 const std = @import("std");
 const Bus = @import("../bus.zig").Bus;
 
-
 const bitutils = @import("bitutils.zig");
 
 const decode_opcode = @import("opcodes.zig").decode_opcode;
@@ -204,6 +203,7 @@ pub const CPU = struct {
     }
 
     pub fn clock_tick(self: *CPU) void {
+        
         if (self.instruction_remaining_cycles > 0) {
             self.instruction_remaining_cycles -= 1;
         } else {
@@ -215,7 +215,6 @@ pub const CPU = struct {
     /// Executes the next instruction in a single step
     pub fn step(self: *CPU) void {
         self.mutex.lock();
-        self.instruction_remaining_cycles = 0;
         const d_prev = self.status.decimal;
         const opcode = self.fetch_byte();
         
@@ -223,10 +222,12 @@ pub const CPU = struct {
             std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{ opcode, self.PC });
         };
        
-        const instruction = get_instruction(self, opcode_info);
+        self.instruction_remaining_cycles = 0;
+        var instruction = get_instruction(self, opcode_info);
         self.current_instruction = instruction;
-        opcode_info.handler_fn(self, instruction);
-        self.cycle_count += self.instruction_remaining_cycles;
+        opcode_info.handler_fn(self, &instruction);
+        self.instruction_remaining_cycles = instruction.cycles - 1;
+        self.cycle_count += instruction.cycles;
         self.instruction_count += 1;
         const d_curr = self.status.decimal;
         self.mutex.unlock();

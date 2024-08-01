@@ -34,7 +34,7 @@ pub const Timer = union {
     },
 };
 
-pub const CiaI = struct {
+pub const CiaI = packed struct {
     port_a: *u8,
     port_b: *u8,
     ddra: *u8, 
@@ -135,7 +135,7 @@ pub const CiaI = struct {
         }
     }
 
-    pub fn dec_timer_a (self: *CiaI) void {
+    pub fn dec_timer_a(self: *CiaI) void {
         var val = self.read_timer_a();
         val -%= 1;
         if (val == 0) {

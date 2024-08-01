@@ -6,6 +6,7 @@ const c = @import("../cpu/cpu.zig");
 const emu = @import("../emulator.zig");
 const colors = @import("colors.zig");
 const bitutils = @import("../cpu/bitutils.zig");
+const PrecisionClock = @import("../clock.zig").PrecisionClock;
 
 const MemoryMap = b.MemoryMap;
 const Bus = b.Bus;
@@ -50,13 +51,16 @@ pub const VicII = struct {
     }
 
 
-    pub fn run(self: *VicII) void {
+    pub fn run(self: *VicII, clock: *PrecisionClock) void {
         self.renderer = r.Renderer.init(self.scaling_factor);
         
-        while (!@atomicLoad(bool, &self.termination_requested, .acquire)) {
-            const start = std.time.nanoTimestamp();
+        while (true) {
+            clock.start();
             self.update_screen();
-            std.time.sleep(@intCast(@max(0, 16666666 - ((std.time.nanoTimestamp() - start)))));
+            if(@atomicLoad(bool, &self.termination_requested, .acquire)) {
+                break;
+            }
+            clock.end();
         }
         std.log.info("Rendering loops exited", .{});
     }

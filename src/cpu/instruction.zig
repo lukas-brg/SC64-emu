@@ -58,7 +58,6 @@ pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
             operand = cpu.bus.read(addr);
             page_crossed = page_boundary_crossed(pc, addr);
             address = addr;
-
         },
         .ZEROPAGE => {
             const addr = @as(u16, cpu.bus.read(pc+1));
@@ -104,7 +103,7 @@ pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
         },
         .INDIRECT_Y => {
             const lookup_addr: u16 = @as(u16, cpu.bus.read(pc+1));
-            const addr = cpu.bus.read_16(lookup_addr)  +% cpu.Y;
+            const addr = cpu.bus.read_16(lookup_addr) +% cpu.Y;
             operand = cpu.bus.read(addr);
             page_crossed = page_boundary_crossed(pc, addr);
             address = addr;

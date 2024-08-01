@@ -1,9 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const graphics = @import("graphics.zig");
+const io = @import("io.zig");
 
 const raylib = graphics.raylib;
 
+const PrecisionClock = @import("clock.zig").PrecisionClock;
 const CPU = @import("cpu/cpu.zig").CPU;
 const Bus = @import("bus.zig").Bus;
 const MemoryMap = @import("bus.zig").MemoryMap;
@@ -11,8 +13,6 @@ const bitutils = @import("cpu/bitutils.zig");
 const colors = graphics.colors;
 const Renderer = graphics.Renderer;
 const instruction = @import("cpu/instruction.zig");
-const cia = @import("cia.zig");
-const keyboard = @import("keyboard.zig");
 
 const print_disassembly_inline = @import("cpu/cpu.zig").print_disassembly_inline;
 
@@ -61,8 +61,8 @@ pub const Emulator = struct {
     cpu: *CPU,
     config: EmulatorConfig = .{},
     trace_config: DebugTraceConfig = .{},
-    instruction_count: usize = 0,
-    cia1: cia.CiaI,
+    step_count: usize = 0,
+    cia1: io.CiaI,
     vic: ?graphics.VicII = null,
     __tracing_active: bool = false,
 
@@ -78,7 +78,7 @@ pub const Emulator = struct {
             .bus = bus,
             .cpu = cpu,
             .config = config,
-            .cia1 = cia.CiaI.init(bus, cpu),
+            .cia1 = io.CiaI.init(bus, cpu),
         };
 
         if (!config.headless) {
@@ -180,20 +180,17 @@ pub const Emulator = struct {
 
 
     pub fn step(self: *Emulator) void {
-        //self.cpu.mutex.lock();
-        self.cia1.dec_timers();
-        self.cpu.step();
-        //self.cpu.mutex.unlock();
+        //self.cia1.dec_timers();
+        
+        self.cpu.clock_tick();
         
         self.print_trace();
-        //self.bus.io_ram_mutex.lock();
-        //self.bus.io_ram_mutex.unlock();
 
-        if (self.instruction_count % 20000 == 0) {
-            keyboard.update_keyboard_state(self);
+        if (self.step_count % 20000 == 0) {
+            io.keyboard.update_keyboard_state(self);
             //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
         }
-        self.instruction_count += 1;
+        self.step_count += 1;
     }
 
 
@@ -219,9 +216,11 @@ pub const Emulator = struct {
        
         create_sigint_handler();
         self.cpu.reset();
-       
+        var clock = PrecisionClock.init(1000);
+        var vic_clock = PrecisionClock.init(16666667);
+     
         var vic = graphics.VicII.init(self.bus, self.cpu, self.config.scaling_factor);
-        const rendering_thread = std.Thread.spawn(.{}, graphics.VicII.run, .{&vic}) catch |err| {
+        const rendering_thread = std.Thread.spawn(.{}, graphics.VicII.run, .{&vic, &vic_clock}) catch |err| {
             std.debug.panic("Spawing rendering thread failed {any}", .{err});
         };
         
@@ -233,6 +232,7 @@ pub const Emulator = struct {
         const starttime_ms = std.time.milliTimestamp();
         
         while (!quit) {
+            clock.start();
             self.step(); 
             quit = sigint_received or @atomicLoad(bool, &vic.termination_requested, std.builtin.AtomicOrder.acquire);
             
@@ -249,6 +249,7 @@ pub const Emulator = struct {
                     break;  
                 } 
             }
+            clock.end();
         }
         const endtime_ms = std.time.milliTimestamp();
         
@@ -384,7 +385,7 @@ pub const Emulator = struct {
     fn log_runtime_stats(self: *Emulator, runtime_ms: i64) void {
         const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
         const freq_c = @as(f64, @floatFromInt(self.cpu.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
-        const freq_i = @as(f64, @floatFromInt(self.instruction_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
+        const freq_i = @as(f64, @floatFromInt(self.cpu.instruction_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
 
         
         // Casting to unsigned values because otherwise the formatter will display '+' signs
