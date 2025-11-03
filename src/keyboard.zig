@@ -10,16 +10,17 @@ const raylib = graphics.raylib;
 
 pub fn update_keyboard_state(emulator: *emu.Emulator) void {
     
-    
+  
+
     if (raylib.IsKeyPressed(raylib.KEY_A)) {
         emulator.cia1.port_a.* = 0b11111101;
         emulator.cia1.port_b.* = 0b11111011;
         log_io.debug("A pressed.", .{});
-        //emulator.__tracing_active = true;
+        // emulator.__tracing_active = true;
     
     } else if (raylib.IsKeyPressed(raylib.KEY_LEFT)) {
-        emulator.cia1.port_a.* = 0b11111101;
-        emulator.cia1.port_b.* = 0b11111101;
+        emulator.cia1.port_a.* |= 0b11111101;
+        emulator.cia1.port_b.* |= 0b11111101;
     } else if (raylib.IsKeyPressed(raylib.KEY_W)) {
         emulator.cia1.port_a.* = 0b11111101;
         emulator.cia1.port_b.* = 0b11111101;
