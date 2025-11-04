@@ -187,7 +187,7 @@ pub const Emulator = struct {
         
         self.print_trace();
         
-        if (self.step_count % 20000 == 0) {
+        if (self.step_count % 10000 == 0) {
             io.keyboard.update_keyboard_state(self);
             
             //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});

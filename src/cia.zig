@@ -54,8 +54,8 @@ pub const CiaI = struct {
     // bus: *Bus,
     cpu: *c.CPU,
     keyboard_matrix: [8]u8,
-    port_a: u8 = 0,
-    port_b: u8 = 0,
+    port_a: u8 = 0xFF,
+    port_b: u8 = 0xFF,
     ddr_a: u8 = 0,
     ddr_b: u8 = 0,
     
@@ -129,6 +129,8 @@ pub const CiaI = struct {
             },
             CiaIAddresses.port_a => {
                 self.port_a = (self.port_a & ~self.ddr_a) | (value & self.ddr_a);
+                // self.port_a = value;
+                 std.debug.print("PORTA WRITE {x}\n", .{value});
                 
             },
             CiaIAddresses.port_b => {
@@ -139,33 +141,46 @@ pub const CiaI = struct {
         
     }
 
+    
     pub fn read_io_ram(self: *CiaI, addr: u16) u8 {
         switch (addr) {
-            CiaIAddresses.ddra => {
-                return self.ddr_a;
-            },
-            CiaIAddresses.ddrb => {
-                return self.ddr_b;
-            },
             CiaIAddresses.port_a => {
-                return (self.port_a & ~self.ddr_a);
-
+                return (self.port_a & ~self.ddr_a) | (self.port_a & self.ddr_a);
             },
             CiaIAddresses.port_b => {
-                return (self.port_b & ~self.ddr_b);
+                var result: u8 = 0xFF; 
+                var a: u8 = 0xFF;
+                for (0..8) |_col| {
+                    const col: u3 = @truncate(_col);
+                    if ((self.port_a & (@as(u8, 1) << col)) == 0) {
+                        const kb_entry = self.keyboard_matrix[col];
+                        result &= kb_entry;
+                        a = kb_entry;
+                    }
+                }
+                const retval = (result & ~self.ddr_b) | (self.port_b & self.ddr_b);
+                std.debug.print("PORT B Read. PORT A {X} RETURN: {x}\n", .{self.port_a, retval});
+                return result;
             },
-            else => {return 0;}
-        }
+            CiaIAddresses.ddra => return self.ddr_a,
+            CiaIAddresses.ddrb => return self.ddr_b,
+            else => return 0,
+         }
+
 
     }
 
 
     pub fn set_key_down(self: *CiaI, row: u3, col: u3) void {
-        self.keyboard_matrix[row] &= @truncate(@as(u8, 0) << col);
+        // const old = self.keyboard_matrix[col];
+        const old = 0;
+
+        self.keyboard_matrix[col] &= ~(@as(u8, 1) << row);
+        std.debug.print("key pressed row {} col {} matrix entry at col {x}  previous value  {x}\n", .{row, col, self.keyboard_matrix[col], old});
     }
 
     pub fn set_key_up(self: *CiaI, row: u3, col: u3) void {
-        self.keyboard_matrix[row] &= @truncate(@as(u8, 1) << col);
+        self.keyboard_matrix[col] |= @truncate(@as(u8, 1) << row);
     }
 
     pub fn write_timer_a(self: *CiaI, value: u16) void {
