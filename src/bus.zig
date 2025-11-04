@@ -1,6 +1,6 @@
 const std = @import("std");
 const bitutils = @import("cpu/bitutils.zig");
-
+const cia = @import("cia.zig");
 const log_bus = std.log.scoped(.bus);
 
 const MEM_SIZE: u17 = 0x10000;
@@ -50,7 +50,7 @@ pub const Bus = struct {
     mutex: std.Thread.Mutex = .{},
     ram_mutex: std.Thread.Mutex = .{},
     io_ram_mutex: std.Thread.Mutex = .{},
-    
+    cia1: *cia.CiaI,
     mem_size: u17 = MEM_SIZE,
 
     character_rom: [MemoryMap.character_rom_end - MemoryMap.character_rom_start + 1]u8 = std.mem.zeroes([MemoryMap.character_rom_end - MemoryMap.character_rom_start + 1]u8),
@@ -62,45 +62,52 @@ pub const Bus = struct {
 
     enable_bank_switching: bool = true,
 
-    pub fn init() Bus {
-        return .{};
+    pub fn init(cia1: *cia.CiaI) Bus {
+        return .{.cia1= cia1};
     }
 
     pub fn write(self: *Bus, addr: u16, val: u8) void {
         //self.mutex.lock();
        // defer self.mutex.unlock();
-        const mem_location = self.access_mem_location(addr);
-        if (addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
-            log_bus.err("Writing to character rom at {X:0>4}\n", .{addr});
-        }
-
-        if (addr == MemoryMap.processor_port and ((val & 7) != (self.ram[addr] & 7))) {
-            const new_control_bits: u3 = @truncate(val);
-            log_bus.debug("Bank switch. Control bits changed from [{b:0>3}] to [{b:0>3}]", .{ mem_location.control_bits, new_control_bits });
-        }
-
-     
-        if (!mem_location.read_only) {
-            mem_location.val_ptr.* = val;
+        if (addr >= MemoryMap.cia1_start and addr <= MemoryMap.cia1_end) {
+            self.cia1.write_io_ram(addr, val);
         } else {
-            log_bus.debug("Trying to write to rom at ({X}), writing to ram instead. Control bits: [{b:0>3}]", .{ addr, mem_location.control_bits });
-            self.ram[addr] = val;
+        
+            const mem_location = self.access_mem_location(addr);
+            if (addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
+                log_bus.err("Writing to character rom at {X:0>4}\n", .{addr});
+            }
+
+            if (addr == MemoryMap.processor_port and ((val & 7) != (self.ram[addr] & 7))) {
+                const new_control_bits: u3 = @truncate(val);
+                log_bus.debug("Bank switch. Control bits changed from [{b:0>3}] to [{b:0>3}]", .{ mem_location.control_bits, new_control_bits });
+            }
+
+        
+            if (!mem_location.read_only) {
+                mem_location.val_ptr.* = val;
+            } else {
+                log_bus.debug("Trying to write to rom at ({X}), writing to ram instead. Control bits: [{b:0>3}]", .{ addr, mem_location.control_bits });
+                self.ram[addr] = val;
+            }
         }
     }
 
     pub fn write_io_ram(self: *Bus, addr: u16, val: u8) void {
-        const index = addr - comptime MemoryMap.io_ram_start;
+        // const index = addr - comptime MemoryMap.io_ram_start;
       //  self.io_ram_mutex.lock();
-        self.io_ram[index] = val;
+        self.cia1.write_io_ram(addr, val);
+        // self.io_ram[index] = val;
       //  self.io_ram_mutex.unlock();
     }
 
     pub fn read_io_ram(self: *Bus, addr: u16) u8 {
-        const index = addr - comptime MemoryMap.io_ram_start;
+        // const index = addr - comptime MemoryMap.io_ram_start;
      //   self.io_ram_mutex.lock();
-        const val = self.io_ram[index];
+        // const val = self.io_ram[index];
      //   self.io_ram_mutex.unlock();
-        return val;
+        return self.cia1.read_io_ram(addr);
+        // return val;
     }
 
     pub fn aquire_io_ram(self: *Bus) []u8 {
@@ -138,8 +145,13 @@ pub const Bus = struct {
     }
 
     pub fn read(self: *Bus, addr: u16) u8 {
+        if (addr >= MemoryMap.cia1_start and addr <= MemoryMap.cia1_end) {
+            return self.cia1.read_io_ram(addr);
+        } else {
+
         const mem_location = self.access_mem_location(addr);
         return mem_location.val_ptr.*;
+        }
     }
 
     pub fn read_16(self: *Bus, addr: u16) u16 {

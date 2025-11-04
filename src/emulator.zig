@@ -38,7 +38,7 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
 
 pub const EmulatorConfig = struct {
     headless: bool = false,
-    scaling_factor: f32 = 4,
+    scaling_factor: f32 = 3,
     enable_bank_switching: bool = true,
 };
 
@@ -62,23 +62,24 @@ pub const Emulator = struct {
     config: EmulatorConfig = .{},
     trace_config: DebugTraceConfig = .{},
     step_count: usize = 0,
-    cia1: io.CiaI,
+    cia1: *io.CiaI,
     vic: ?graphics.VicII = null,
     __tracing_active: bool = false,
 
     pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
         
         const bus = try allocator.create(Bus);
-        bus.* = Bus.init();
-        bus.enable_bank_switching = config.enable_bank_switching;
         const cpu = try allocator.create(CPU);
-        
+        const cia1 = try allocator.create(io.CiaI);
+        cia1.* = io.CiaI.init(cpu);
+        bus.* = Bus.init(cia1);
+        bus.enable_bank_switching = config.enable_bank_switching;
         cpu.* = CPU.init(bus);
         const emulator: Emulator = .{
             .bus = bus,
             .cpu = cpu,
             .config = config,
-            .cia1 = io.CiaI.init(bus, cpu),
+            .cia1 = cia1
         };
 
         if (!config.headless) {
@@ -185,9 +186,10 @@ pub const Emulator = struct {
         self.cpu.clock_tick();
         
         self.print_trace();
-
+        
         if (self.step_count % 20000 == 0) {
             io.keyboard.update_keyboard_state(self);
+            
             //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
         }
         self.step_count += 1;
