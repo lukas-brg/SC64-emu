@@ -3,8 +3,8 @@ const c = @import("cpu/cpu.zig");
 const Bus = @import("bus.zig").Bus;
 const CPU = @import("cpu/cpu.zig").CPU;
 const Emulator = @import("emulator.zig").Emulator;
-const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
-const DebugTraceConfig = @import("emulator.zig").DebugTraceConfig;
+const EmulatorConfig = @import("config.zig").EmulatorConfig;
+const DebugTraceConfig = @import("config.zig").DebugTraceConfig;
 const clap = @import("clap");
 const builtin = @import("builtin");
 

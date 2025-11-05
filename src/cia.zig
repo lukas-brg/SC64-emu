@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 const std = @import("std");
-
+const kb = @import("keyboard.zig");
 const bitutils = @import("cpu/bitutils.zig");
 // const b = @import("bus.zig");
 const c = @import("cpu/cpu.zig");
@@ -36,16 +36,17 @@ pub const Timer = union {
 
 pub const CiaI = struct {
     cpu: *c.CPU,
+    keyboard: *kb.Keyboard, // later replace with generic input device
     keyboard_matrix: [8]u8,
     port_a: u8 = 0xFF,
     port_b: u8 = 0xFF,
     ddr_a: u8 = 0,
     ddr_b: u8 = 0,
     
-    
-    pub fn init(cpu: *c.CPU) CiaI {
+    pub fn init(cpu: *c.CPU, keyboard: *kb.Keyboard) CiaI {
         const cia1: CiaI = .{
             .cpu         = cpu,
+            .keyboard = keyboard,
             .keyboard_matrix =  [8]u8{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
         };
        
@@ -119,7 +120,7 @@ pub const CiaI = struct {
                 for (0..8) |_col| {
                     const col: u3 = @truncate(_col);
                     if ((self.port_a & (@as(u8, 1) << col)) == 0) {
-                        const kb_entry = self.keyboard_matrix[col];
+                        const kb_entry = self.keyboard.keyboard_matrix[col];
                         result &= kb_entry;
                         a = kb_entry;
                     }

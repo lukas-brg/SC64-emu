@@ -13,6 +13,9 @@ const bitutils = @import("cpu/bitutils.zig");
 const colors = graphics.colors;
 const Renderer = graphics.Renderer;
 const instruction = @import("cpu/instruction.zig");
+const kb = @import("keyboard.zig");
+
+const conf = @import("config.zig");
 
 const print_disassembly_inline = @import("cpu/cpu.zig").print_disassembly_inline;
 
@@ -36,48 +39,34 @@ fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     return data;
 }
 
-pub const EmulatorConfig = struct {
-    headless: bool = false,
-    scaling_factor: f32 = 3,
-    enable_bank_switching: bool = true,
-};
 
-pub const DebugTraceConfig = struct {
-    enable_trace: bool = false,
-    print_mem: bool = true,
-    print_mem_window_size: usize = 0x20,
-    print_stack: bool = false,
-    print_stack_limit: usize = 10,
-    print_cpu_state: bool = true,
-    start_at_cycle: usize = 0,
-    start_at_instr: usize = 0,
-    capture_addr: ?u16 = 0,
-    end_at_cycle: ?usize = null,
-    verbose: bool = false,
-};
 
 pub const Emulator = struct {
     bus: *Bus,
     cpu: *CPU,
-    config: EmulatorConfig = .{},
-    trace_config: DebugTraceConfig = .{},
+    keyboard: *kb.Keyboard,
+    config: conf.EmulatorConfig = .{},
+    trace_config: conf.DebugTraceConfig = .{},
     step_count: usize = 0,
     cia1: *io.CiaI,
     vic: ?graphics.VicII = null,
     __tracing_active: bool = false,
 
-    pub fn init(allocator: std.mem.Allocator, config: EmulatorConfig) !Emulator {
+    pub fn init(allocator: std.mem.Allocator, config: conf.EmulatorConfig) !Emulator {
         
         const bus = try allocator.create(Bus);
         const cpu = try allocator.create(CPU);
+        const keyboard = try allocator.create(kb.Keyboard);
         const cia1 = try allocator.create(io.CiaI);
-        cia1.* = io.CiaI.init(cpu);
+        keyboard.* = kb.Keyboard.init();
+        cia1.* = io.CiaI.init(cpu, keyboard);
         bus.* = Bus.init(cia1);
         bus.enable_bank_switching = config.enable_bank_switching;
         cpu.* = CPU.init(bus);
         const emulator: Emulator = .{
             .bus = bus,
             .cpu = cpu,
+            .keyboard = keyboard,
             .config = config,
             .cia1 = cia1
         };
@@ -142,7 +131,7 @@ pub const Emulator = struct {
         log_emu.info("Loaded charset '{s}' into character rom", .{charset_path});
     }
 
-    pub fn set_trace_config(self: *Emulator, config: DebugTraceConfig) void {
+    pub fn set_trace_config(self: *Emulator, config: conf.DebugTraceConfig) void {
         self.trace_config = config;
         // Activate tracing automatically if trace_start parameter is set
         const enable = config.enable_trace or (config.start_at_cycle > 0) or (config.start_at_instr > 0);
@@ -164,6 +153,7 @@ pub const Emulator = struct {
         allocator.destroy(self.bus);
         allocator.destroy(self.cia1);
         allocator.destroy(self.cpu);
+        allocator.destroy(self.keyboard);
         log_emu.info("All resources deallocated", .{});
     }
 
@@ -175,7 +165,7 @@ pub const Emulator = struct {
         const rom_data = load_file_data(rom_path, allocator) catch {
             std.debug.panic("Could not load rom '{s}' file data", .{rom_path});
         };
-        self.cpu.bus.write_continous(rom_data, offset);
+        self.cpu.bus.write_continuous(rom_data, offset);
         allocator.free(rom_data);
         log_emu.info("Loaded rom data from file '{s}' at offset {X:0>4}", .{ rom_path, offset });
     }
@@ -188,8 +178,9 @@ pub const Emulator = struct {
         
         self.print_trace();
         
-        if (self.step_count % 10000 == 0) {
-            io.keyboard.update_keyboard_state(self);
+        if (self.step_count % 1 == 0) {
+            // io.keyboard.update_keyboard_state(self);
+            self.keyboard.update();
             
             //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
         }
@@ -223,11 +214,15 @@ pub const Emulator = struct {
         var vic_clock = PrecisionClock.init(16666667);
      
         var vic = graphics.VicII.init(self.bus, self.cpu, self.config.scaling_factor);
-        const rendering_thread = std.Thread.spawn(.{}, graphics.VicII.run, .{&vic, &vic_clock}) catch |err| {
-            std.debug.panic("Spawing rendering thread failed {any}", .{err});
-        };
         
-        defer rendering_thread.join();
+        // if (!self.config.headless) {
+
+            const rendering_thread = std.Thread.spawn(.{}, graphics.VicII.run, .{&vic, &vic_clock}) catch |err| {
+                std.debug.panic("Spawing rendering thread failed {any}", .{err});
+            };
+        
+            defer rendering_thread.join();
+        // }
         
         var quit = false;
         log_emu.info("Starting execution...", .{});

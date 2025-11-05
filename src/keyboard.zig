@@ -8,14 +8,15 @@ const bus = @import("bus.zig");
 const log_io = std.log.scoped(.io);
 const raylib = graphics.raylib;
 
+const keymap = @import("keymap.zig");
+
 const KeyMapping = struct {
     host_key: i32,
     row: u3,
     col: u3,
 };
 
-const HostKeyToC64: []const KeyMapping = &.{ 
-
+const HostKeyToC64: []const KeyMapping = &.{
     KeyMapping{ .host_key = raylib.KEY_A, .row = 2, .col = 1 },
     KeyMapping{ .host_key = raylib.KEY_B, .row = 4, .col = 3 },
     KeyMapping{ .host_key = raylib.KEY_C, .row = 4, .col = 2 },
@@ -46,7 +47,9 @@ const HostKeyToC64: []const KeyMapping = &.{
     KeyMapping{ .host_key = raylib.KEY_SPACE, .row = 4, .col = 7 },
     KeyMapping{ .host_key = raylib.KEY_ENTER, .row = 1, .col = 0 },
     KeyMapping{ .host_key = raylib.KEY_KP_ADD, .row = 0, .col = 5 },
-
+    KeyMapping{ .host_key = raylib.KEY_LEFT_SHIFT, .row = 7, .col = 1 },
+    KeyMapping{ .host_key = raylib.KEY_COMMA, .row = 7, .col = 5 },
+    KeyMapping{ .host_key = raylib.KEY_BACKSPACE, .row = 0, .col = 0 },
 
     KeyMapping{ .host_key = raylib.KEY_ONE, .row = 0, .col = 7 },
     KeyMapping{ .host_key = raylib.KEY_TWO, .row = 3, .col = 7 },
@@ -58,23 +61,53 @@ const HostKeyToC64: []const KeyMapping = &.{
     KeyMapping{ .host_key = raylib.KEY_EIGHT, .row = 3, .col = 3 },
     KeyMapping{ .host_key = raylib.KEY_NINE, .row = 0, .col = 4 },
     KeyMapping{ .host_key = raylib.KEY_ZERO, .row = 3, .col = 4 },
+};
 
-
+pub const KeyEvent = struct {
 
 };
 
-pub fn update_keyboard_state(emulator: *emu.Emulator) void {
-    // _=emulator;
-    
-    const char = raylib.GetCharPressed();
 
-    switch(char) {
-        '+' => {
-
-        },
-        else => {}
+pub const Keyboard = struct {
+    // Maybe make a interface for the cia1 connected device and let this be one implementation of it.
+    keyboard_matrix: [8]u8,
+    pub fn init() Keyboard {
+        return Keyboard{
+            .keyboard_matrix = [8]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+        };
     }
 
+    pub fn set_key_down(self: *Keyboard, row: u3, col: u3) void {
+        self.keyboard_matrix[col] &= ~(@as(u8, 1) << row);
+    }
+
+    pub fn set_key_up(self: *Keyboard, row: u3, col: u3) void {
+        self.keyboard_matrix[col] |= @truncate(@as(u8, 1) << row);
+    }
+
+    pub fn select_col(self: *Keyboard, col: u3) u8 {
+        return self.keyboard_matrix[col];
+    }
+
+    pub fn update(self: *Keyboard) void {
+        
+
+        while (true) {
+            
+            var char: c_int = raylib.GetCharPressed();
+            if (char == 0) break;
+            // Ensure uppercase for alphanumeric
+            if (char >= 97 and char <= 122) {
+                char -= 32; 
+            }
+            const key = keymap.lookup_printable_key(@intCast(char)) orelse continue;
+            self.set_key_down(key.row, key.col);
+            
+        }
+    }
+};
+
+pub fn update_keyboard_state(emulator: *emu.Emulator) void {
     for (HostKeyToC64) |mapping| {
         if (raylib.IsKeyPressed(mapping.host_key)) {
             emulator.cia1.set_key_down(mapping.row, mapping.col);
@@ -83,40 +116,23 @@ pub fn update_keyboard_state(emulator: *emu.Emulator) void {
         }
     }
 
-    // if (raylib.IsKeyPressed(raylib.KEY_A)) {
-    //     // emulator.cia1.port_a.* = 0b11111101;
-    //     // emulator.cia1.port_b.* = 0b11111011;
-    //     emulator.cia1.set_key_down(2, 1);
-    //     // emulator.cia1.set_key_down(6, 2);
-    //     // emulator.cia1.set_key_down(6, 5);
+    var char: c_int = raylib.GetCharPressed();
+    // emulator.cia1.set_key_up(0, 5);
+    // emulator.cia1.set_key_up(7, 1);
+    // emulator.cia1.set_key_up(3, 7);
 
-    //     log_io.debug("A pressed.", .{});
-    //     //emulator.__tracing_active = true;
-    
-    // } else {
-    //     emulator.cia1.set_key_up(2, 1);
-    // }
-
-    // if (raylib.IsKeyPressed(raylib.KEY_S)) {
-    //     // emulator.cia1.port_a.* = 0b11111101;
-    //     // emulator.cia1.port_b.* = 0b11111011;
-    //     emulator.cia1.set_key_down(5 ,1);
-    //     // emulator.cia1.set_key_down(6, 2);
-    //     // emulator.cia1.set_key_down(6, 5);
-
-    //     log_io.debug("A pressed.", .{});
-    //     //emulator.__tracing_active = true;
-    
-    // }
-    // if (raylib.IsKeyPressed(raylib.KEY_B)) {
-    //     // emulator.cia1.port_a.* = 0b11111101;
-    //     // emulator.cia1.port_b.* = 0b11111011;
-    //     emulator.cia1.set_key_down(4 ,3);
-    //     // emulator.cia1.set_key_down(6, 2);
-    //     // emulator.cia1.set_key_down(6, 5);
-
-    //     log_io.debug("A pressed.", .{});
-    //     //emulator.__tracing_active = true;
-    
-    
+    while (char != 0) {
+        switch (char) {
+            '+' => {
+                emulator.cia1.set_key_down(0, 5);
+            },
+            '"' => {
+                std.debug.print("QUOTE", .{});
+                emulator.cia1.set_key_down(7, 1);
+                emulator.cia1.set_key_down(3, 7);
+            },
+            else => {},
+        }
+        char = raylib.GetCharPressed();
+    }
 }
