@@ -65,7 +65,15 @@ const HostKeyToC64: []const KeyMapping = &.{
 
 pub fn update_keyboard_state(emulator: *emu.Emulator) void {
     // _=emulator;
-  
+    
+    const char = raylib.GetCharPressed();
+
+    switch(char) {
+        '+' => {
+
+        },
+        else => {}
+    }
 
     for (HostKeyToC64) |mapping| {
         if (raylib.IsKeyPressed(mapping.host_key)) {

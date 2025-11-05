@@ -35,23 +35,6 @@ pub const Timer = union {
 };
 
 pub const CiaI = struct {
-    // port_a: *u8,
-    // port_b: *u8,
-    // ddra: *u8, 
-    // ddrb: *u8, 
-    // timer_a_lo: *u8,
-    // timer_a_hi: *u8,
-    // timer_b_lo: *u8,
-    // timer_b_hi: *u8,
-    // rtc_tenth: *u8,
-    // rtc_sec: *u8, 
-    // rtc_min: *u8,
-    // rtc_hr: *u8,
-    // serial_shift: *u8,
-    // icr: *u8,
-    // timer_a_ctrl: *u8,
-    // timer_b_ctrl: *u8,
-    // bus: *Bus,
     cpu: *c.CPU,
     keyboard_matrix: [8]u8,
     port_a: u8 = 0xFF,
@@ -62,26 +45,8 @@ pub const CiaI = struct {
     
     pub fn init(cpu: *c.CPU) CiaI {
         const cia1: CiaI = .{
-            // .port_a       = get_ioram_ptr(bus, CiaIAddresses.port_a),
-            // .port_b       = get_ioram_ptr(bus, CiaIAddresses.port_b),
-            // .ddra         = get_ioram_ptr(bus, CiaIAddresses.ddra),
-            // .ddrb         = get_ioram_ptr(bus, CiaIAddresses.ddrb),
-            // .timer_a_lo   = get_ioram_ptr(bus, CiaIAddresses.timer_a_lo),
-            // .timer_b_lo   = get_ioram_ptr(bus, CiaIAddresses.timer_b_lo),
-            // .timer_a_hi   = get_ioram_ptr(bus, CiaIAddresses.timer_a_hi),
-            // .timer_b_hi   = get_ioram_ptr(bus, CiaIAddresses.timer_b_hi),
-            // .rtc_tenth    = get_ioram_ptr(bus, CiaIAddresses.rtc_tenth),
-            // .rtc_sec      = get_ioram_ptr(bus, CiaIAddresses.rtc_sec),
-            // .rtc_min      = get_ioram_ptr(bus, CiaIAddresses.rtc_min),
-            // .rtc_hr       = get_ioram_ptr(bus, CiaIAddresses.rtc_hr),
-            // .serial_shift = get_ioram_ptr(bus, CiaIAddresses.serial_shift),
-            // .icr          = get_ioram_ptr(bus, CiaIAddresses.icr),
-            // .timer_a_ctrl = get_ioram_ptr(bus, CiaIAddresses.timer_a_ctrl),
-            // .timer_b_ctrl = get_ioram_ptr(bus, CiaIAddresses.timer_b_ctrl),
-            // .bus         = bus,
             .cpu         = cpu,
             .keyboard_matrix =  [8]u8{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-            
         };
        
         return cia1;
@@ -97,9 +62,6 @@ pub const CiaI = struct {
         return @atomicLoad(u8, ptr, .acquire);
     }
 
-    // fn get_ioram_ptr(bus: *Bus, addr: u16) *u8 {
-    //     return &bus.io_ram[addr-b.MemoryMap.io_ram_start];
-    // }
 
     pub fn read_timer_a(self: *CiaI) u16 {
         if (comptime builtin.cpu.arch.endian() == .little ) {
@@ -119,7 +81,12 @@ pub const CiaI = struct {
         }
     }
 
-    pub fn write_io_ram(self: *CiaI, addr: u16, value: u8) void {
+    pub fn access_cia_ram() *u8 {
+        
+    }
+
+
+    pub fn write_cia_ram(self: *CiaI, addr: u16, value: u8) void {
         switch (addr) {
             CiaIAddresses.ddra => {
                 self.ddr_a = value;
@@ -130,7 +97,6 @@ pub const CiaI = struct {
             CiaIAddresses.port_a => {
                 self.port_a = (self.port_a & ~self.ddr_a) | (value & self.ddr_a);
                 // self.port_a = value;
-                 std.debug.print("PORTA WRITE {x}\n", .{value});
                 
             },
             CiaIAddresses.port_b => {
@@ -142,7 +108,7 @@ pub const CiaI = struct {
     }
 
     
-    pub fn read_io_ram(self: *CiaI, addr: u16) u8 {
+    pub fn read_cia_ram(self: *CiaI, addr: u16) u8 {
         switch (addr) {
             CiaIAddresses.port_a => {
                 return (self.port_a & ~self.ddr_a) | (self.port_a & self.ddr_a);
@@ -159,7 +125,7 @@ pub const CiaI = struct {
                     }
                 }
                 const retval = (result & ~self.ddr_b) | (self.port_b & self.ddr_b);
-                std.debug.print("PORT B Read. PORT A {X} RETURN: {x}\n", .{self.port_a, retval});
+                _ = retval;
                 return result;
             },
             CiaIAddresses.ddra => return self.ddr_a,
@@ -172,11 +138,7 @@ pub const CiaI = struct {
 
 
     pub fn set_key_down(self: *CiaI, row: u3, col: u3) void {
-        // const old = self.keyboard_matrix[col];
-        const old = 0;
-
         self.keyboard_matrix[col] &= ~(@as(u8, 1) << row);
-        std.debug.print("key pressed row {} col {} matrix entry at col {x}  previous value  {x}\n", .{row, col, self.keyboard_matrix[col], old});
     }
 
     pub fn set_key_up(self: *CiaI, row: u3, col: u3) void {

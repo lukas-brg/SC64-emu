@@ -73,7 +73,7 @@ pub const Bus = struct {
         if (addr >= MemoryMap.cia1_start and addr <= MemoryMap.cia1_end) {
             const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port]);
             if (bitutils.get_bit_at(banking_control_bits, 2) == 1) {
-                self.cia1.write_io_ram(addr, val);
+                self.cia1.write_cia_ram(addr, val);
                 return;
             }
         }
@@ -104,7 +104,7 @@ pub const Bus = struct {
         if (addr >= MemoryMap.cia1_start and addr <= MemoryMap.cia1_end) {
             const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port]);
             if (bitutils.get_bit_at(banking_control_bits, 2) == 1) {
-                return self.cia1.read_io_ram(addr);
+                return self.cia1.read_cia_ram(addr);
             }
         }
 
@@ -255,6 +255,7 @@ pub const Bus = struct {
                             },
                             1 => {
                                 switch (addr) {
+
                                     MemoryMap.cia1_mirrored_start...MemoryMap.cia1_end => {
                                         const offset = (addr - MemoryMap.cia1_mirrored_start) % 16;
                                         const io_idx = offset + comptime (MemoryMap.cia1_start - MemoryMap.io_ram_start);

@@ -162,6 +162,7 @@ pub const Emulator = struct {
 
     pub fn deinit(self: Emulator, allocator: std.mem.Allocator) void {
         allocator.destroy(self.bus);
+        allocator.destroy(self.cia1);
         allocator.destroy(self.cpu);
         log_emu.info("All resources deallocated", .{});
     }
