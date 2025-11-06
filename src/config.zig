@@ -2,6 +2,7 @@ pub const EmulatorConfig = struct {
     headless: bool = false,
     scaling_factor: f32 = 3,
     enable_bank_switching: bool = true,
+    speedup_startup: bool = true,
 };
 
 pub const DebugTraceConfig = struct {

@@ -210,7 +210,7 @@ pub const Emulator = struct {
        
         create_sigint_handler();
         self.cpu.reset();
-        var clock = PrecisionClock.init(1000);
+        var clock = PrecisionClock.init(if (self.config.speedup_startup) 100  else 1000);
         var vic_clock = PrecisionClock.init(16666667);
      
         var vic = graphics.VicII.init(self.bus, self.cpu, self.config.scaling_factor);
@@ -228,10 +228,16 @@ pub const Emulator = struct {
         log_emu.info("Starting execution...", .{});
         
         const starttime_ms = std.time.milliTimestamp();
-        
+        var adjusted = false;
         while (!quit) {
             clock.start();
             self.step(); 
+            
+            if (!adjusted and self.cpu.PC >= MemoryMap.basic_rom_start and self.cpu.PC <= MemoryMap.basic_rom_end) {
+                // std.debug.print("asdasdads", .{});
+                clock.target_duration_ns = 1015;
+                adjusted = true;
+            }
             quit = sigint_received or @atomicLoad(bool, &vic.termination_requested, std.builtin.AtomicOrder.acquire);
             
             if (limit_instructions) |max_instr| {
@@ -262,7 +268,7 @@ pub const Emulator = struct {
     }
 
 
-    /// Like run but automatically detects infinite loop and stops execution
+    /// Like run but automatically detects infinite loop or success and stops execution
     pub fn run_ftest(self: *Emulator, limit_cycles: ?usize, addr_success: u16) bool {
         create_sigint_handler();
         self.cpu.reset();
