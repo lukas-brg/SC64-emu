@@ -60,7 +60,7 @@ pub const C64KeyCode = enum {
     KEY_SEMICOLON,
     KEY_HOME,
     KEY_RIGHT_SHIFT,
-    KEY_EQUALS,
+    KEY_EQUAL,
     KEY_ARROW_UP,
     KEY_SLASH,
 
@@ -111,9 +111,17 @@ pub const C64_PHYSICAL_KEYS: []const C64Key = &.{
     .{ .keycode = .KEY_SPACE, .row = 4, .col = 7 },
     .{ .keycode = .KEY_RETURN, .row = 1, .col = 0 },
     .{ .keycode = .KEY_PLUS, .row = 0, .col = 5 },
+    .{ .keycode = .KEY_ASTERISK, .row = 1, .col = 6 },
+    .{ .keycode = .KEY_PERIOD, .row = 4, .col = 5 },
+    .{ .keycode = .KEY_SEMICOLON, .row = 2, .col = 6 },
+    .{ .keycode = .KEY_COLON, .row = 5, .col = 5 },
+    .{ .keycode = .KEY_EQUAL, .row = 5, .col = 6 },
+    .{ .keycode = .KEY_MINUS, .row = 3, .col = 5 },
     .{ .keycode = .KEY_SHIFT_LEFT, .row = 7, .col = 1 },
+    .{ .keycode = .KEY_RIGHT_SHIFT, .row = 4, .col = 6 },
     .{ .keycode = .KEY_COMMA, .row = 7, .col = 5 },
     .{ .keycode = .KEY_DELETE, .row = 0, .col = 0 },
+    .{ .keycode = .KEY_AT, .row = 6, .col = 5 },
 
     .{ .keycode = .KEY_1, .row = 0, .col = 7 },
     .{ .keycode = .KEY_2, .row = 3, .col = 7 },
@@ -155,7 +163,7 @@ const _CHAR_TABLE = [_]C64CharKeyMapping{
     .{ .char = 'Y', .keys = &.{.KEY_Y} },
     .{ .char = 'Z', .keys = &.{.KEY_Z} },
 
-    .{ .char = 'e', .keys = &.{.KEY_RETURN} },
+    .{ .char = ' ', .keys = &.{.KEY_SPACE} },
 
     .{ .char = '0', .keys = &.{.KEY_0} },
     .{ .char = '1', .keys = &.{.KEY_1} },
@@ -168,9 +176,16 @@ const _CHAR_TABLE = [_]C64CharKeyMapping{
     .{ .char = '8', .keys = &.{.KEY_8} },
     .{ .char = '9', .keys = &.{.KEY_9} },
     .{ .char = '+', .keys = &.{.KEY_PLUS} },
+    .{ .char = '-', .keys = &.{.KEY_MINUS} },
+    .{ .char = '.', .keys = &.{.KEY_PERIOD} },
+    .{ .char = ':', .keys = &.{.KEY_COLON} },
+    .{ .char = ';', .keys = &.{.KEY_SEMICOLON} },
+    .{ .char = '*', .keys = &.{.KEY_ASTERISK} },
+    .{ .char = '=', .keys = &.{.KEY_EQUAL} },
     .{ .char = '"', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_2 } },
-    .{ .char = '@', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_2 } },
+    .{ .char = '@', .keys = &.{ .KEY_AT } },
 };
+
 
 pub const C64_PHYSICAL_KEY_LOOKUP_TABLE = blk: {
     var table: [@typeInfo(C64KeyCode).Enum.fields.len]C64Key = undefined;

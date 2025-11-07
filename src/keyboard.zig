@@ -54,6 +54,8 @@ pub const Keyboard = struct {
                 break;
             }
         }
+
+        // Handle printable keys/chars in a host layout agnostic way
         while (true) {
             var char: c_int = raylib.GetCharPressed();
             if (char == 0) break;
@@ -69,13 +71,29 @@ pub const Keyboard = struct {
             }
         }
 
+        // Handle control keys
         if (raylib.IsKeyDown(raylib.KEY_ENTER)) {
-            const keymapping = keymap.lookup_c64_char('e') orelse return;
-            for (keymapping.keys) |keycode| {
-                const key = keymap.lookup_c64_physical_key(keycode);
-                self.set_key_down(key.row, key.col);
-                keyevent_queue.enqueue(.{ .keycode = keycode, .at_cycle = runtime_info.current_cycle_count });
-            }
+            const key = keymap.lookup_c64_physical_key(.KEY_RETURN);
+            self.set_key_down(key.row, key.col);
+        } else {
+            const key = keymap.lookup_c64_physical_key(.KEY_RETURN);
+            self.set_key_up(key.row, key.col);
+        }
+
+        if (raylib.IsKeyDown(raylib.KEY_BACKSPACE)) {
+            const key = keymap.lookup_c64_physical_key(.KEY_DELETE);
+            self.set_key_down(key.row, key.col);
+        } else {
+            const key = keymap.lookup_c64_physical_key(.KEY_DELETE);
+            self.set_key_up(key.row, key.col);
+        }
+
+        if (raylib.IsKeyDown(raylib.KEY_LEFT)) {
+            const key = keymap.lookup_c64_physical_key(.KEY_ARROW_LEFT);
+            self.set_key_down(key.row, key.col);
+        } else {
+            const key = keymap.lookup_c64_physical_key(.KEY_ARROW_LEFT);
+            self.set_key_up(key.row, key.col);
         }
     }
 };
