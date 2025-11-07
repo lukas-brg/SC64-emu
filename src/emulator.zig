@@ -14,6 +14,7 @@ const colors = graphics.colors;
 const Renderer = graphics.Renderer;
 const instruction = @import("cpu/instruction.zig");
 const kb = @import("keyboard.zig");
+const RuntimeInfo = @import("runtime_info.zig");
 
 const conf = @import("config.zig");
 
@@ -185,6 +186,7 @@ pub const Emulator = struct {
             //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
         }
         self.step_count += 1;
+        RuntimeInfo.current_cycle_count = self.step_count;
     }
 
 

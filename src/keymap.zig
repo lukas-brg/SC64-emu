@@ -1,8 +1,8 @@
 const std = @import("std");
 
 pub const C64KeyCode = enum {
-    KEY_DELETE,   
-    KEY_RETURN,     
+    KEY_DELETE,
+    KEY_RETURN,
     KEY_CURSOR_RIGHT,
     KEY_F7,
     KEY_F1,
@@ -46,32 +46,32 @@ pub const C64KeyCode = enum {
     KEY_O,
     KEY_N,
 
-    KEY_PLUS,     
+    KEY_PLUS,
     KEY_P,
     KEY_L,
-    KEY_MINUS,    
-    KEY_PERIOD,    
-    KEY_COLON,     
-    KEY_AT,        
-    KEY_COMMA,     
+    KEY_MINUS,
+    KEY_PERIOD,
+    KEY_COLON,
+    KEY_AT,
+    KEY_COMMA,
 
-    KEY_POUND,     
-    KEY_ASTERISK,  
-    KEY_SEMICOLON, 
-    KEY_HOME,      
+    KEY_POUND,
+    KEY_ASTERISK,
+    KEY_SEMICOLON,
+    KEY_HOME,
     KEY_RIGHT_SHIFT,
-    KEY_EQUALS,    
-    KEY_ARROW_UP,  
-    KEY_SLASH,     
+    KEY_EQUALS,
+    KEY_ARROW_UP,
+    KEY_SLASH,
 
     KEY_1,
     KEY_ARROW_LEFT,
     KEY_CONTROL,
     KEY_2,
     KEY_SPACE,
-    KEY_COMMODORE,  
+    KEY_COMMODORE,
     KEY_Q,
-    KEY_RUN_STOP,   
+    KEY_RUN_STOP,
 };
 
 pub const C64Key = struct {
@@ -127,14 +127,50 @@ pub const C64_PHYSICAL_KEYS: []const C64Key = &.{
     .{ .keycode = .KEY_0, .row = 3, .col = 4 },
 };
 
-
 const _CHAR_TABLE = [_]C64CharKeyMapping{
     .{ .char = 'A', .keys = &.{.KEY_A} },
     .{ .char = 'B', .keys = &.{.KEY_B} },
-    .{ .char = '+', .keys = &.{.KEY_PLUS} },
-    .{ .char = '"', .keys = &.{.KEY_SHIFT_LEFT, .KEY_2} },
-};
+    .{ .char = 'C', .keys = &.{.KEY_C} },
+    .{ .char = 'D', .keys = &.{.KEY_D} },
+    .{ .char = 'E', .keys = &.{.KEY_E} },
+    .{ .char = 'F', .keys = &.{.KEY_F} },
+    .{ .char = 'G', .keys = &.{.KEY_G} },
+    .{ .char = 'H', .keys = &.{.KEY_H} },
+    .{ .char = 'I', .keys = &.{.KEY_I} },
+    .{ .char = 'J', .keys = &.{.KEY_J} },
+    .{ .char = 'K', .keys = &.{.KEY_K} },
+    .{ .char = 'L', .keys = &.{.KEY_L} },
+    .{ .char = 'M', .keys = &.{.KEY_M} },
+    .{ .char = 'N', .keys = &.{.KEY_N} },
+    .{ .char = 'O', .keys = &.{.KEY_O} },
+    .{ .char = 'P', .keys = &.{.KEY_P} },
+    .{ .char = 'Q', .keys = &.{.KEY_Q} },
+    .{ .char = 'R', .keys = &.{.KEY_R} },
+    .{ .char = 'S', .keys = &.{.KEY_S} },
+    .{ .char = 'T', .keys = &.{.KEY_T} },
+    .{ .char = 'U', .keys = &.{.KEY_U} },
+    .{ .char = 'V', .keys = &.{.KEY_V} },
+    .{ .char = 'W', .keys = &.{.KEY_W} },
+    .{ .char = 'X', .keys = &.{.KEY_X} },
+    .{ .char = 'Y', .keys = &.{.KEY_Y} },
+    .{ .char = 'Z', .keys = &.{.KEY_Z} },
 
+    .{ .char = 'e', .keys = &.{.KEY_RETURN} },
+
+    .{ .char = '0', .keys = &.{.KEY_0} },
+    .{ .char = '1', .keys = &.{.KEY_1} },
+    .{ .char = '2', .keys = &.{.KEY_2} },
+    .{ .char = '3', .keys = &.{.KEY_3} },
+    .{ .char = '4', .keys = &.{.KEY_4} },
+    .{ .char = '5', .keys = &.{.KEY_5} },
+    .{ .char = '6', .keys = &.{.KEY_6} },
+    .{ .char = '7', .keys = &.{.KEY_7} },
+    .{ .char = '8', .keys = &.{.KEY_8} },
+    .{ .char = '9', .keys = &.{.KEY_9} },
+    .{ .char = '+', .keys = &.{.KEY_PLUS} },
+    .{ .char = '"', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_2 } },
+    .{ .char = '@', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_2 } },
+};
 
 pub const C64_PHYSICAL_KEY_LOOKUP_TABLE = blk: {
     var table: [@typeInfo(C64KeyCode).Enum.fields.len]C64Key = undefined;
@@ -146,12 +182,10 @@ pub const C64_PHYSICAL_KEY_LOOKUP_TABLE = blk: {
     break :blk table;
 };
 
-
 pub const C64CharKeyMapping = struct {
     char: u8,
-    keys: [] const C64KeyCode,
+    keys: []const C64KeyCode,
 };
-
 
 const C64_CHAR_LOOKUP_TABLE = blk: {
     var table: [256]?C64CharKeyMapping = [_]?C64CharKeyMapping{null} ** 256;
