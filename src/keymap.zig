@@ -129,14 +129,15 @@ pub const C64_PHYSICAL_KEYS: []const C64Key = &.{
 
 
 const _CHAR_TABLE = [_]C64CharKeyMapping{
-    .{ .char = 'A', .keys = &[_]C64KeyCode{.KEY_A} },
-    .{ .char = '+', .keys = &[_]C64KeyCode{.KEY_PLUS} },
+    .{ .char = 'A', .keys = &.{.KEY_A} },
+    .{ .char = 'B', .keys = &.{.KEY_B} },
+    .{ .char = '+', .keys = &.{.KEY_PLUS} },
+    .{ .char = '"', .keys = &.{.KEY_SHIFT_LEFT, .KEY_2} },
 };
 
 
 pub const C64_PHYSICAL_KEY_LOOKUP_TABLE = blk: {
-    var table: [@typeInfo(C64KeyCode).Enum.fields.len]C64Key =
-        undefined;
+    var table: [@typeInfo(C64KeyCode).Enum.fields.len]C64Key = undefined;
 
     for (C64_PHYSICAL_KEYS) |entry| {
         const idx = @intFromEnum(entry.keycode);
@@ -145,10 +146,6 @@ pub const C64_PHYSICAL_KEY_LOOKUP_TABLE = blk: {
     break :blk table;
 };
 
-
-pub inline fn lookup_c64_physical_key(key: C64KeyCode) C64Key {
-    return C64_PHYSICAL_KEY_LOOKUP_TABLE[@intFromEnum(key)];
-}
 
 pub const C64CharKeyMapping = struct {
     char: u8,
@@ -165,6 +162,10 @@ const C64_CHAR_LOOKUP_TABLE = blk: {
     break :blk table;
 };
 
-pub inline fn lookup_c64_char(host_symbol: u8) ?C64CharKeyMapping {
-    return C64_CHAR_LOOKUP_TABLE[host_symbol];
+pub inline fn lookup_c64_physical_key(key: C64KeyCode) C64Key {
+    return C64_PHYSICAL_KEY_LOOKUP_TABLE[@intFromEnum(key)];
+}
+
+pub inline fn lookup_c64_char(host_char: u8) ?C64CharKeyMapping {
+    return C64_CHAR_LOOKUP_TABLE[host_char];
 }

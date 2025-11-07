@@ -30,7 +30,7 @@ pub const Keyboard = struct {
     }
 
     pub fn set_key_up(self: *Keyboard, row: u3, col: u3) void {
-        self.keyboard_matrix[col] |= @truncate(@as(u8, 1) << row);
+        self.keyboard_matrix[col] |= @as(u8, 1) << row;
     }
 
     pub fn select_col(self: *Keyboard, col: u3) u8 {
