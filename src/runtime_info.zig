@@ -1,1 +1,1 @@
-pub var current_cycle_count: usize = 0;
+pub var current_cycle: usize = 0;

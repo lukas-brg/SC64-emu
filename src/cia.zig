@@ -37,7 +37,6 @@ pub const Timer = union {
 pub const CiaI = struct {
     cpu: *c.CPU,
     keyboard: *kb.Keyboard, // later replace with generic input device
-    keyboard_matrix: [8]u8,
     port_a: u8 = 0xFF,
     port_b: u8 = 0xFF,
     ddr_a: u8 = 0,
@@ -47,7 +46,6 @@ pub const CiaI = struct {
         const cia1: CiaI = .{
             .cpu         = cpu,
             .keyboard = keyboard,
-            .keyboard_matrix =  [8]u8{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
         };
        
         return cia1;

@@ -14,9 +14,7 @@ const DEBUG_CPU = @import("cpu.zig").self.pring_debug_info;
 pub fn adc(cpu: *CPU, instruction: *Instruction) void {
     const operand = instruction.operand.?;
 
-
     if (cpu.status.decimal == 0) {
-    
         const result = cpu.A +% operand +% cpu.status.carry;
 
         cpu.status.carry = @intFromBool(bitutils.did_carry_out_of_bit(cpu.A, operand, result, 7));
@@ -25,10 +23,9 @@ pub fn adc(cpu: *CPU, instruction: *Instruction) void {
         cpu.status.overflow = v_flag;
         cpu.status.update_zero(result);
         cpu.A = result;
-
     } else {
         const c_in = cpu.status.carry;
-        const binres =  cpu.A +% operand +% c_in;
+        const binres = cpu.A +% operand +% c_in;
         var c_out = @intFromBool(bitutils.did_carry_out_of_bit(cpu.A, operand, binres, 7));
 
         var decres = binres;
@@ -163,7 +160,7 @@ pub fn brk(cpu: *CPU, instruction: *Instruction) void {
 pub fn bit(cpu: *CPU, instruction: *Instruction) void {
     const operand = instruction.operand.?;
     cpu.status.negative = bitutils.get_bit_at(operand, 7);
-    
+
     cpu.status.overflow = bitutils.get_bit_at(operand, 6);
     cpu.status.update_zero(operand & cpu.A);
     cpu.PC += instruction.bytes;
@@ -401,7 +398,6 @@ pub fn rts(cpu: *CPU, instruction: *Instruction) void {
 }
 
 pub fn sbc(cpu: *CPU, instruction: *Instruction) void {
-
     if (cpu.status.decimal == 0) {
         const operand = ~instruction.operand.?;
         const result = cpu.A +% operand +% cpu.status.carry;
@@ -413,10 +409,9 @@ pub fn sbc(cpu: *CPU, instruction: *Instruction) void {
         cpu.status.update_zero(result);
         cpu.A = result;
     } else {
-
         const operand: u8 = ~instruction.operand.?;
         const c_in = cpu.status.carry;
-        const binres = cpu.A +% operand +% c_in; 
+        const binres = cpu.A +% operand +% c_in;
 
         var decres = binres;
         cpu.status.update_zero(binres);
@@ -424,11 +419,11 @@ pub fn sbc(cpu: *CPU, instruction: *Instruction) void {
         const c_out: u1 = @intFromBool(bitutils.did_carry_out_of_bit(cpu.A, operand, binres, 7));
         cpu.status.carry = c_out;
         cpu.status.update_negative(binres);
-        const v_flag: u1 = @intCast(((((binres ^ cpu.A) & (binres ^ operand) ) & 0x80) >> 7));
+        const v_flag: u1 = @intCast(((((binres ^ cpu.A) & (binres ^ operand)) & 0x80) >> 7));
         cpu.status.overflow = v_flag;
         if (!bitutils.did_carry_into_bit(cpu.A, operand, binres, 4)) {
             decres = (decres & 0xf0) | ((decres +% 0xfa) & 0xf);
-        }        
+        }
 
         if (c_out == 0) {
             decres +%= 0xA0;

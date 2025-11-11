@@ -184,6 +184,9 @@ const _CHAR_TABLE = [_]C64CharKeyMapping{
     .{ .char = '=', .keys = &.{.KEY_EQUAL} },
     .{ .char = '"', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_2 } },
     .{ .char = '@', .keys = &.{ .KEY_AT } },
+    .{ .char = '$', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_4 } },
+    .{ .char = '(', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_8 } },
+    .{ .char = ')', .keys = &.{ .KEY_SHIFT_LEFT, .KEY_9 } },
 };
 
 
