@@ -3,8 +3,8 @@ const c = @import("cpu/cpu.zig");
 const Bus = @import("bus.zig").Bus;
 const CPU = @import("cpu/cpu.zig").CPU;
 const Emulator = @import("emulator.zig").Emulator;
-const EmulatorConfig = @import("emulator.zig").EmulatorConfig;
-const DebugTraceConfig = @import("emulator.zig").DebugTraceConfig;
+const EmulatorConfig = @import("config.zig").EmulatorConfig;
+const DebugTraceConfig = @import("config.zig").DebugTraceConfig;
 const clap = @import("clap");
 const builtin = @import("builtin");
 
@@ -19,7 +19,7 @@ pub const std_options: std.Options = .{
 
 
 
-pub fn load_rom_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
+pub fn loadRomData(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const rom_data = try std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize));
     return rom_data;
 }
@@ -105,27 +105,27 @@ pub fn main() !void {
         var emulator = try Emulator.init(allocator, emu_config);
         defer emulator.deinit(allocator);
 
-        emulator.set_trace_config(trace_config);
+        emulator.setTraceConfig(trace_config);
         emulator.bus.enable_bank_switching = false;
-        _ = try emulator.load_rom(rom_path, 0);
-        emulator.cpu.set_reset_vector(0x400);
-        _ = emulator.run_ftest(cycles, FTEST_SUCCESS_ADDR);
+        _ = try emulator.loadRom(rom_path, 0);
+        emulator.cpu.setResetVector(0x400);
+        _ = emulator.runFtest(cycles, FTEST_SUCCESS_ADDR);
     } else if (res.args.rom) |rom_path| {
         emu_config.enable_bank_switching = false;
         var emulator = try Emulator.init(allocator, emu_config);
         defer emulator.deinit(allocator);
-        try emulator.init_graphics();
-        emulator.set_trace_config(trace_config);
+        try emulator.initGraphics();
+        emulator.setTraceConfig(trace_config);
         const offset = res.args.offset orelse 0x1000;
-        emulator.cpu.set_reset_vector(res.args.pc orelse 0x1000);
-        _ = try emulator.load_rom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
+        emulator.cpu.setResetVector(res.args.pc orelse 0x1000);
+        _ = try emulator.loadRom(rom_path, offset); // 0x1000 is chosen as a default here since xa65 also uses it by default
         emulator.run(res.args.cycles, res.args.instructions);
-        emulator.bus.print_mem(0x210, 0x211);
+        emulator.bus.printMem(0x210, 0x211);
     } else {
         var emulator = try Emulator.init(allocator, emu_config);
         defer emulator.deinit(allocator);
-        emulator.set_trace_config(trace_config);
-        try emulator.init_c64();
+        emulator.setTraceConfig(trace_config);
+        try emulator.initC64();
         emulator.run(res.args.cycles, res.args.instructions);
     }
     

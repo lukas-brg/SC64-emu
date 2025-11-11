@@ -4,14 +4,15 @@ pub const PrecisionClock = struct {
     target_duration_ns: u64,
     target_duration_ns_adjusted: u64 = 0,
     start_time: i128 = 0,
+    next_target_time: i128 = 0,
 
 
     pub fn init(target_duration_ns: u64) PrecisionClock {
-        var clock = PrecisionClock{
+        const clock = PrecisionClock{
             .target_duration_ns = target_duration_ns,
             .start_time = 0,
         };
-        clock.calibrate();
+        // clock.calibrate();
         return clock;
     }
 
@@ -33,14 +34,17 @@ pub const PrecisionClock = struct {
 
     pub inline fn start(self: *PrecisionClock) void {
         self.start_time = std.time.nanoTimestamp();
+        self.next_target_time = self.start_time + self.target_duration_ns;
     }
 
     pub inline fn end(self: *PrecisionClock) void {
-        const elapsed = std.time.nanoTimestamp() - self.start_time;
-        
-        if (elapsed < self.target_duration_ns_adjusted) {
-            while ((std.time.nanoTimestamp() - self.start_time) < self.target_duration_ns_adjusted) {}
-        } 
+        // const elapsed = std.time.nanoTimestamp() - self.start_time;
+
+        while((std.time.nanoTimestamp()) < self.next_target_time) {}
+
+        // if (elapsed < self.target_duration_ns) {
+        //     while ((std.time.nanoTimestamp() - self.start_time) < self.target_duration_ns) {}
+        // } 
         // else {
         //     std.debug.print("{} exceeded clock period\n", .{self.start_time});
         // }

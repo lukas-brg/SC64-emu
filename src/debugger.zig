@@ -8,5 +8,5 @@ const BreakPoint = union(enum) {
     disasm: []u8, // Break when disasm regex matches the dissassembly of an instruction
 };
 
-pub fn run_terminal_debugger() !void {
+pub fn runTerminalDebugger() !void {
 }

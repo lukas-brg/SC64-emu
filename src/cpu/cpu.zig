@@ -3,10 +3,10 @@ const Bus = @import("../bus.zig").Bus;
 
 const bitutils = @import("bitutils.zig");
 
-const decode_opcode = @import("opcodes.zig").decode_opcode;
+const decode_opcode = @import("opcodes.zig").decodeOpcode;
 const OpcodeInfo = @import("opcodes.zig").OpcodeInfo;
 const Instruction = @import("instruction.zig").Instruction;
-const get_instruction = @import("instruction.zig").get_instruction;
+const get_instruction = @import("instruction.zig").getInstruction;
 
 const log_cpu = std.log.scoped(.cpu);
 
@@ -28,14 +28,14 @@ pub const StatusFlag = enum(u3) {
     NEGATIVE,
 };
 
-pub fn print_disassembly_inline(cpu: CPU, instruction: Instruction) void {
+pub fn printDisassemblyInline(cpu: CPU, instruction: Instruction) void {
     const PC = instruction.instruction_addr;
     switch (instruction.addressing_mode) {
         .ABSOLUTE => std.debug.print("{X:0>4}:  {s} ${X:0>4}{s: <4}", .{ PC, instruction.mnemonic, instruction.operand_addr.?, "" }),
-        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read_16(PC + 1), "" }),
-        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read_16(PC + 1), "" }),
+        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read16(PC + 1), "" }),
+        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read16(PC + 1), "" }),
         .IMPLIED, .ACCUMULATOR => std.debug.print("{X:0>4}:  {s}{s: <10}", .{ PC, instruction.mnemonic, "" }),
-        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4}){s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read_16(PC + 1), "" }),
+        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4}){s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read16(PC + 1), "" }),
         .INDIRECT_Y => std.debug.print("{X:0>4}:  {s} (${X:0>2}),Y{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
         .INDIRECT_X => std.debug.print("{X:0>4}:  {s} (${X:0>2},X){s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
         .IMMEDIATE => std.debug.print("{X:0>4}:  {s} #${X:0>2}{s: <5}", .{ PC, instruction.mnemonic, instruction.operand.?, "" }),
@@ -46,8 +46,8 @@ pub fn print_disassembly_inline(cpu: CPU, instruction: Instruction) void {
     }
 }
 
-pub fn print_disassembly(cpu: CPU, instruction: Instruction) void {
-    print_disassembly_inline(cpu, instruction);
+pub fn printDisassembly(cpu: CPU, instruction: Instruction) void {
+    printDisassemblyInline(cpu, instruction);
     std.debug.print("\n", .{});
 }
 
@@ -61,7 +61,7 @@ const StatusRegister = packed struct(u8) {
     overflow: u1 = 0,
     negative: u1 = 0,
 
-    pub inline fn to_byte(self: StatusRegister) u8 {
+    pub inline fn toByte(self: StatusRegister) u8 {
         return @bitCast(self);
     }
     
@@ -69,15 +69,15 @@ const StatusRegister = packed struct(u8) {
         self.* = @bitCast(byte);
     }
 
-    pub fn from_byte(value: u8) StatusRegister {
+    pub fn fromByte(value: u8) StatusRegister {
         return @bitCast(value);
     }
 
-    pub inline fn update_negative(self: *StatusRegister, result: u8) void {
-        self.negative = bitutils.get_bit_at(result, 7);
+    pub inline fn updateNegative(self: *StatusRegister, result: u8) void {
+        self.negative = bitutils.getBitAt(result, 7);
     }
 
-    pub inline fn update_zero(self: *StatusRegister, result: u8) void {
+    pub inline fn updateZero(self: *StatusRegister, result: u8) void {
         self.zero = @intFromBool(result == 0);
     }
 };
@@ -116,18 +116,18 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
-        self.PC = self.bus.read_16(RESET_VECTOR);
+        self.PC = self.bus.read16(RESET_VECTOR);
         log_cpu.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
     }
 
     pub fn irq(self: *CPU) void {
         if (self.status.interrupt_disable == 0) {
             self.mutex.lock();
-            self.push_16(self.PC);
+            self.push16(self.PC);
             var status = self.status;
             status.break_flag = 0;
-            self.push(status.to_byte());
-            self.PC = self.bus.read_16(IRQ_VECTOR);
+            self.push(status.toByte());
+            self.PC = self.bus.read16(IRQ_VECTOR);
             self.mutex.unlock();
             //log_cpu.debug("IRQ", .{});
         } else {
@@ -136,11 +136,11 @@ pub const CPU = struct {
     }
 
     pub fn nmi(self: *CPU) void {
-        self.push_16(self.PC);
+        self.push16(self.PC);
         var status = self.status;
         status.break_flag = 0;
-        self.push(status.to_byte());
-        self.PC = self.bus.read_16(NMI_VECTOR);
+        self.push(status.toByte());
+        self.PC = self.bus.read16(NMI_VECTOR);
         log_cpu.debug("NMI", .{});
     }
 
@@ -158,8 +158,8 @@ pub const CPU = struct {
         return self.bus.read(STACK_BASE_POINTER + self.SP);
     }
 
-    pub fn pop_16(self: *CPU) u16 {
-        return bitutils.combine_bytes(self.pop(), self.pop());
+    pub fn pop16(self: *CPU) u16 {
+        return bitutils.combineBytes(self.pop(), self.pop());
     }
 
     pub fn push(self: *CPU, val: u8) void {
@@ -175,7 +175,7 @@ pub const CPU = struct {
         self.SP -%= 1;
     }
    
-    pub fn push_16(self: *CPU, val: u16) void {
+    pub fn push16(self: *CPU, val: u16) void {
         const high_byte: u8 = @intCast(val >> 8);
         self.push(high_byte);
 
@@ -183,15 +183,15 @@ pub const CPU = struct {
         self.push(low_byte);
     }
 
-    fn fetch_byte(self: CPU) u8 {
+    fn fetchNextByte(self: CPU) u8 {
         return self.bus.read(self.PC);
     }
 
-    pub fn set_reset_vector(self: *CPU, addr: u16) void {
-        self.bus.write_16(RESET_VECTOR, addr);
+    pub fn setResetVector(self: *CPU, addr: u16) void {
+        self.bus.write16(RESET_VECTOR, addr);
     }
 
-    pub fn print_stack(self: *CPU, limit: usize) void {
+    pub fn printStack(self: *CPU, limit: usize) void {
         var sp_abs = STACK_BASE_POINTER + @as(u16, self.SP) + 1;
         var count: usize = 0;
         std.debug.print("STACK:\n", .{});
@@ -202,7 +202,7 @@ pub const CPU = struct {
         }
     }
 
-    pub fn clock_tick(self: *CPU) void {
+    pub fn clockTick(self: *CPU) void {
         
         if (self.instruction_remaining_cycles > 0) {
             self.instruction_remaining_cycles -= 1;
@@ -216,7 +216,7 @@ pub const CPU = struct {
     pub fn step(self: *CPU) void {
         self.mutex.lock();
         const d_prev = self.status.decimal;
-        const opcode = self.fetch_byte();
+        const opcode = self.fetchNextByte();
         
         const opcode_info = decode_opcode(opcode) orelse { 
             std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{ opcode, self.PC });
@@ -251,9 +251,9 @@ pub const CPU = struct {
         }
     }
 
-    pub fn print_state_compact(self: CPU) void {
+    pub fn printStateCompact(self: CPU) void {
         const instruction = self.current_instruction orelse unreachable;
-        print_disassembly_inline(self, instruction);
+        printDisassemblyInline(self, instruction);
         if (instruction.operand_addr) |addr| {
             std.debug.print(" {X:0>4}  ", .{addr});
         } else {
@@ -288,7 +288,7 @@ pub const CPU = struct {
         std.debug.print("\n", .{});
     }
 
-    pub fn print_state(self: CPU) void {
+    pub fn printState(self: CPU) void {
         std.debug.print("\n----------------------------------------------------", .{});
         std.debug.print("\nCPU STATE:", .{});
 
@@ -298,8 +298,8 @@ pub const CPU = struct {
         std.debug.print("\nSP:         {b:0>8}", .{self.SP});
         std.debug.print("      {x:0>2}", .{self.SP});
 
-        std.debug.print("\nP:          {b:0>8}", .{self.status.to_byte()});
-        std.debug.print("      {x:0>2}", .{self.status.to_byte()});
+        std.debug.print("\nP:          {b:0>8}", .{self.status.toByte()});
+        std.debug.print("      {x:0>2}", .{self.status.toByte()});
 
         std.debug.print("\nA:          {b:0>8}", .{self.A});
         std.debug.print("      {x:0>2}", .{self.A});
