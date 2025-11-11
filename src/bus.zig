@@ -280,3 +280,12 @@ pub const Bus = struct {
         };
     }
 };
+
+
+pub const _Bus = struct {
+    read: fn(addr: u16) u8,
+    write: fn(addr: u16, val: u8) void,
+    read_16: fn(addr: u16) u16,
+    write_16: fn(addr: u16, val: u8) void,
+
+};

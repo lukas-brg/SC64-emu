@@ -62,7 +62,7 @@ pub const Keyboard = struct {
             }
         }
 
-        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and runtime_info.current_cycle - self.last_paste_at_cycle >= 200000) {
+        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and runtime_info.current_cycle - self.last_paste_at_cycle >= 800000) {
             const clip: [*c]const u8 = @ptrCast(raylib.GetClipboardText());
             if (clip != null) {
                 const len = std.mem.len(clip);
@@ -80,17 +80,19 @@ pub const Keyboard = struct {
                         paste_queue.enqueue(.{ .keycode = keycode, .at_cycle = runtime_info.current_cycle });
                     }
                 }
+                self.last_paste_at_cycle = runtime_info.current_cycle;
+                self.paste_last_insert_at = runtime_info.current_cycle;
+                return;
             }
-            self.last_paste_at_cycle = runtime_info.current_cycle;
         }
 
         if (paste_queue.peek()) |event| {
-            if (runtime_info.current_cycle - self.last_paste_at_cycle >= 12000) {
+            if (runtime_info.current_cycle - self.paste_last_insert_at >= 14400) {
                 const key = keymap.lookup_c64_physical_key(event.keycode);
                 self.set_key_down(key.row, key.col);
                 std.debug.print("paste: {s} at {}\n", .{@tagName(event.keycode), runtime_info.current_cycle});
                 _ = paste_queue.dequeue();
-                self.last_paste_at_cycle = runtime_info.current_cycle;
+                self.paste_last_insert_at = runtime_info.current_cycle;
                 keyevent_queue.enqueue(.{ .keycode = event.keycode, .at_cycle = runtime_info.current_cycle });
                 return;
             }
