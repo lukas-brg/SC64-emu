@@ -2,25 +2,32 @@ const keymap = @import("keymap.zig");
 const KeyDownEvent = @import("keydown_event.zig").KeyDownEvent;
 // const keydown_event = @import("keydown_event.zig");
 
-var list: [100]KeyDownEvent = undefined;
-var head: isize = -1;
+const CAPACITY = 100;
+
+var buffer: [CAPACITY]KeyDownEvent = undefined;
+var head: usize = 0;
+var tail: usize = 0;
+
 
 
 pub fn enqueue(event: KeyDownEvent) void {
-    head += 1;
-    list[@as(usize, @intCast(head))] = event;
+    buffer[tail] = event;
+    tail += 1;
+    tail %= CAPACITY;
+    
 }
 
 pub fn dequeue() ?KeyDownEvent {
-    if (head < 0) return null;
-    const ret = list[@as(usize, @intCast(head))];
-    head -= 1;
+    if (head == tail) return null;
+    const ret = buffer[head];
+    head += 1;
+    head %= CAPACITY;
     return ret;
 }
 
 
 pub fn peek() ?KeyDownEvent {
-    if (head < 0) return null;
-    const ret = list[@as(usize, @intCast(head))];
+    if (head == tail) return null;
+    const ret = buffer[head];
     return ret;
 }

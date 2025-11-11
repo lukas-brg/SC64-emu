@@ -20,6 +20,7 @@ pub const Keyboard = struct {
     // Maybe make a interface for the cia1 connected device and let this be one implementation of it.
     keyboard_matrix: [8]u8,
     last_paste_at_cycle: usize = 0,
+    paste_last_insert_at: usize = 0,
 
     pub fn init() Keyboard {
         return Keyboard{
@@ -46,14 +47,12 @@ pub const Keyboard = struct {
     }
 
     pub fn update(self: *Keyboard) void {
-        var last_key_event: ?KeyDownEvent = null;
         while (true) {
-            last_key_event = keyevent_queue.peek();
-
-            if (last_key_event) |event| {
+            if (keyevent_queue.peek()) |event| {
                 if (runtime_info.current_cycle - event.at_cycle >= 10000) {
                     _ = keyevent_queue.dequeue();
                     const key = keymap.lookup_c64_physical_key(event.keycode);
+                    std.debug.print("releasing key {s} at {}\n", .{@tagName(event.keycode), runtime_info.current_cycle});
                     self.set_key_up(key.row, key.col);
                 } else {
                     break;
@@ -63,7 +62,7 @@ pub const Keyboard = struct {
             }
         }
 
-        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and runtime_info.current_cycle - self.last_paste_at_cycle >= 10000) {
+        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and runtime_info.current_cycle - self.last_paste_at_cycle >= 200000) {
             const clip: [*c]const u8 = @ptrCast(raylib.GetClipboardText());
             if (clip != null) {
                 const len = std.mem.len(clip);
@@ -73,9 +72,9 @@ pub const Keyboard = struct {
                     if (char >= 'a' and char <= 'z') {
                         char -= 32;
                     }
-                    std.debug.print("{c}\n'", .{char});
+                    // std.debug.print("{c}\n'", .{char});
                     const keymapping = keymap.lookup_c64_char(@intCast(char)) orelse continue;
-                    for (keymapping.keys) |keycode| {
+                    for (keymapping.keys, 0..keymapping.keys.len) |keycode, _| {
                         // const key = keymap.lookup_c64_physical_key(keycode);
                         // self.set_key_down(key.row, key.col);
                         paste_queue.enqueue(.{ .keycode = keycode, .at_cycle = runtime_info.current_cycle });
@@ -85,12 +84,16 @@ pub const Keyboard = struct {
             self.last_paste_at_cycle = runtime_info.current_cycle;
         }
 
-        if (paste_queue.dequeue()) |event| {
-            const key = keymap.lookup_c64_physical_key(event.keycode);
-            self.set_key_down(key.row, key.col);
-            std.debug.print("paste: {s}\n", .{@tagName(event.keycode)});
-            keyevent_queue.enqueue(.{ .keycode = event.keycode, .at_cycle = runtime_info.current_cycle });
-            return;
+        if (paste_queue.peek()) |event| {
+            if (runtime_info.current_cycle - self.last_paste_at_cycle >= 12000) {
+                const key = keymap.lookup_c64_physical_key(event.keycode);
+                self.set_key_down(key.row, key.col);
+                std.debug.print("paste: {s} at {}\n", .{@tagName(event.keycode), runtime_info.current_cycle});
+                _ = paste_queue.dequeue();
+                self.last_paste_at_cycle = runtime_info.current_cycle;
+                keyevent_queue.enqueue(.{ .keycode = event.keycode, .at_cycle = runtime_info.current_cycle });
+                return;
+            }
         }
 
         // Handle printable keys/chars in a host layout agnostic way
