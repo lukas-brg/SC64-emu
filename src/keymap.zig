@@ -214,10 +214,10 @@ const C64_CHAR_LOOKUP_TABLE = blk: {
     break :blk table;
 };
 
-pub inline fn lookup_c64_physical_key(key: C64KeyCode) C64Key {
+pub inline fn lookupC64PhysicalKey(key: C64KeyCode) C64Key {
     return C64_PHYSICAL_KEY_LOOKUP_TABLE[@intFromEnum(key)];
 }
 
-pub inline fn lookup_c64_char(host_char: u8) ?C64CharKeyMapping {
+pub inline fn lookupC64Char(host_char: u8) ?C64CharKeyMapping {
     return C64_CHAR_LOOKUP_TABLE[host_char];
 }

@@ -15,7 +15,7 @@ const opcode_lookup_table: [256]?OpcodeInfo = blk: {
 };
 
 
-pub inline fn decode_opcode(opcode: u8) ?OpcodeInfo {
+pub inline fn decodeOpcode(opcode: u8) ?OpcodeInfo {
     return opcode_lookup_table[opcode];
 }
 

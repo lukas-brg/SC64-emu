@@ -18,19 +18,19 @@ const RuntimeInfo = @import("runtime_info.zig");
 
 const conf = @import("config.zig");
 
-const print_disassembly_inline = @import("cpu/cpu.zig").print_disassembly_inline;
+const print_disassembly_inline = @import("cpu/cpu.zig").printDisassemblyInline;
 
 const log_emu = std.log.scoped(.emu_core);
 
 var sigint_received: bool = false;
 
-export fn catch_sigint(_: i32) void {
+export fn catchSigint(_: i32) void {
     sigint_received = true;
     //@atomicStore(bool, &sigint_received, true, std.builtin.AtomicOrder.release);
 
 }
 
-fn load_file_data(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
+fn loadFileData(rom_path: []const u8, allocator: std.mem.Allocator) ![]u8 {
     const data = std.fs.cwd().readFileAlloc(allocator, rom_path, std.math.maxInt(usize)) catch |err| {
         log_emu.err("Could not read file '{s}'", .{rom_path});
         return err;
@@ -73,46 +73,46 @@ pub const Emulator = struct {
         return emulator;
     }
 
-    pub fn init_graphics(self: *Emulator) !void {
+    pub fn initGraphics(self: *Emulator) !void {
         self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
         self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
         self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
-        self.load_character_rom("data/c64_charset.bin");
+        self.loadCharacterRom("data/c64_charset.bin");
         // self.clear_color_mem();
         log_emu.info("C64 graphics initialized", .{});
     }
 
-    pub fn init_c64(self: *Emulator) !void {
-        self.load_basic_rom() catch std.debug.panic("Couldn't load BASIC rom", .{});
-        self.load_kernal_rom() catch std.debug.panic("Couldn't load KERNAL rom", .{});
+    pub fn initC64(self: *Emulator) !void {
+        self.loadBasicRom() catch std.debug.panic("Couldn't load BASIC rom", .{});
+        self.loadKernalRom() catch std.debug.panic("Couldn't load KERNAL rom", .{});
 
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
         self.cpu.reset();
-        try self.init_graphics();
+        try self.initGraphics();
         self.cpu.SP = 0xFF;
         log_emu.info("C64 init procedure completed", .{});
     }
 
-    fn load_basic_rom(self: *Emulator) !void {
+    fn loadBasicRom(self: *Emulator) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
         const allocator = gpa.allocator();
-        const rom_data = try load_file_data("data/basic.bin", allocator);
+        const rom_data = try loadFileData("data/basic.bin", allocator);
         @memcpy(self.bus.basic_rom[0..], rom_data);
         allocator.free(rom_data);
         log_emu.info("Loaded BASIC rom", .{});
     }
 
-    fn load_character_rom(self: *Emulator, charset_path: []const u8) void {
+    fn loadCharacterRom(self: *Emulator, charset_path: []const u8) void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
         const allocator = gpa.allocator();
 
-        const rom_data = load_file_data(charset_path, allocator) catch {
+        const rom_data = loadFileData(charset_path, allocator) catch {
             std.debug.panic("Couldn't load charset {s}", .{charset_path});
         };
         defer allocator.free(rom_data);
@@ -121,19 +121,19 @@ pub const Emulator = struct {
         log_emu.info("Loaded charset '{s}' into character rom", .{charset_path});
     }
 
-    pub fn set_trace_config(self: *Emulator, config: conf.DebugTraceConfig) void {
+    pub fn setTraceConfig(self: *Emulator, config: conf.DebugTraceConfig) void {
         self.trace_config = config;
         // Activate tracing automatically if trace_start parameter is set
         const enable = config.enable_trace or (config.start_at_cycle > 0) or (config.start_at_instr > 0);
         self.trace_config.enable_trace = enable;
     }
 
-    fn load_kernal_rom(self: *Emulator) !void {
+    fn loadKernalRom(self: *Emulator) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
         const allocator = gpa.allocator();
-        const rom_data = try load_file_data("data/kernal.bin", allocator);
+        const rom_data = try loadFileData("data/kernal.bin", allocator);
         @memcpy(self.bus.kernal_rom[0..], rom_data);
         allocator.free(rom_data);
         log_emu.info("Loaded KERNAL rom", .{});
@@ -147,15 +147,15 @@ pub const Emulator = struct {
         log_emu.info("All resources deallocated", .{});
     }
 
-    pub fn load_rom(self: *Emulator, rom_path: []const u8, offset: u16) !void {
+    pub fn loadRom(self: *Emulator, rom_path: []const u8, offset: u16) !void {
         var gpa = std.heap.GeneralPurposeAllocator(.{}){};
         defer _ = gpa.deinit();
 
         const allocator = gpa.allocator();
-        const rom_data = load_file_data(rom_path, allocator) catch {
+        const rom_data = loadFileData(rom_path, allocator) catch {
             std.debug.panic("Could not load rom '{s}' file data", .{rom_path});
         };
-        self.cpu.bus.write_continuous(rom_data, offset);
+        self.cpu.bus.writeContinuous(rom_data, offset);
         allocator.free(rom_data);
         log_emu.info("Loaded rom data from file '{s}' at offset {X:0>4}", .{ rom_path, offset });
     }
@@ -163,9 +163,9 @@ pub const Emulator = struct {
     pub fn step(self: *Emulator) void {
         //self.cia1.dec_timers();
 
-        self.cpu.clock_tick();
+        self.cpu.clockTick();
 
-        self.print_trace();
+        self.printTrace();
 
         if (self.step_count % 1 == 0) {
             // io.keyboard.update_keyboard_state(self);
@@ -177,12 +177,12 @@ pub const Emulator = struct {
         RuntimeInfo.current_cycle = self.step_count;
     }
 
-    fn create_sigint_handler() void {
+    fn createSigintHandler() void {
         switch (comptime builtin.os.tag) {
             .windows => log_emu.warn("SIGINT handler not supported on Windows yet.", .{}),
             else => {
                 var act = std.posix.Sigaction{
-                    .handler = .{ .handler = catch_sigint },
+                    .handler = .{ .handler = catchSigint },
                     .mask = std.posix.empty_sigset,
                     .flags = 0,
                 };
@@ -195,7 +195,7 @@ pub const Emulator = struct {
     }
 
     pub fn run(self: *Emulator, limit_cycles: ?usize, limit_instructions: ?usize) void {
-        create_sigint_handler();
+        createSigintHandler();
         self.cpu.reset();
         var clock = PrecisionClock.init(if (self.config.speedup_startup) 100 else 1000);
         var vic_clock = PrecisionClock.init(16666667);
@@ -251,12 +251,12 @@ pub const Emulator = struct {
 
         const runtime_ms = endtime_ms - starttime_ms;
         self.vic = vic;
-        self.log_runtime_stats(runtime_ms);
+        self.logRunTimeStats(runtime_ms);
     }
 
     /// Like run but automatically detects infinite loop or success and stops execution
-    pub fn run_ftest(self: *Emulator, limit_cycles: ?usize, addr_success: u16) bool {
-        create_sigint_handler();
+    pub fn runFtest(self: *Emulator, limit_cycles: ?usize, addr_success: u16) bool {
+        createSigintHandler();
         self.cpu.reset();
         var quit = false;
 
@@ -268,7 +268,7 @@ pub const Emulator = struct {
         while (!quit) {
             pc_prev = self.cpu.PC;
             self.cpu.step();
-            self.print_trace();
+            self.printTrace();
             self.step_count += 1;
             quit = sigint_received;
             if (pc_prev == self.cpu.PC) {
@@ -286,8 +286,8 @@ pub const Emulator = struct {
                         self.cpu.cycle_count,
                         self.cpu.instruction_count,
                     });
-                    cpu_state_prev.print_state_compact();
-                    self.cpu.print_state_compact();
+                    cpu_state_prev.printStateCompact();
+                    self.cpu.printStateCompact();
                     break;
                 }
             }
@@ -309,11 +309,11 @@ pub const Emulator = struct {
         }
 
         const runtime_ms = endtime_ms - starttime_ms;
-        self.log_runtime_stats(runtime_ms);
+        self.logRunTimeStats(runtime_ms);
         return passed;
     }
 
-    fn print_trace(self: *Emulator) void {
+    fn printTrace(self: *Emulator) void {
         const cfg = self.trace_config;
 
         const do_print_trace: bool = blk: {
@@ -351,24 +351,24 @@ pub const Emulator = struct {
                 const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
 
                 if (self.trace_config.print_cpu_state) {
-                    self.cpu.print_state();
+                    self.cpu.printState();
                 }
 
                 if (self.trace_config.print_stack) {
-                    self.cpu.print_stack(self.trace_config.print_stack_limit);
+                    self.cpu.printStack(self.trace_config.print_stack_limit);
                 }
 
                 if (self.trace_config.print_mem) {
-                    self.cpu.bus.print_mem(start, @intCast(end));
-                    self.cpu.bus.print_mem(0xc0, @intCast(0xc9));
+                    self.cpu.bus.printMem(start, @intCast(end));
+                    self.cpu.bus.printMem(0xc0, @intCast(0xc9));
                 }
             } else {
-                self.cpu.print_state_compact();
+                self.cpu.printStateCompact();
             }
         }
     }
 
-    fn log_runtime_stats(self: *Emulator, runtime_ms: i64) void {
+    fn logRunTimeStats(self: *Emulator, runtime_ms: i64) void {
         const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
         const freq_c = @as(f64, @floatFromInt(self.cpu.cycle_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));
         const freq_i = @as(f64, @floatFromInt(self.cpu.instruction_count)) / @as(f64, @floatFromInt((runtime_ms * 1000)));

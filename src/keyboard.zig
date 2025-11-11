@@ -28,22 +28,18 @@ pub const Keyboard = struct {
         };
     }
 
-    pub fn get_clipboard_text() ?[]const u8 {
+    pub fn getClipboardText() ?[]const u8 {
         const text = raylib.GetClipboardText();
         if (text == null) return null;
         return text;
     }
 
-    pub fn set_key_down(self: *Keyboard, row: u3, col: u3) void {
+    pub fn setKeyDown(self: *Keyboard, row: u3, col: u3) void {
         self.keyboard_matrix[col] &= ~(@as(u8, 1) << row);
     }
 
-    pub fn set_key_up(self: *Keyboard, row: u3, col: u3) void {
+    pub fn setKeyUp(self: *Keyboard, row: u3, col: u3) void {
         self.keyboard_matrix[col] |= @as(u8, 1) << row;
-    }
-
-    pub fn select_col(self: *Keyboard, col: u3) u8 {
-        return self.keyboard_matrix[col];
     }
 
     pub fn update(self: *Keyboard) void {
@@ -51,9 +47,9 @@ pub const Keyboard = struct {
             if (keyevent_queue.peek()) |event| {
                 if (runtime_info.current_cycle - event.at_cycle >= 10000) {
                     _ = keyevent_queue.dequeue();
-                    const key = keymap.lookup_c64_physical_key(event.keycode);
-                    std.debug.print("releasing key {s} at {}\n", .{@tagName(event.keycode), runtime_info.current_cycle});
-                    self.set_key_up(key.row, key.col);
+                    const key = keymap.lookupC64PhysicalKey(event.keycode);
+                    std.debug.print("releasing key {s} at {}\n", .{ @tagName(event.keycode), runtime_info.current_cycle });
+                    self.setKeyUp(key.row, key.col);
                 } else {
                     break;
                 }
@@ -73,7 +69,7 @@ pub const Keyboard = struct {
                         char -= 32;
                     }
                     // std.debug.print("{c}\n'", .{char});
-                    const keymapping = keymap.lookup_c64_char(@intCast(char)) orelse continue;
+                    const keymapping = keymap.lookupC64Char(@intCast(char)) orelse continue;
                     for (keymapping.keys, 0..keymapping.keys.len) |keycode, _| {
                         // const key = keymap.lookup_c64_physical_key(keycode);
                         // self.set_key_down(key.row, key.col);
@@ -88,9 +84,9 @@ pub const Keyboard = struct {
 
         if (paste_queue.peek()) |event| {
             if (runtime_info.current_cycle - self.paste_last_insert_at >= 14400) {
-                const key = keymap.lookup_c64_physical_key(event.keycode);
-                self.set_key_down(key.row, key.col);
-                std.debug.print("paste: {s} at {}\n", .{@tagName(event.keycode), runtime_info.current_cycle});
+                const key = keymap.lookupC64PhysicalKey(event.keycode);
+                self.setKeyDown(key.row, key.col);
+                std.debug.print("paste: {s} at {}\n", .{ @tagName(event.keycode), runtime_info.current_cycle });
                 _ = paste_queue.dequeue();
                 self.paste_last_insert_at = runtime_info.current_cycle;
                 keyevent_queue.enqueue(.{ .keycode = event.keycode, .at_cycle = runtime_info.current_cycle });
@@ -106,37 +102,37 @@ pub const Keyboard = struct {
             if (char >= 'a' and char <= 'z') {
                 char -= 32;
             }
-            const keymapping = keymap.lookup_c64_char(@intCast(char)) orelse continue;
+            const keymapping = keymap.lookupC64Char(@intCast(char)) orelse continue;
             for (keymapping.keys) |keycode| {
-                const key = keymap.lookup_c64_physical_key(keycode);
-                self.set_key_down(key.row, key.col);
+                const key = keymap.lookupC64PhysicalKey(keycode);
+                self.setKeyDown(key.row, key.col);
                 keyevent_queue.enqueue(.{ .keycode = keycode, .at_cycle = runtime_info.current_cycle });
             }
         }
 
         // Handle control keys
         if (raylib.IsKeyDown(raylib.KEY_ENTER)) {
-            const key = keymap.lookup_c64_physical_key(.KEY_RETURN);
-            self.set_key_down(key.row, key.col);
+            const key = keymap.lookupC64PhysicalKey(.KEY_RETURN);
+            self.setKeyDown(key.row, key.col);
         } else {
-            const key = keymap.lookup_c64_physical_key(.KEY_RETURN);
-            self.set_key_up(key.row, key.col);
+            const key = keymap.lookupC64PhysicalKey(.KEY_RETURN);
+            self.setKeyUp(key.row, key.col);
         }
 
         if (raylib.IsKeyDown(raylib.KEY_BACKSPACE)) {
-            const key = keymap.lookup_c64_physical_key(.KEY_DELETE);
-            self.set_key_down(key.row, key.col);
+            const key = keymap.lookupC64PhysicalKey(.KEY_DELETE);
+            self.setKeyDown(key.row, key.col);
         } else {
-            const key = keymap.lookup_c64_physical_key(.KEY_DELETE);
-            self.set_key_up(key.row, key.col);
+            const key = keymap.lookupC64PhysicalKey(.KEY_DELETE);
+            self.setKeyUp(key.row, key.col);
         }
 
         if (raylib.IsKeyDown(raylib.KEY_LEFT)) {
-            const key = keymap.lookup_c64_physical_key(.KEY_ARROW_LEFT);
-            self.set_key_down(key.row, key.col);
+            const key = keymap.lookupC64PhysicalKey(.KEY_ARROW_LEFT);
+            self.setKeyDown(key.row, key.col);
         } else {
-            const key = keymap.lookup_c64_physical_key(.KEY_ARROW_LEFT);
-            self.set_key_up(key.row, key.col);
+            const key = keymap.lookupC64PhysicalKey(.KEY_ARROW_LEFT);
+            self.setKeyUp(key.row, key.col);
         }
     }
 };

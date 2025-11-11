@@ -22,17 +22,17 @@ pub const Renderer = struct {
         raylib.SetTraceLogLevel(raylib.LOG_INFO);
         log_renderer.info("Initializing Renderer...", .{});
         var renderer = Renderer{ .scale = scaling_factor };
-        renderer.init_window();
+        renderer.initWindow();
         log_renderer.info("Renderer initialized" ,.{});
         return renderer;
     }
 
-    pub fn window_should_close(self: *Renderer) bool {
+    pub fn windowShouldClose(self: *Renderer) bool {
         return self.__window_close;
     }
 
 
-    pub fn init_window(self: *Renderer) void {
+    pub fn initWindow(self: *Renderer) void {
         
         const scale = self.scale;
         const win_w: c_int = @intFromFloat((SCREEN_WIDTH + 2 * BORDER_SIZE_X) * scale);
@@ -59,7 +59,7 @@ pub const Renderer = struct {
         log_renderer.info("Window created successfully.", .{});
     }
 
-    pub fn render_frame(self: *Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {
+    pub fn renderFrame(self: *Renderer, frame_buffer: []u8, border_color: colors.ColorRGB) void {
         if(raylib.WindowShouldClose()) {
             self.__window_close = true;
             return;

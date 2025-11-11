@@ -72,15 +72,15 @@ pub const Bus = struct {
        
         if (addr >= MemoryMap.cia1_start and addr <= MemoryMap.cia1_end) {
             const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port]);
-            if (bitutils.get_bit_at(banking_control_bits, 2) == 1) {
-                self.cia1.write_cia_ram(addr, val);
+            if (bitutils.getBitAt(banking_control_bits, 2) == 1) {
+                self.cia1.writeCiaRam(addr, val);
                 return;
             }
         }
         
       
     
-        const mem_location = self.access_mem_location(addr);
+        const mem_location = self.accessMemLocation(addr);
         if (addr >= MemoryMap.character_rom_start and addr <= MemoryMap.character_rom_end and mem_location.read_only) {
             log_bus.err("Writing to character rom at {X:0>4}\n", .{addr});
         }
@@ -103,17 +103,17 @@ pub const Bus = struct {
     pub fn read(self: *Bus, addr: u16) u8 {
         if (addr >= MemoryMap.cia1_start and addr <= MemoryMap.cia1_end) {
             const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port]);
-            if (bitutils.get_bit_at(banking_control_bits, 2) == 1) {
-                return self.cia1.read_cia_ram(addr);
+            if (bitutils.getBitAt(banking_control_bits, 2) == 1) {
+                return self.cia1.readCiaRam(addr);
             }
         }
 
-        const mem_location = self.access_mem_location(addr);
+        const mem_location = self.accessMemLocation(addr);
         return mem_location.val_ptr.*;
         
     }
 
-    pub fn write_io_ram(self: *Bus, addr: u16, val: u8) void {
+    pub fn writeIORam(self: *Bus, addr: u16, val: u8) void {
         const index = addr - comptime MemoryMap.io_ram_start;
       //  self.io_ram_mutex.lock();
         // self.cia1.write_io_ram(addr, val);
@@ -121,7 +121,7 @@ pub const Bus = struct {
       //  self.io_ram_mutex.unlock();
     }
 
-    pub fn read_io_ram(self: *Bus, addr: u16) u8 {
+    pub fn readIORam(self: *Bus, addr: u16) u8 {
         const index = addr - comptime MemoryMap.io_ram_start;
      //   self.io_ram_mutex.lock();
         const val = self.io_ram[index];
@@ -130,43 +130,43 @@ pub const Bus = struct {
         return val;
     }
 
-    pub fn aquire_io_ram(self: *Bus) []u8 {
+    pub fn aquireIoRam(self: *Bus) []u8 {
        self.io_ram_mutex.lock();
         return self.io_ram;
     }
 
-    pub fn write_ram(self: *Bus, addr: u16, val: u8) void {
+    pub fn writeRam(self: *Bus, addr: u16, val: u8) void {
       //  self.ram_mutex.lock();
         self.io_ram[addr] = val;
      //   self.ram_mutex.unlock();
     }
 
-    pub fn read_ram(self: *Bus, addr: u16) u8 {
+    pub fn readRam(self: *Bus, addr: u16) u8 {
       //  self.ram_mutex.lock();
         const val = self.ram[addr];
       //  self.ram_mutex.unlock();
         return val;
     }
 
-    pub fn aquire_ram(self: *Bus) []u8 {
+    pub fn aquireRam(self: *Bus) []u8 {
         self.ram_mutex.lock();
         return self.ram;
     }
 
-    pub fn write_16(self: *Bus, addr: u16, val: u16) void {
+    pub fn write16(self: *Bus, addr: u16, val: u16) void {
         //if (addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});
         // const mem_location = self.access_mem_location(addr);
         // const ptr16: *u16 = @ptrCast(@alignCast(mem_location.val_ptr));
         // ptr16.* = val;
         
-        const bytes = bitutils.split_into_bytes(val);
+        const bytes = bitutils.splitIntoBytes(val);
         self.write(addr, bytes[0]);
         self.write(addr + 1, bytes[1]);
     }
 
 
 
-    pub fn read_16(self: *Bus, addr: u16) u16 {
+    pub fn read16(self: *Bus, addr: u16) u16 {
         // if (addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});
         // const mem_location = self.access_mem_location(addr);
         // std.log.debug("addr {X:0>4}", .{addr});
@@ -175,10 +175,10 @@ pub const Bus = struct {
         //if (addr > MEM_SIZE - 2) std.debug.panic("Trying to read from out of bounds at {X:0>4}", .{addr});
         const low = self.read(addr);
         const high = self.read(addr + 1);
-        return bitutils.combine_bytes(low, high);
+        return bitutils.combineBytes(low, high);
     }
 
-    pub fn write_continuous(self: *Bus, buffer: []const u8, offset: u16) void {
+    pub fn writeContinuous(self: *Bus, buffer: []const u8, offset: u16) void {
         if (buffer.len + offset > self.ram.len) {
             std.debug.panic("Buffer is too large to fit in memory at offset {X}.", .{offset});
         }
@@ -188,7 +188,7 @@ pub const Bus = struct {
         }
     }
 
-    pub fn print_mem(self: *Bus, start: u16, end: u17) void {
+    pub fn printMem(self: *Bus, start: u16, end: u17) void {
         std.debug.print("\nMEMORY:", .{});
         std.debug.assert(end >= start);
         for (start..end, 0..end - start) |addr, count| {
@@ -204,7 +204,7 @@ pub const Bus = struct {
         std.debug.print("\n\n", .{});
     }
 
-    fn access_mem_location(self: *Bus, addr: u16) MemoryLocation {
+    fn accessMemLocation(self: *Bus, addr: u16) MemoryLocation {
         const banking_control_bits: u3 = @truncate(self.ram[MemoryMap.processor_port]);
         if (!self.enable_bank_switching) {
             return .{
@@ -232,7 +232,7 @@ pub const Bus = struct {
                 }
             },
             MemoryMap.kernal_rom_start...MemoryMap.kernal_rom_end => {
-                switch (bitutils.get_bit_at(ram_control_bits, 1)) {
+                switch (bitutils.getBitAt(ram_control_bits, 1)) {
                     1 => {
                         val_ptr = &self.kernal_rom[addr - MemoryMap.kernal_rom_start];
                         read_only = true;
@@ -248,7 +248,7 @@ pub const Bus = struct {
                         val_ptr = &self.ram[addr];
                     },
                     else => {
-                        switch (bitutils.get_bit_at(banking_control_bits, 2)) {
+                        switch (bitutils.getBitAt(banking_control_bits, 2)) {
                             0 => {
                                 val_ptr = &self.character_rom[addr - MemoryMap.character_rom_start];
                                 read_only = true;

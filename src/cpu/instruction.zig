@@ -20,12 +20,12 @@ pub const Instruction = struct {
     }
 };
 
-inline fn page_boundary_crossed(pc: u16, addr: u16) bool {
+inline fn pageBoundaryCrossed(pc: u16, addr: u16) bool {
     // A page boundary is crossed when the high byte differs
     return (pc & 0xFF00) != (addr & 0xFF00);
 }
 
-pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
+pub fn getInstruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
     var address: ?u16 = null;
     var operand: ?u8 = null;
     var page_crossed = false;
@@ -35,43 +35,43 @@ pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
         .IMMEDIATE => {
             const addr = pc + 1;
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .ABSOLUTE => {
-            const addr = cpu.bus.read_16(pc + 1);
+            const addr = cpu.bus.read16(pc + 1);
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .ABSOLUTE_X => {
-            const addr = cpu.bus.read_16(pc + 1) +% cpu.X;
+            const addr = cpu.bus.read16(pc + 1) +% cpu.X;
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .ABSOLUTE_Y => {
-            const addr = cpu.bus.read_16(pc + 1) +% cpu.Y;
+            const addr = cpu.bus.read16(pc + 1) +% cpu.Y;
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .ZEROPAGE => {
             const addr = @as(u16, cpu.bus.read(pc + 1));
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .ZEROPAGE_X => {
             const addr = @as(u16, cpu.bus.read(pc + 1) +% cpu.X);
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .ZEROPAGE_Y => {
             const addr = @as(u16, cpu.bus.read(pc + 1) +% cpu.Y);
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .RELATIVE => {
@@ -82,27 +82,27 @@ pub fn get_instruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
                 address = pc + opcode.bytes + offset;
             }
             operand = cpu.bus.read(address.?);
-            page_crossed = page_boundary_crossed(pc, address.?);
+            page_crossed = pageBoundaryCrossed(pc, address.?);
         },
         .INDIRECT => {
-            const lookup_addr = cpu.bus.read_16(pc + 1);
-            const addr = cpu.bus.read_16(lookup_addr);
+            const lookup_addr = cpu.bus.read16(pc + 1);
+            const addr = cpu.bus.read16(lookup_addr);
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .INDIRECT_X => {
             const lookup_addr: u16 = @as(u16, cpu.bus.read(pc + 1) +% cpu.X);
-            const addr = cpu.bus.read_16(lookup_addr);
+            const addr = cpu.bus.read16(lookup_addr);
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .INDIRECT_Y => {
             const lookup_addr: u16 = @as(u16, cpu.bus.read(pc + 1));
-            const addr = cpu.bus.read_16(lookup_addr) +% cpu.Y;
+            const addr = cpu.bus.read16(lookup_addr) +% cpu.Y;
             operand = cpu.bus.read(addr);
-            page_crossed = page_boundary_crossed(pc, addr);
+            page_crossed = pageBoundaryCrossed(pc, addr);
             address = addr;
         },
         .ACCUMULATOR => {

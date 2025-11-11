@@ -44,8 +44,8 @@ pub const VicII = struct {
             .scaling_factor = scaling_factor,
         };
         
-        vic.clear_color_mem();
-        vic.clear_screen_mem();
+        vic.clearColorMem();
+        vic.clearScreenMem();
 
         return vic;
     }
@@ -56,7 +56,7 @@ pub const VicII = struct {
         
         while (true) {
             clock.start();
-            self.update_screen();
+            self.updateScreen();
             if(@atomicLoad(bool, &self.termination_requested, .acquire)) {
                 break;
             }
@@ -65,7 +65,7 @@ pub const VicII = struct {
         std.log.info("Rendering loops exited", .{});
     }
 
-    fn clear_color_mem(self: *VicII) void {
+    fn clearColorMem(self: *VicII) void {
         
         self.bus.ram_mutex.lock();
         //const bgcolor_code = self.bus.ram[MemoryMap.text_color];
@@ -77,7 +77,7 @@ pub const VicII = struct {
         self.bus.ram_mutex.unlock();
     }
 
-    fn clear_screen_mem(self: *VicII) void {
+    fn clearScreenMem(self: *VicII) void {
         self.bus.mutex.lock();
         defer self.bus.mutex.unlock();
         @memset(
@@ -87,7 +87,7 @@ pub const VicII = struct {
     }
 
 
-    fn clear_screen_text_area(self: *VicII) void {
+    fn clearScreen(self: *VicII) void {
         const color_code: u4 = @truncate(self.bus.read(MemoryMap.bg_color));
         const bg_color = colors.C64_COLOR_PALETTE[color_code];
         for (0..SCREEN_HEIGHT * SCREEN_WIDTH) |i| {
@@ -98,14 +98,14 @@ pub const VicII = struct {
     }
     
     
-    pub fn update_screen(self: *VicII) void {
-        self.clear_screen_text_area();
+    pub fn updateScreen(self: *VicII) void {
+        self.clearScreen();
       
         //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
         @atomicStore(u8, &self.bus.io_ram[comptime (b.MemoryMap.raster_line_reg - b.MemoryMap.io_ram_start)], 0, .unordered);
 
         const border_color = blk: {
-            const color_code: u4 = @truncate(self.bus.read_io_ram(MemoryMap.frame_color));
+            const color_code: u4 = @truncate(self.bus.readIORam(MemoryMap.frame_color));
             break :blk colors.C64_COLOR_PALETTE[color_code];
         };
         
@@ -115,9 +115,9 @@ pub const VicII = struct {
             const screen_mem_addr: u16 = @intCast(char_count + MemoryMap.screen_mem_start);
             const color_mem_addr: u16 = @intCast(char_count + MemoryMap.color_mem_start);
                        
-            const color_code: u4 = @truncate(self.bus.read_io_ram(color_mem_addr));
+            const color_code: u4 = @truncate(self.bus.readIORam(color_mem_addr));
             
-            const screen_code = @as(u16, self.bus.read_ram(screen_mem_addr));
+            const screen_code = @as(u16, self.bus.readRam(screen_mem_addr));
             if (screen_code == 0x20) continue;
             //std.debug.print("color {any}\n", .{color_code});
             const color = colors.C64_COLOR_PALETTE[color_code];
@@ -133,7 +133,7 @@ pub const VicII = struct {
                 const char_row_byte = self.bus.character_rom[char_row_addr];
    
                 for (0..8) |char_col_idx| { // The leftmost pixel is represented by the most significant bit
-                    const pixel: u1 = bitutils.get_bit_at(char_row_byte, @intCast(7 - char_col_idx));
+                    const pixel: u1 = bitutils.getBitAt(char_row_byte, @intCast(7 - char_col_idx));
                     const char_pixel_x = char_x + char_col_idx;
                     const char_pixel_y = char_y + char_row_idx;
                     const fbuf_idx: usize = (char_pixel_y * SCREEN_WIDTH + char_pixel_x) * 3;
@@ -147,10 +147,10 @@ pub const VicII = struct {
             }
         }
 
-        self.renderer.render_frame(&self.frame_buffer, border_color);
+        self.renderer.renderFrame(&self.frame_buffer, border_color);
         self.cpu.irq();
         self.n_frames_rendered += 1;
-        if (self.renderer.window_should_close()) {
+        if (self.renderer.windowShouldClose()) {
             @atomicStore(
                 bool, 
                 &self.termination_requested, 
