@@ -25,7 +25,7 @@ inline fn pageBoundaryCrossed(pc: u16, addr: u16) bool {
     return (pc & 0xFF00) != (addr & 0xFF00);
 }
 
-pub fn getInstruction(cpu: *CPU, opcode: OpcodeInfo) Instruction {
+pub fn decodeOpcode(cpu: *CPU, opcode: OpcodeInfo) Instruction {
     var address: ?u16 = null;
     var operand: ?u8 = null;
     var page_crossed = false;

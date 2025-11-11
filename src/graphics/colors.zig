@@ -7,7 +7,7 @@ pub const ColorRGB = struct {
 pub const C64_COLOR_PALETTE = [16]ColorRGB {
     .{.r=0,   .g=0,   .b=0},      // black
     .{.r=255, .g=255, .b=255},    // White
-    .{.r=136, .g=0, .  b=0},      // Red
+    .{.r=136, .g=0,   .b=0},      // Red
     .{.r=170, .g=255, .b=238},    // cyan
     
     .{.r=204, .g=68,  .b=204},    // Violet

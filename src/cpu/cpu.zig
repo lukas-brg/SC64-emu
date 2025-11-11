@@ -3,10 +3,10 @@ const Bus = @import("../bus.zig").Bus;
 
 const bitutils = @import("bitutils.zig");
 
-const decode_opcode = @import("opcodes.zig").decodeOpcode;
+const lookupOpcode = @import("opcodes.zig").lookupOpcode;
 const OpcodeInfo = @import("opcodes.zig").OpcodeInfo;
 const Instruction = @import("instruction.zig").Instruction;
-const get_instruction = @import("instruction.zig").getInstruction;
+const decodeOpcode = @import("instruction.zig").decodeOpcode;
 
 const log_cpu = std.log.scoped(.cpu);
 
@@ -218,12 +218,12 @@ pub const CPU = struct {
         const d_prev = self.status.decimal;
         const opcode = self.fetchNextByte();
         
-        const opcode_info = decode_opcode(opcode) orelse { 
+        const opcode_info = lookupOpcode(opcode) orelse { 
             std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{ opcode, self.PC });
         };
        
         self.instruction_remaining_cycles = 0;
-        var instruction = get_instruction(self, opcode_info);
+        var instruction = decodeOpcode(self, opcode_info);
         self.current_instruction = instruction;
         opcode_info.handler_fn(self, &instruction);
         self.instruction_remaining_cycles = instruction.cycles - 1;

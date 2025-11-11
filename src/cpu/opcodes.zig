@@ -1,6 +1,6 @@
 const std = @import("std");
 const CPU = @import("cpu.zig").CPU;
-const instructions = @import("instructions.zig");
+const instructions = @import("instructions_impl.zig");
 const instruction = @import("instruction.zig");
 
 const HandlerFn = fn(*CPU, *instruction.Instruction) void;
@@ -15,7 +15,7 @@ const opcode_lookup_table: [256]?OpcodeInfo = blk: {
 };
 
 
-pub inline fn decodeOpcode(opcode: u8) ?OpcodeInfo {
+pub inline fn lookupOpcode(opcode: u8) ?OpcodeInfo {
     return opcode_lookup_table[opcode];
 }
 
