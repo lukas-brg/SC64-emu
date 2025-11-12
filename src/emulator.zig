@@ -54,9 +54,9 @@ pub const Emulator = struct {
         const cpu = try allocator.create(CPU);
         const keyboard = try allocator.create(kb.Keyboard);
         const cia1 = try allocator.create(io.CiaI);
-        keyboard.* = kb.Keyboard.init();
         cia1.* = io.CiaI.init(cpu, keyboard);
         bus.* = Bus.init(cia1);
+        keyboard.* = kb.Keyboard.init(bus);
         bus.enable_bank_switching = config.enable_bank_switching;
         cpu.* = CPU.init(bus);
         const emulator: Emulator = .{ .bus = bus, .cpu = cpu, .keyboard = keyboard, .config = config, .cia1 = cia1 };

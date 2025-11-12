@@ -15,6 +15,9 @@ pub const MemoryMap = enum {
     pub const color_mem_start = 0xD800;
     pub const color_mem_end = 0xDBE7;
 
+    pub const cursor_row = 0x00c9;
+    pub const cursor_col = 0x00ca;
+
     pub const character_rom_start = 0xD000;
     pub const io_ram_start = 0xD000;
     pub const character_rom_end = 0xDFFF;

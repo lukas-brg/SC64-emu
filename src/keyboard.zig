@@ -3,7 +3,7 @@ const std = @import("std");
 const graphics = @import("graphics.zig");
 const emu = @import("emulator.zig");
 const cia = @import("cia.zig");
-const bus = @import("bus.zig");
+const _bus = @import("bus.zig");
 
 const log_io = std.log.scoped(.io);
 const raylib = graphics.raylib;
@@ -21,10 +21,12 @@ pub const Keyboard = struct {
     keyboard_matrix: [8]u8,
     last_paste_at_cycle: usize = 0,
     paste_last_insert_at: usize = 0,
+    bus: *_bus.Bus,
 
-    pub fn init() Keyboard {
+    pub fn init(bus: *_bus.Bus) Keyboard {
         return Keyboard{
             .keyboard_matrix = [8]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+            .bus = bus,
         };
     }
 
@@ -79,17 +81,17 @@ pub const Keyboard = struct {
             }
         }
 
-        if (paste_queue.peek()) |event| {
-            if (runtime_info.current_cycle - self.paste_last_insert_at >= 14400) {
-                const key = keymap.lookupC64PhysicalKey(event.keycode);
-                self.setKeyDown(key.row, key.col);
-                // std.debug.print("paste: {s} at {}\n", .{ @tagName(event.keycode), runtime_info.current_cycle });
-                _ = paste_queue.dequeue();
-                self.paste_last_insert_at = runtime_info.current_cycle;
-                keyevent_queue.enqueue(.{ .keycode = event.keycode, .at_cycle = runtime_info.current_cycle });
-                return;
-            }
-        }
+        // if (paste_queue.peek()) |event| {
+        //     if (runtime_info.current_cycle - self.paste_last_insert_at >= 14400) {
+        //         const key = keymap.lookupC64PhysicalKey(event.keycode);
+        //         self.setKeyDown(key.row, key.col);
+        //         // std.debug.print("paste: {s} at {}\n", .{ @tagName(event.keycode), runtime_info.current_cycle });
+        //         _ = paste_queue.dequeue();
+        //         self.paste_last_insert_at = runtime_info.current_cycle;
+        //         keyevent_queue.enqueue(.{ .keycode = event.keycode, .at_cycle = runtime_info.current_cycle });
+        //         return;
+        //     }
+        // }
 
         // Handle printable keys/chars in a host layout agnostic way
         while (true) {
