@@ -140,7 +140,7 @@ pub const Bus = struct {
 
     pub fn writeRam(self: *Bus, addr: u16, val: u8) void {
       //  self.ram_mutex.lock();
-        self.io_ram[addr] = val;
+        self.ram[addr] = val;
      //   self.ram_mutex.unlock();
     }
 
