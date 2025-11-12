@@ -12,22 +12,19 @@ const raylib = graphics.raylib;
 const keymap = @import("keymap.zig");
 const runtime_info = @import("runtime_info.zig");
 
-const keyevent_queue = @import("keyevent_queue.zig");
-const paste_queue = @import("paste_queue.zig");
+const keyevent_queue = @import("keydown_queue.zig");
 
+const MemoryMap = @import("memory_map.zig");
 const KeyDownEvent = @import("keydown_event.zig").KeyDownEvent;
-
-
 
 pub fn asciiToPetscii(char: u8) u8 {
     if (char >= 'a' and char <= 'z') {
-        return char - 'a' + 0x41;        
+        return char - 'a' + 0x41;
     } else if (char >= 'A' and char <= 'Z') {
         return char - 'A' + 0xc1;
     }
     return char;
 }
-
 
 pub fn petsciiToScreencode(code: u8) u8 {
     if (code >= 0x40 and code <= 0x5f) {
@@ -40,22 +37,20 @@ pub fn petsciiToScreencode(code: u8) u8 {
         return (code - 0x80);
     } else if (code == 0xff) {
         return 0x5e;
-    }  
-    return code; 
+    }
+    return code;
 }
 
-pub inline fn asciiToScreencode(char: u8) u8 {
-    if (char >= 'a' and char <= 'z') {
-        return (char - 32) - 64;
-    }
-    
-    if (char >= 'A' and char <= 'Z') {
-        return char - 64;
-    }
-    return char;
+pub fn asciiToScreencode(char: u8) u8 {
+    return switch (char) {
+        'a'...'z' => char - 96,
+        'A'...'Z' => char - 64,
+        '[' => 0x1B,
+        ']' => 0x1D,
+        ' ' => 0x20,
+        else => char,
+    };
 }
-
-
 
 pub const Keyboard = struct {
     // Maybe make a interface for the cia1 connected device and let this be one implementation of it.
@@ -66,11 +61,7 @@ pub const Keyboard = struct {
     cpu: *c.CPU,
 
     pub fn init(bus: *_bus.Bus, cpu: *c.CPU) Keyboard {
-        return Keyboard{
-            .keyboard_matrix = [8]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
-            .bus = bus,
-            .cpu = cpu
-        };
+        return Keyboard{ .keyboard_matrix = [8]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, .bus = bus, .cpu = cpu };
     }
 
     pub fn getClipboardText() ?[]const u8 {
@@ -108,30 +99,28 @@ pub const Keyboard = struct {
             if (clip != null) {
                 const len = std.mem.len(clip);
                 const slice = clip[0..len];
-                const cursor_row = self.bus.readRam(_bus.MemoryMap.cursor_row);
-                const cursor_col = self.bus.readRam(_bus.MemoryMap.cursor_col);
+                const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
+                const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
 
-                const offset = @as(u16 ,cursor_row) * 40 + cursor_col;
-                const addr_start = _bus.MemoryMap.screen_mem_start + offset;
+                const offset = @as(u16, cursor_row) * 40 + cursor_col;
+                const addr_start = MemoryMap.screen_mem_start + offset;
 
                 for (slice, 0..slice.len) |_char, i| {
                     const char = _char;
                     const screencode = asciiToScreencode(char);
-                    std.debug.print("screencode {x}  char {c}\n", .{screencode, char});
+                    // std.debug.print("char {c} screencode {x:0>2} \n", .{ char, screencode });
                     self.bus.writeRam(addr_start + @as(u16, @truncate(i)), screencode);
-
                 }
                 const paste_len = slice.len;
                 const new_col: u8 = @truncate((@as(usize, cursor_col) + paste_len) % 40);
                 const new_row: u8 = @truncate(cursor_row + (@as(usize, cursor_col) + paste_len) / 40);
 
-                std.debug.print("new cursor col {}", .{new_col});
-                self.bus.writeRam(_bus.MemoryMap.cursor_row, new_row);
-                self.bus.writeRam(_bus.MemoryMap.cursor_col, new_col);
+                self.bus.writeRam(MemoryMap.cursor_row, new_row);
+                self.bus.writeRam(MemoryMap.cursor_col, new_col);
                 self.cpu.irq();
                 self.last_paste_at_cycle = runtime_info.current_cycle;
                 self.paste_last_insert_at = runtime_info.current_cycle;
-                
+
                 return;
             }
         }

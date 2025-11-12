@@ -2,7 +2,7 @@ const std = @import("std");
 
 const raylib = @import("raylib.zig");
 
-const MemoryMap = @import("../bus.zig").MemoryMap;
+const MemoryMap = @import("../memory_map.zig");
 const colors = @import("colors.zig");
 
 const SCREEN_WIDTH = @import("vic.zig").SCREEN_WIDTH;

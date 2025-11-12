@@ -8,7 +8,7 @@ const colors = @import("colors.zig");
 const bitutils = @import("../cpu/bitutils.zig");
 const PrecisionClock = @import("../clock.zig").PrecisionClock;
 
-const MemoryMap = b.MemoryMap;
+const MemoryMap = @import("../memory_map.zig");
 const Bus = b.Bus;
 
 
@@ -102,7 +102,7 @@ pub const VicII = struct {
         self.clearScreen();
       
         //Todo: This probably shouldn't be here long term, it is a quick and dirty hack to get kernal running for now,
-        @atomicStore(u8, &self.bus.io_ram[comptime (b.MemoryMap.raster_line_reg - b.MemoryMap.io_ram_start)], 0, .unordered);
+        @atomicStore(u8, &self.bus.io_ram[comptime (MemoryMap.raster_line_reg - MemoryMap.io_ram_start)], 0, .unordered);
 
         const border_color = blk: {
             const color_code: u4 = @truncate(self.bus.readIORam(MemoryMap.frame_color));
