@@ -136,7 +136,13 @@ pub const Bus = struct {
         self.write(addr + 1, bytes[1]);
     }
 
+    pub fn writeScreenMem(self: *Bus, index: u16, val: u8) void {
+        self.ram[index + MemoryMap.screen_mem_start] = val;
+    }
 
+    pub fn readScreenMem(self: *Bus, index: u16) u8 {
+        return self.ram[index + MemoryMap.screen_mem_start];
+    }
 
     pub fn read16(self: *Bus, addr: u16) u16 {
         // if (addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});

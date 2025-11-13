@@ -12,10 +12,13 @@ const raylib = graphics.raylib;
 const keymap = @import("keymap.zig");
 const runtime_info = @import("runtime_info.zig");
 
-const keyevent_queue = @import("keydown_queue.zig");
+const keydown_queue = @import("keydown_queue.zig");
 
 const MemoryMap = @import("memory_map.zig");
 const KeyDownEvent = @import("keydown_event.zig").KeyDownEvent;
+
+const SCREEN_ROWS: u8 = 25;
+const SCREEN_COLS: u8 = 40;
 
 pub fn asciiToPetscii(char: u8) u8 {
     if (char >= 'a' and char <= 'z') {
@@ -64,6 +67,7 @@ pub const Keyboard = struct {
         return Keyboard{ .keyboard_matrix = [8]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, .bus = bus, .cpu = cpu };
     }
 
+
     pub fn getClipboardText() ?[]const u8 {
         const text = raylib.GetClipboardText();
         if (text == null) return null;
@@ -78,11 +82,55 @@ pub const Keyboard = struct {
         self.keyboard_matrix[col] |= @as(u8, 1) << row;
     }
 
-    pub fn update(self: *Keyboard) void {
+    fn handlePaste(self: *Keyboard) bool {
+         const clip: [*c]const u8 = @ptrCast(raylib.GetClipboardText());
+            if (clip != null) {
+                const len = std.mem.len(clip);
+                const slice = clip[0..len];
+                const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
+                const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
+
+                const offset = @as(u16, cursor_row) * 40 + cursor_col;
+                // const addr_start = MemoryMap.screen_mem_start + offset;
+                var effective_paste_len: usize = 0;
+                var current_row = cursor_row;
+                for (slice, 0..slice.len) |char, i| {
+                    const screencode = asciiToScreencode(char);
+                    // std.debug.print("char {c} screencode {x:0>2} \n", .{ char, screencode });
+                    switch (char) {
+                        '\n', '\r' => {
+                            const key = keymap.lookupC64PhysicalKey(.KEY_RETURN);
+                            self.setKeyDown(key.row, key.col);
+                            keydown_queue.enqueue(.{ .keycode = key.keycode, .at_cycle = runtime_info.current_cycle });
+                            current_row += 1;
+                        },
+                        else => {
+                            const screen_mem_idx = offset + @as(u16, @truncate(i));
+                            self.bus.writeScreenMem(screen_mem_idx , screencode);
+                            effective_paste_len += 1;
+
+                        } 
+                    }
+                    
+                }
+                const new_col: u8 = @truncate((@as(usize, cursor_col) + effective_paste_len) % 40);
+                const new_row: u8 = @truncate(cursor_row + (@as(usize, cursor_col) + effective_paste_len) / 40);
+
+                self.bus.writeRam(MemoryMap.cursor_row, new_row);
+                self.bus.writeRam(MemoryMap.cursor_col, new_col);
+                self.last_paste_at_cycle = runtime_info.current_cycle;
+                self.paste_last_insert_at = runtime_info.current_cycle;
+
+                return true;
+            }
+            return false;
+    }
+
+    fn handleKeyReleases(self: *Keyboard) void {
         while (true) {
-            if (keyevent_queue.peek()) |event| {
+            if (keydown_queue.peek()) |event| {
                 if (runtime_info.current_cycle - event.at_cycle >= 10000) {
-                    _ = keyevent_queue.dequeue();
+                    _ = keydown_queue.dequeue();
                     const key = keymap.lookupC64PhysicalKey(event.keycode);
                     // std.debug.print("releasing key {s} at {}\n", .{ @tagName(event.keycode), runtime_info.current_cycle });
                     self.setKeyUp(key.row, key.col);
@@ -93,36 +141,16 @@ pub const Keyboard = struct {
                 break;
             }
         }
+    }
+
+
+    pub fn update(self: *Keyboard) void {
+        
+        self.handleKeyReleases();
 
         if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and runtime_info.current_cycle - self.last_paste_at_cycle >= 800000) {
-            const clip: [*c]const u8 = @ptrCast(raylib.GetClipboardText());
-            if (clip != null) {
-                const len = std.mem.len(clip);
-                const slice = clip[0..len];
-                const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
-                const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
-
-                const offset = @as(u16, cursor_row) * 40 + cursor_col;
-                const addr_start = MemoryMap.screen_mem_start + offset;
-
-                for (slice, 0..slice.len) |_char, i| {
-                    const char = _char;
-                    const screencode = asciiToScreencode(char);
-                    // std.debug.print("char {c} screencode {x:0>2} \n", .{ char, screencode });
-                    self.bus.writeRam(addr_start + @as(u16, @truncate(i)), screencode);
-                }
-                const paste_len = slice.len;
-                const new_col: u8 = @truncate((@as(usize, cursor_col) + paste_len) % 40);
-                const new_row: u8 = @truncate(cursor_row + (@as(usize, cursor_col) + paste_len) / 40);
-
-                self.bus.writeRam(MemoryMap.cursor_row, new_row);
-                self.bus.writeRam(MemoryMap.cursor_col, new_col);
-                self.cpu.irq();
-                self.last_paste_at_cycle = runtime_info.current_cycle;
-                self.paste_last_insert_at = runtime_info.current_cycle;
-
-                return;
-            }
+           const did_paste = self.handlePaste();
+           if (did_paste) return;
         }
 
         // Handle printable keys/chars in a host layout agnostic way
@@ -137,7 +165,7 @@ pub const Keyboard = struct {
             for (keymapping.keys) |keycode| {
                 const key = keymap.lookupC64PhysicalKey(keycode);
                 self.setKeyDown(key.row, key.col);
-                keyevent_queue.enqueue(.{ .keycode = keycode, .at_cycle = runtime_info.current_cycle });
+                keydown_queue.enqueue(.{ .keycode = keycode, .at_cycle = runtime_info.current_cycle });
             }
         }
 
