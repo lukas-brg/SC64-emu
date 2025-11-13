@@ -1,11 +1,17 @@
+pub const kb_buf_len = 0xC6;
+ 
+pub const cursor_row = 0xD6;
+pub const cursor_col = 0xD3;
+
+pub const kb_buf_start = 0x0277;
+pub const kb_buf_end = 0x0280;
+
 pub const screen_mem_start = 0x0400;
 pub const screen_mem_end = 0x07E7;
 
 pub const color_mem_start = 0xD800;
 pub const color_mem_end = 0xDBE7;
 
-pub const cursor_row = 0xD6;
-pub const cursor_col = 0xD3;
 
 pub const character_rom_start = 0xD000;
 pub const io_ram_start = 0xD000;

@@ -17,43 +17,12 @@ const keydown_queue = @import("keydown_queue.zig");
 const MemoryMap = @import("memory_map.zig");
 const KeyDownEvent = @import("keydown_event.zig").KeyDownEvent;
 
+const charset = @import("charset.zig");
+
 const SCREEN_ROWS: u8 = 25;
 const SCREEN_COLS: u8 = 40;
 
-pub fn asciiToPetscii(char: u8) u8 {
-    if (char >= 'a' and char <= 'z') {
-        return char - 'a' + 0x41;
-    } else if (char >= 'A' and char <= 'Z') {
-        return char - 'A' + 0xc1;
-    }
-    return char;
-}
 
-pub fn petsciiToScreencode(code: u8) u8 {
-    if (code >= 0x40 and code <= 0x5f) {
-        return (code - 0x40);
-    } else if (code >= 0x60 and code <= 0x7f) {
-        return (code - 0x20);
-    } else if (code >= 0xa0 and code <= 0xbf) {
-        return (code - 0x40);
-    } else if (code >= 0xc0 and code <= 0xfe) {
-        return (code - 0x80);
-    } else if (code == 0xff) {
-        return 0x5e;
-    }
-    return code;
-}
-
-pub fn asciiToScreencode(char: u8) u8 {
-    return switch (char) {
-        'a'...'z' => char - 96,
-        'A'...'Z' => char - 64,
-        '[' => 0x1B,
-        ']' => 0x1D,
-        ' ' => 0x20,
-        else => char,
-    };
-}
 
 pub const Keyboard = struct {
     // Maybe make a interface for the cia1 connected device and let this be one implementation of it.
@@ -82,6 +51,11 @@ pub const Keyboard = struct {
         self.keyboard_matrix[col] |= @as(u8, 1) << row;
     }
 
+    inline fn gridPosToScreenMemOffset(row: u8, col: u8) u16 {
+        const offset = @as(u16, row) * SCREEN_COLS + col;
+        return offset;
+    }
+
     fn handlePaste(self: *Keyboard) bool {
          const clip: [*c]const u8 = @ptrCast(raylib.GetClipboardText());
             if (clip != null) {
@@ -90,39 +64,36 @@ pub const Keyboard = struct {
                 const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
                 const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
 
-                const offset = @as(u16, cursor_row) * 40 + cursor_col;
-                // const addr_start = MemoryMap.screen_mem_start + offset;
                 var effective_paste_len: usize = 0;
                 var current_row = cursor_row;
-                for (slice, 0..slice.len) |char, i| {
-                    const screencode = asciiToScreencode(char);
-                    // std.debug.print("char {c} screencode {x:0>2} \n", .{ char, screencode });
+                var current_col = cursor_col;
+                for (slice) |char| {
+                    const screencode = charset.asciiToScreencode(char) orelse 0x20;
                     switch (char) {
-                        '\n', '\r' => {
-                            const key = keymap.lookupC64PhysicalKey(.KEY_RETURN);
-                            self.setKeyDown(key.row, key.col);
-                            keydown_queue.enqueue(.{ .keycode = key.keycode, .at_cycle = runtime_info.current_cycle });
+                        '\n' => {
                             current_row += 1;
+                            current_col = 0;
+                            std.debug.print("new line cursor row: {} \n", .{ current_row });
                         },
                         else => {
-                            const screen_mem_idx = offset + @as(u16, @truncate(i));
-                            self.bus.writeScreenMem(screen_mem_idx , screencode);
+                            self.bus.writeScreenMem(gridPosToScreenMemOffset(current_row, current_col) , screencode);
+                            current_row += (current_col + 1) / SCREEN_COLS;
+                            current_col = (current_col + 1) % SCREEN_COLS;
                             effective_paste_len += 1;
-
-                        } 
+                            std.debug.print("char {c} screencode {x:0>2} cursor col: {} \n", .{ char, screencode, current_col });
+                        }   
                     }
                     
                 }
-                const new_col: u8 = @truncate((@as(usize, cursor_col) + effective_paste_len) % 40);
-                const new_row: u8 = @truncate(cursor_row + (@as(usize, cursor_col) + effective_paste_len) / 40);
-
-                self.bus.writeRam(MemoryMap.cursor_row, new_row);
-                self.bus.writeRam(MemoryMap.cursor_col, new_col);
+                std.debug.print("writing cursor pos {} {}", .{current_row, cursor_col});
+                self.bus.write(MemoryMap.cursor_row, current_row);
+                self.bus.ram[214] = current_row;
+                self.bus.write(0xC9, current_row);
+                self.bus.writeRam(MemoryMap.cursor_col, current_col);
                 self.last_paste_at_cycle = runtime_info.current_cycle;
-                self.paste_last_insert_at = runtime_info.current_cycle;
-
                 return true;
             }
+            
             return false;
     }
 

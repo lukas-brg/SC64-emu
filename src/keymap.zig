@@ -178,6 +178,7 @@ const _CHAR_TABLE = [_]C64CharKeyMapping{
     .{ .char = '+', .keys = &.{.KEY_PLUS} },
     .{ .char = '-', .keys = &.{.KEY_MINUS} },
     .{ .char = '.', .keys = &.{.KEY_PERIOD} },
+    .{ .char = ',', .keys = &.{.KEY_COMMA } },
     .{ .char = ':', .keys = &.{.KEY_COLON} },
     .{ .char = ';', .keys = &.{.KEY_SEMICOLON} },
     .{ .char = '*', .keys = &.{.KEY_ASTERISK} },
