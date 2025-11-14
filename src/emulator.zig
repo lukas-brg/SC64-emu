@@ -15,6 +15,7 @@ const Renderer = graphics.Renderer;
 const instruction = @import("cpu/instruction.zig");
 const kb = @import("keyboard.zig");
 const RuntimeInfo = @import("runtime_info.zig");
+const hooks = @import("hooks.zig");
 
 const conf = @import("config.zig");
 
@@ -54,6 +55,13 @@ pub const Emulator = struct {
         const cpu = try allocator.create(CPU);
         const keyboard = try allocator.create(kb.Keyboard);
         const cia1 = try allocator.create(io.CiaI);
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        const alloc = gpa.allocator();
+        
+        const hooksrv = try allocator.create(hooks.HookService);
+        hooksrv.* = hooks.HookService.init(alloc);
+        // hooksrv.registerHook(.{});
+        
         cia1.* = io.CiaI.init(cpu, keyboard);
         bus.* = Bus.init(cia1);
         keyboard.* = kb.Keyboard.init(bus, cpu);
@@ -175,6 +183,8 @@ pub const Emulator = struct {
         }
         self.step_count += 1;
         RuntimeInfo.current_cycle = self.step_count;
+        RuntimeInfo.current_instruction = self.cpu.current_instruction;
+        RuntimeInfo.current_pc = self.cpu.PC;
     }
 
     fn createSigintHandler() void {
