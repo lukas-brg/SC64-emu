@@ -15,7 +15,7 @@ const RESET_VECTOR = 0xFFFC;
 const IRQ_VECTOR = 0xFFFE;
 const NMI_VECTOR = 0xFFFA;
 
-const STACK_BASE_POINTER: u16 = 0x100;
+pub const STACK_BASE_POINTER: u16 = 0x100;
 
 pub const StatusFlag = enum(u3) {
     CARRY,
@@ -28,28 +28,7 @@ pub const StatusFlag = enum(u3) {
     NEGATIVE,
 };
 
-pub fn printDisassemblyInline(cpu: CPU, instruction: Instruction) void {
-    const PC = instruction.instruction_addr;
-    switch (instruction.addressing_mode) {
-        .ABSOLUTE => std.debug.print("{X:0>4}:  {s} ${X:0>4}{s: <4}", .{ PC, instruction.mnemonic, instruction.operand_addr.?, "" }),
-        .ABSOLUTE_X => std.debug.print("{X:0>4}:  {s} ${X:0>4},X{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read16(PC + 1), "" }),
-        .ABSOLUTE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>4},Y{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read16(PC + 1), "" }),
-        .IMPLIED, .ACCUMULATOR => std.debug.print("{X:0>4}:  {s}{s: <10}", .{ PC, instruction.mnemonic, "" }),
-        .INDIRECT => std.debug.print("{X:0>4}:  {s} (${X:0>4}){s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read16(PC + 1), "" }),
-        .INDIRECT_Y => std.debug.print("{X:0>4}:  {s} (${X:0>2}),Y{s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
-        .INDIRECT_X => std.debug.print("{X:0>4}:  {s} (${X:0>2},X){s: <2}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
-        .IMMEDIATE => std.debug.print("{X:0>4}:  {s} #${X:0>2}{s: <5}", .{ PC, instruction.mnemonic, instruction.operand.?, "" }),
-        .ZEROPAGE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
-        .ZEROPAGE_Y => std.debug.print("{X:0>4}:  {s} ${X:0>2},Y{s: <4}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
-        .ZEROPAGE_X => std.debug.print("{X:0>4}:  {s} ${X:0>2},X{s: <4}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
-        .RELATIVE => std.debug.print("{X:0>4}:  {s} ${X:0>2}{s: <6}", .{ PC, instruction.mnemonic, cpu.bus.read(PC + 1), "" }),
-    }
-}
 
-pub fn printDisassembly(cpu: CPU, instruction: Instruction) void {
-    printDisassemblyInline(cpu, instruction);
-    std.debug.print("\n", .{});
-}
 
 const StatusRegister = packed struct(u8) {
     carry: u1 = 0,
@@ -190,17 +169,6 @@ pub const CPU = struct {
         self.bus.write16(RESET_VECTOR, addr);
     }
 
-    pub fn printStack(self: *CPU, limit: usize) void {
-        var sp_abs = STACK_BASE_POINTER + @as(u16, self.SP) + 1;
-        var count: usize = 0;
-        std.debug.print("STACK:\n", .{});
-        while (sp_abs <= STACK_BASE_POINTER + 0xFF and count < limit) {
-            std.debug.print("{x:0>4}: {x:0>2}\n", .{ sp_abs, self.bus.read(sp_abs) });
-            sp_abs += 1;
-            count += 1;
-        }
-    }
-
     pub fn clockTick(self: *CPU) void {
         
         if (self.instruction_remaining_cycles > 0) {
@@ -250,79 +218,5 @@ pub const CPU = struct {
         }
     }
 
-    pub fn printStateCompact(self: CPU) void {
-        const instruction = self.current_instruction orelse unreachable;
-        printDisassemblyInline(self, instruction);
-        if (instruction.operand_addr) |addr| {
-            std.debug.print(" {X:0>4}  ", .{addr});
-        } else {
-            std.debug.print("  --   ", .{});
-        }
 
-        if (instruction.operand) |op| {
-            std.debug.print("{X:0>2}  ", .{op});
-        } else {
-            std.debug.print("--  ", .{});
-        }
-
-        std.debug.print("|  AC={X:0>2}  XR={X:0>2}  YR={X:0>2}  SP={X:0>2}  |  n={} v={} d={} i={} z={} c={}  |  {} {}  |  ", .{
-            self.A,
-            self.X,
-            self.Y,
-            self.SP,
-            self.status.negative,
-            self.status.overflow,
-            self.status.decimal,
-            self.status.interrupt_disable,
-            self.status.zero,
-            self.status.carry,
-            self.instruction_count,
-            self.cycle_count,
-        });
-
-        for (instruction.instruction_addr..instruction.instruction_addr + instruction.bytes) |addr| {
-            std.debug.print("{X:0>2} ", .{self.bus.read(@intCast(addr))});
-        }
-
-        std.debug.print("\n", .{});
-    }
-
-    pub fn printState(self: CPU) void {
-        std.debug.print("\n----------------------------------------------------", .{});
-        std.debug.print("\nCPU STATE:", .{});
-
-        std.debug.print("\nPC: {b:0>16}", .{self.PC});
-        std.debug.print("    {x:0>4}", .{self.PC});
-
-        std.debug.print("\nSP:         {b:0>8}", .{self.SP});
-        std.debug.print("      {x:0>2}", .{self.SP});
-
-        std.debug.print("\nP:          {b:0>8}", .{self.status.toByte()});
-        std.debug.print("      {x:0>2}", .{self.status.toByte()});
-
-        std.debug.print("\nA:          {b:0>8}", .{self.A});
-        std.debug.print("      {x:0>2}", .{self.A});
-
-        std.debug.print("\nX:          {b:0>8}", .{self.X});
-        std.debug.print("      {x:0>2}", .{self.X});
-
-        std.debug.print("\nY:          {b:0>8}", .{self.Y});
-        std.debug.print("      {x:0>2}", .{self.Y});
-
-        std.debug.print("\n\nSTATUS FLAGS:", .{});
-        std.debug.print("\nN V - B D I Z C", .{});
-
-        std.debug.print("\n{} {} {} {} {} {} {} {} ", .{ 
-            self.status.negative,
-            self.status.overflow,
-            self.status.unused,
-            self.status.break_flag,
-            self.status.decimal, 
-            self.status.interrupt_disable, 
-            self.status.zero,
-            self.status.carry,
-        });
-
-        std.debug.print("\n----------------------------------------------------\n\n", .{});
-    }
 };

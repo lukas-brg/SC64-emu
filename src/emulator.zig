@@ -16,6 +16,7 @@ const instruction = @import("cpu/instruction.zig");
 const kb = @import("keyboard.zig");
 const RuntimeInfo = @import("runtime_info.zig");
 const hooks = @import("hooks.zig");
+const tracing = @import("tracing.zig");
 
 const conf = @import("config.zig");
 
@@ -173,7 +174,7 @@ pub const Emulator = struct {
 
         self.cpu.clockTick();
 
-        self.printTrace();
+        tracing.printTrace(self);
 
         if (self.step_count % 1 == 0) {
             // io.keyboard.update_keyboard_state(self);
@@ -279,7 +280,7 @@ pub const Emulator = struct {
         while (!quit) {
             pc_prev = self.cpu.PC;
             self.cpu.step();
-            self.printTrace();
+            tracing.printTrace(self);
             self.step_count += 1;
             quit = sigint_received;
             if (pc_prev == self.cpu.PC) {
@@ -297,8 +298,8 @@ pub const Emulator = struct {
                         self.cpu.cycle_count,
                         self.cpu.instruction_count,
                     });
-                    cpu_state_prev.printStateCompact();
-                    self.cpu.printStateCompact();
+                    tracing.printCpuStateCompact(&cpu_state_prev);
+                    tracing.printCpuStateCompact(self.cpu);
                     break;
                 }
             }
@@ -324,60 +325,7 @@ pub const Emulator = struct {
         return passed;
     }
 
-    fn printTrace(self: *Emulator) void {
-        const cfg = self.trace_config;
-
-        const do_print_trace: bool = blk: {
-            if (self.__tracing_active) break :blk true;
-            const cycle = self.cpu.cycle_count;
-            const instr = self.cpu.instruction_count;
-            const addr = self.cpu.current_instruction.?.instruction_addr;
-
-            if (cfg.capture_addr) |caddr| {
-                if (addr == caddr) {
-                    break :blk true;
-                }
-            }
-            if (!cfg.enable_trace) {
-                break :blk false;
-            }
-
-            if (cfg.end_at_cycle) |endc| {
-                if (cycle > endc) {
-                    break :blk false;
-                }
-            }
-
-            if (cfg.start_at_cycle > cfg.start_at_instr) {
-                break :blk cycle >= cfg.start_at_cycle;
-            } else {
-                break :blk instr >= cfg.start_at_instr;
-            }
-        };
-
-        if (do_print_trace) {
-            if (cfg.verbose) {
-                const mem_window_size: i32 = @intCast(self.trace_config.print_mem_window_size);
-                const start: u16 = @intCast(@max(0, @as(i32, @intCast(self.cpu.PC)) - @divFloor(mem_window_size, 2)));
-                const end = @min(self.bus.mem_size, @as(u17, start) + mem_window_size);
-
-                if (self.trace_config.print_cpu_state) {
-                    self.cpu.printState();
-                }
-
-                if (self.trace_config.print_stack) {
-                    self.cpu.printStack(self.trace_config.print_stack_limit);
-                }
-
-                if (self.trace_config.print_mem) {
-                    self.cpu.bus.printMem(start, @intCast(end));
-                    self.cpu.bus.printMem(0xc0, @intCast(0xc9));
-                }
-            } else {
-                self.cpu.printStateCompact();
-            }
-        }
-    }
+    
 
     fn logRunTimeStats(self: *Emulator, runtime_ms: i64) void {
         const runtime_s: f64 = @as(f64, @floatFromInt(runtime_ms)) / 1000.0;
