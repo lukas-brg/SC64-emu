@@ -28,6 +28,13 @@ pub const StatusFlag = enum(u3) {
     NEGATIVE,
 };
 
+pub const CpuExecutionPhase = enum(u2) {
+    FETCH,
+    WAIT,
+    EXECUTE,
+    HALT,
+};
+
 
 
 const StatusRegister = packed struct(u8) {
@@ -76,9 +83,12 @@ pub const CPU = struct {
     cycle_count: usize = 0,
     instruction_remaining_cycles: usize = 0,
     current_instruction: ?Instruction = null,
+    current_opcode: ?OpcodeInfo = null,
     halt: bool = false,
     print_debug_info: bool = true,
     mutex: std.Thread.Mutex = .{},
+    phase: CpuExecutionPhase = .HALT,
+    irq_pending: bool = false,
 
     pub fn init(bus: *Bus) CPU {
         const cpu = CPU{
@@ -98,15 +108,17 @@ pub const CPU = struct {
         log_cpu.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
     }
 
+    fn triggerIrq(self: *CPU) void {
+        self.push16(self.PC);
+        var status = self.status;
+        status.break_flag = 0;
+        self.push(status.toByte());
+        self.PC = self.bus.read16(IRQ_VECTOR);
+    }
+
     pub fn irq(self: *CPU) void {
         if (self.status.interrupt_disable == 0) {
-            self.mutex.lock();
-            self.push16(self.PC);
-            var status = self.status;
-            status.break_flag = 0;
-            self.push(status.toByte());
-            self.PC = self.bus.read16(IRQ_VECTOR);
-            self.mutex.unlock();
+            @atomicStore(bool, &self.irq_pending, true, .unordered);
             //log_cpu.debug("IRQ", .{});
         } else {
             // log_cpu.debug("IRQ (masked)", .{});
@@ -169,48 +181,74 @@ pub const CPU = struct {
         self.bus.write16(RESET_VECTOR, addr);
     }
 
-    pub fn clockTick(self: *CPU) void {
-        
-        if (self.instruction_remaining_cycles > 0) {
-            self.instruction_remaining_cycles -= 1;
-        } else {
-            self.step();
+    pub fn clockTick(self: *CPU) CpuExecutionPhase {
+        switch (self.phase) {
+            .HALT, .EXECUTE => {
+                self.phase = .FETCH;
+                if (@atomicLoad(bool, &self.irq_pending, .unordered)) {
+                    @atomicStore(bool, &self.irq_pending, false, .unordered);
+                    self.triggerIrq();
+                }
+                self.fetch();
+                self.instruction_remaining_cycles = self.current_instruction.?.cycles;
+                self.instruction_remaining_cycles -= 1;
+            },
+            .FETCH, .WAIT => {
+                if (self.instruction_remaining_cycles > 1) {
+                    self.instruction_remaining_cycles -= 1;
+                    self.phase = .WAIT;
+                } else {
+                    self.phase = .EXECUTE;
+                    self.execute();
+                }
+            }
+
         }
+        return self.phase;
+    }
+
+    pub fn fetch(self: *CPU) void {
+        self.phase = .FETCH;
+        const opcode = self.fetchNextByte();
+        const opcode_info = lookupOpcode(opcode) orelse { 
+            std.debug.panic("Illegal opcode {X:0>2} at {X:0>4} at cycle {}", .{ opcode, self.PC, self.cycle_count });
+        };
+        self.current_opcode = opcode_info;
+       
+        const instruction = decodeOpcode(self, opcode_info);
+        self.instruction_remaining_cycles = instruction.cycles;
+        self.current_instruction = instruction;
+
+    }
+
+    pub fn step(self: *CPU) void {
+        self.fetch();
+        self.execute();
     }
 
 
     /// Executes the next instruction in a single step
-    pub fn step(self: *CPU) void {
-        self.mutex.lock();
+    pub fn execute(self: *CPU) void {
+        self.phase = .EXECUTE;
         const d_prev = self.status.decimal;
-        const opcode = self.fetchNextByte();
-        
-        const opcode_info = lookupOpcode(opcode) orelse { 
-            std.debug.panic("Illegal opcode {X:0>2} at {X:0>4}", .{ opcode, self.PC });
-        };
-       
-        self.instruction_remaining_cycles = 0;
-        var instruction = decodeOpcode(self, opcode_info);
-        self.current_instruction = instruction;
-        opcode_info.handler_fn(self, &instruction);
-        self.instruction_remaining_cycles = instruction.cycles - 1;
-        self.cycle_count += instruction.cycles;
+        self.current_opcode.?.handler_fn(self, &self.current_instruction.?);
+        // self.instruction_remaining_cycles -= 1;
+        self.cycle_count += self.current_instruction.?.cycles;
         self.instruction_count += 1;
         const d_curr = self.status.decimal;
-        self.mutex.unlock();
 
         if (d_curr != d_prev) {
             if (d_curr == 1) {
                 log_cpu.debug("Decimal mode activated.   [PC={X:0>4}, OP={s}, Cycle={}, #Instruction={}]", .{
-                    instruction.instruction_addr,
-                    instruction.mnemonic,
+                    self.current_instruction.?.instruction_addr,
+                    self.current_instruction.?.mnemonic,
                     self.cycle_count,
                     self.instruction_count,
                 });
             } else {
                 log_cpu.debug("Decimal mode deactivated. [PC={X:0>4}, OP={s}, Cycle={}, #Instruction={}]", .{
-                    instruction.instruction_addr,
-                    instruction.mnemonic,
+                    self.current_instruction.?.instruction_addr,
+                    self.current_instruction.?.mnemonic,
                     self.cycle_count,
                     self.instruction_count,
                 });

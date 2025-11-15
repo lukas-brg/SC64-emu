@@ -7,6 +7,7 @@ const MAX_HOOKS = 128;
 var active_hooks: [MAX_HOOKS]Hook = undefined;
 var hooks_count: usize = 0;
 
+
 pub const HookTrigger = union(enum) {
     PC: u16,
     at_cycle: usize,
@@ -39,7 +40,7 @@ pub fn evalHooks(emu: *Emulator) void {
         const hook = &active_hooks[i];
 
         const does_trigger = switch (hook.trigger) {
-            .at_cycle => |c| machine_state.current_cycle == c,
+            .at_cycle => |c| machine_state.current_cycle >= c,
             .PC => |pc| pc == machine_state.current_pc,
             .predicate => |p| p(emu),
             else => unreachable,

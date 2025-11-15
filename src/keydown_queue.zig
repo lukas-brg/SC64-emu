@@ -28,6 +28,5 @@ pub fn dequeue() ?KeyDownEvent {
 
 pub fn peek() ?KeyDownEvent {
     if (head == tail) return null;
-    const ret = buffer[head];
-    return ret;
+    return buffer[head];
 }

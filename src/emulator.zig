@@ -17,7 +17,7 @@ const kb = @import("keyboard.zig");
 const machine_state = @import("machine_state.zig");
 const hooks = @import("hooks.zig");
 const tracing = @import("tracing.zig");
-
+const kb_buf = @import("keyboard_buf.zig");
 const conf = @import("config.zig");
 
 
@@ -98,6 +98,7 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
+        kb_buf.init(self.bus.ram[MemoryMap.kb_buf_start..MemoryMap.kb_buf_end+1]);
         self.cpu.reset();
         try self.initGraphics();
         self.cpu.SP = 0xFF;
@@ -172,17 +173,16 @@ pub const Emulator = struct {
     pub fn step(self: *Emulator) void {
         //self.cia1.dec_timers();
 
-        self.cpu.clockTick();
+        const phase = self.cpu.clockTick();
+        
+        // Perform additional operations in less busy cycles
+        if (phase != .EXECUTE) {
+            hooks.evalHooks(self);
+            self.keyboard.update();
+        }
 
         tracing.printTrace(self);
 
-        if (self.step_count % 1 == 0) {
-            // io.keyboard.update_keyboard_state(self);
-            self.keyboard.update();
-
-            //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
-        }
-        hooks.evalHooks(self);
         self.step_count += 1;
         machine_state.current_cycle = self.step_count;
         machine_state.current_instruction = self.cpu.current_instruction;
