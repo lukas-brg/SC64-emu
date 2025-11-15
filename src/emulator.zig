@@ -83,9 +83,9 @@ pub const Emulator = struct {
     }
 
     pub fn initGraphics(self: *Emulator) !void {
-        self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
-        self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
-        self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
+        // self.bus.write(MemoryMap.bg_color, colors.BG_COLOR);
+        // self.bus.write(MemoryMap.text_color, colors.TEXT_COLOR);
+        // self.bus.write(MemoryMap.frame_color, colors.FRAME_COLOR);
         self.loadCharacterRom("data/c64_charset.bin");
         // self.clear_color_mem();
         log_emu.info("C64 graphics initialized", .{});
@@ -209,19 +209,22 @@ pub const Emulator = struct {
     pub fn run(self: *Emulator, limit_cycles: ?usize, limit_instructions: ?usize) void {
         createSigintHandler();
         self.cpu.reset();
-        var clock = PrecisionClock.init(if (self.config.speedup_startup) 100 else 1000);
-        var vic_clock = PrecisionClock.init(16666667);
+        var clock = PrecisionClock.initNs(if (self.config.speedup_startup) 100 else 1000);
+        var vic_clock = PrecisionClock.initHz(50);
 
         var vic = graphics.VicII.init(self.bus, self.cpu, self.config.scaling_factor);
+        var rendering_thread: ?std.Thread = null; 
+        
+        if (!self.config.headless) {
 
-        // if (!self.config.headless) {
+            rendering_thread = std.Thread.spawn(.{}, graphics.VicII.run, .{ &vic, &vic_clock }) catch |err| {
+                std.debug.panic("Spawing rendering thread failed {any}", .{err});
+            };
+        } 
 
-        const rendering_thread = std.Thread.spawn(.{}, graphics.VicII.run, .{ &vic, &vic_clock }) catch |err| {
-            std.debug.panic("Spawing rendering thread failed {any}", .{err});
+        defer if (!self.config.headless) {
+            rendering_thread.?.join();
         };
-
-        defer rendering_thread.join();
-        // }
 
         var quit = false;
         log_emu.info("Starting execution...", .{});
@@ -234,7 +237,7 @@ pub const Emulator = struct {
 
             if (!adjusted and self.cpu.PC >= MemoryMap.basic_rom_start and self.cpu.PC <= MemoryMap.basic_rom_end) {
                 // std.debug.print("asdasdads", .{});
-                clock.target_duration_ns = 1015;
+                clock.period_ns = 1015;
                 adjusted = true;
             }
             quit = sigint_received or @atomicLoad(bool, &vic.termination_requested, std.builtin.AtomicOrder.acquire);

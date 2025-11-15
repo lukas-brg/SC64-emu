@@ -21,7 +21,15 @@ pub const Hook = struct {
 
 pub fn registerHook(hook: Hook) !void {
     if (hooks_count == MAX_HOOKS) return error.MaxHooksLimitReached;
-    active_hooks[hooks_count] = hook;
+
+    const _hook = switch (hook.trigger) {
+        .in_n_cycles => |n| Hook{
+            .trigger = .{ .at_cycle = runtime_info.current_cycle + n },
+            .callback = hook.callback,
+        },
+        else => hook,
+    };
+    active_hooks[hooks_count] = _hook;
     hooks_count += 1;
 }
 
@@ -31,17 +39,10 @@ pub fn evalHooks(emu: *Emulator) void {
         const hook = &active_hooks[i];
 
         const does_trigger = switch (hook.trigger) {
-            .in_n_cycles => |*cycles_left| blk: {
-                if (cycles_left.* == 0) {
-                    break :blk true;
-                } else {
-                    cycles_left.* -= 1;
-                    break :blk false;
-                }
-            },
             .at_cycle => |c| runtime_info.current_cycle == c,
             .PC => |pc| pc == runtime_info.current_pc,
             .predicate => |p| p(emu),
+            else => unreachable(),
         };
 
         if (does_trigger) {
