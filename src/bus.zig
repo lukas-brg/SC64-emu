@@ -2,41 +2,13 @@ const std = @import("std");
 const bitutils = @import("cpu/bitutils.zig");
 const cia = @import("cia.zig");
 const log_bus = std.log.scoped(.bus);
+const MemoryMap = @import("memory_map.zig");
 
 const MEM_SIZE: u17 = 0x10000;
 
 var bus_s = std.Thread.Semaphore{};
 var bus_m = std.Thread.Mutex{};
 
-pub const MemoryMap = enum {
-    pub const screen_mem_start = 0x0400;
-    pub const screen_mem_end = 0x07E7;
-
-    pub const color_mem_start = 0xD800;
-    pub const color_mem_end = 0xDBE7;
-
-    pub const character_rom_start = 0xD000;
-    pub const io_ram_start = 0xD000;
-    pub const character_rom_end = 0xDFFF;
-
-    pub const kernal_rom_start = 0xE000;
-    pub const kernal_rom_end = 0xFFFF;
-
-    pub const basic_rom_start = 0xA000;
-    pub const basic_rom_end = 0xBFFF;
-
-    pub const bg_color = 0xD021;
-    pub const text_color = 0x0286;
-    pub const frame_color = 0xD020;
-
-    pub const raster_line_reg = 0xD012;
-
-    pub const processor_port = 1;
-
-    pub const cia1_start = 0xDC00;
-    pub const cia1_mirrored_start = 0xDC10;
-    pub const cia1_end = 0xDCFF;
-};
 
 pub const MemoryLocation = struct {
     val_ptr: *u8,
@@ -137,7 +109,7 @@ pub const Bus = struct {
 
     pub fn writeRam(self: *Bus, addr: u16, val: u8) void {
       //  self.ram_mutex.lock();
-        self.io_ram[addr] = val;
+        self.ram[addr] = val;
      //   self.ram_mutex.unlock();
     }
 
@@ -164,7 +136,13 @@ pub const Bus = struct {
         self.write(addr + 1, bytes[1]);
     }
 
+    pub fn writeScreenMem(self: *Bus, index: u16, val: u8) void {
+        self.ram[index + MemoryMap.screen_mem_start] = val;
+    }
 
+    pub fn readScreenMem(self: *Bus, index: u16) u8 {
+        return self.ram[index + MemoryMap.screen_mem_start];
+    }
 
     pub fn read16(self: *Bus, addr: u16) u16 {
         // if (addr > MEM_SIZE - 2) std.debug.panic("Trying to write out of bounds at {X:0>4}", .{addr});

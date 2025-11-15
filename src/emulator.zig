@@ -8,17 +8,17 @@ const raylib = graphics.raylib;
 const PrecisionClock = @import("clock.zig").PrecisionClock;
 const CPU = @import("cpu/cpu.zig").CPU;
 const Bus = @import("bus.zig").Bus;
-const MemoryMap = @import("bus.zig").MemoryMap;
+const MemoryMap = @import("memory_map.zig");
 const bitutils = @import("cpu/bitutils.zig");
 const colors = graphics.colors;
 const Renderer = graphics.Renderer;
 const instruction = @import("cpu/instruction.zig");
 const kb = @import("keyboard.zig");
 const RuntimeInfo = @import("runtime_info.zig");
+const hooks = @import("hooks.zig");
 
 const conf = @import("config.zig");
 
-const print_disassembly_inline = @import("cpu/cpu.zig").printDisassemblyInline;
 
 const log_emu = std.log.scoped(.emu_core);
 
@@ -49,17 +49,25 @@ pub const Emulator = struct {
     vic: ?graphics.VicII = null,
     __tracing_active: bool = false,
 
+    pub fn testHook(t: hooks.HookTrigger) void {
+        std.debug.print("hook triggered at cycle {}\n", .{RuntimeInfo.current_cycle});
+        _ = t;
+    }
+
     pub fn init(allocator: std.mem.Allocator, config: conf.EmulatorConfig) !Emulator {
         const bus = try allocator.create(Bus);
         const cpu = try allocator.create(CPU);
         const keyboard = try allocator.create(kb.Keyboard);
         const cia1 = try allocator.create(io.CiaI);
-        keyboard.* = kb.Keyboard.init();
+        try hooks.registerHook(.{.trigger = .{ .in_n_cycles = 9e+6}, .callback = &testHook});
+        try hooks.registerHook(.{.trigger = .{ .in_n_cycles = 5e+6}, .callback = &testHook});
+        try hooks.registerHook(.{.trigger = .{ .in_n_cycles = 7000000}, .callback = &testHook});
         cia1.* = io.CiaI.init(cpu, keyboard);
         bus.* = Bus.init(cia1);
+        keyboard.* = kb.Keyboard.init(bus, cpu);
         bus.enable_bank_switching = config.enable_bank_switching;
         cpu.* = CPU.init(bus);
-        const emulator: Emulator = .{ .bus = bus, .cpu = cpu, .keyboard = keyboard, .config = config, .cia1 = cia1 };
+        const emulator: Emulator = .{ .bus = bus, .cpu = cpu, .keyboard = keyboard, .config = config, .cia1 = cia1};
 
         if (!config.headless) {
             log_emu.info("Starting emulator in windowed mode...", .{});
@@ -173,8 +181,11 @@ pub const Emulator = struct {
 
             //std.debug.print("A={b:0>8}  B={b:0>8}\n", .{self.bus.read(0xDC00), self.bus.read(0xDC01)});
         }
+        hooks.evalHooks(self);
         self.step_count += 1;
         RuntimeInfo.current_cycle = self.step_count;
+        RuntimeInfo.current_instruction = self.cpu.current_instruction;
+        RuntimeInfo.current_pc = self.cpu.PC;
     }
 
     fn createSigintHandler() void {

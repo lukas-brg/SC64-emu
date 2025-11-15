@@ -115,7 +115,6 @@ pub const CPU = struct {
     }
 
     pub fn reset(self: *CPU) void {
-        self.PC = self.bus.read(RESET_VECTOR) | (@as(u16, self.bus.read(RESET_VECTOR + 1)) << 8);
         self.PC = self.bus.read16(RESET_VECTOR);
         log_cpu.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
     }
@@ -131,7 +130,7 @@ pub const CPU = struct {
             self.mutex.unlock();
             //log_cpu.debug("IRQ", .{});
         } else {
-            //log_cpu.debug("IRQ (masked)", .{});
+            // log_cpu.debug("IRQ (masked)", .{});
         }
     }
 
