@@ -1,6 +1,6 @@
 const std = @import("std");
 const Emulator = @import("emulator.zig").Emulator;
-const runtime_info = @import("runtime_info.zig");
+const machine_state = @import("machine_state.zig");
 
 const MAX_HOOKS = 128;
 
@@ -20,11 +20,11 @@ pub const Hook = struct {
 };
 
 pub fn registerHook(hook: Hook) !void {
-    if (hooks_count == MAX_HOOKS) return error.MaxHooksLimitReached;
+    if (hooks_count >= MAX_HOOKS) return error.MaxHooksLimitReached;
 
     const _hook = switch (hook.trigger) {
         .in_n_cycles => |n| Hook{
-            .trigger = .{ .at_cycle = runtime_info.current_cycle + n },
+            .trigger = .{ .at_cycle = machine_state.current_cycle + n },
             .callback = hook.callback,
         },
         else => hook,
@@ -39,10 +39,10 @@ pub fn evalHooks(emu: *Emulator) void {
         const hook = &active_hooks[i];
 
         const does_trigger = switch (hook.trigger) {
-            .at_cycle => |c| runtime_info.current_cycle == c,
-            .PC => |pc| pc == runtime_info.current_pc,
+            .at_cycle => |c| machine_state.current_cycle == c,
+            .PC => |pc| pc == machine_state.current_pc,
             .predicate => |p| p(emu),
-            else => unreachable(),
+            else => unreachable,
         };
 
         if (does_trigger) {

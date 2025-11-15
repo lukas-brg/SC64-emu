@@ -10,7 +10,7 @@ const log_io = std.log.scoped(.io);
 const raylib = graphics.raylib;
 
 const keymap = @import("keymap.zig");
-const runtime_info = @import("runtime_info.zig");
+const machine_state = @import("machine_state.zig");
 
 const keydown_queue = @import("keydown_queue.zig");
 
@@ -90,7 +90,7 @@ pub const Keyboard = struct {
             self.bus.ram[214] = current_row;
             self.bus.write(0xC9, current_row);
             self.bus.writeRam(MemoryMap.cursor_col, current_col);
-            self.last_paste_at_cycle = runtime_info.current_cycle;
+            self.last_paste_at_cycle = machine_state.current_cycle;
             return true;
         }
 
@@ -100,7 +100,7 @@ pub const Keyboard = struct {
     fn handleKeyReleases(self: *Keyboard) void {
         while (true) {
             if (keydown_queue.peek()) |event| {
-                if (runtime_info.current_cycle - event.at_cycle >= 10000) {
+                if (machine_state.current_cycle - event.at_cycle >= 10000) {
                     _ = keydown_queue.dequeue();
                     const key = keymap.lookupC64PhysicalKey(event.keycode);
                     // std.debug.print("releasing key {s} at {}\n", .{ @tagName(event.keycode), runtime_info.current_cycle });
@@ -117,7 +117,7 @@ pub const Keyboard = struct {
     pub fn update(self: *Keyboard) void {
         self.handleKeyReleases();
 
-        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and runtime_info.current_cycle - self.last_paste_at_cycle >= 800000) {
+        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and machine_state.current_cycle - self.last_paste_at_cycle >= 800000) {
             const did_paste = self.handlePaste();
             if (did_paste) return;
         }
@@ -134,7 +134,7 @@ pub const Keyboard = struct {
             for (keymapping.keys) |keycode| {
                 const key = keymap.lookupC64PhysicalKey(keycode);
                 self.setKeyDown(key.row, key.col);
-                keydown_queue.enqueue(.{ .keycode = keycode, .at_cycle = runtime_info.current_cycle });
+                keydown_queue.enqueue(.{ .keycode = keycode, .at_cycle = machine_state.current_cycle });
             }
         }
 

@@ -14,7 +14,7 @@ const colors = graphics.colors;
 const Renderer = graphics.Renderer;
 const instruction = @import("cpu/instruction.zig");
 const kb = @import("keyboard.zig");
-const RuntimeInfo = @import("runtime_info.zig");
+const machine_state = @import("machine_state.zig");
 const hooks = @import("hooks.zig");
 const tracing = @import("tracing.zig");
 
@@ -51,7 +51,7 @@ pub const Emulator = struct {
     __tracing_active: bool = false,
 
     pub fn testHook(t: hooks.HookTrigger) void {
-        std.debug.print("hook triggered at cycle {}\n", .{RuntimeInfo.current_cycle});
+        std.debug.print("hook triggered at cycle {}\n", .{machine_state.current_cycle});
         _ = t;
     }
 
@@ -184,9 +184,9 @@ pub const Emulator = struct {
         }
         hooks.evalHooks(self);
         self.step_count += 1;
-        RuntimeInfo.current_cycle = self.step_count;
-        RuntimeInfo.current_instruction = self.cpu.current_instruction;
-        RuntimeInfo.current_pc = self.cpu.PC;
+        machine_state.current_cycle = self.step_count;
+        machine_state.current_instruction = self.cpu.current_instruction;
+        machine_state.current_pc = self.cpu.PC;
     }
 
     fn createSigintHandler() void {

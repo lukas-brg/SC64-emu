@@ -5,10 +5,10 @@ const raylib = @import("raylib.zig");
 const MemoryMap = @import("../memory_map.zig");
 const colors = @import("colors.zig");
 
-const SCREEN_WIDTH = @import("vic.zig").SCREEN_WIDTH;
-const SCREEN_HEIGHT = @import("vic.zig").SCREEN_HEIGHT;
-const BORDER_SIZE_X = @import("vic.zig").BORDER_SIZE_X;
-const BORDER_SIZE_Y = @import("vic.zig").BORDER_SIZE_Y;
+const SCREEN_WIDTH = @import("vic2.zig").SCREEN_WIDTH;
+const SCREEN_HEIGHT = @import("vic2.zig").SCREEN_HEIGHT;
+const BORDER_SIZE_X = @import("vic2.zig").BORDER_SIZE_X;
+const BORDER_SIZE_Y = @import("vic2.zig").BORDER_SIZE_Y;
 
 const log_renderer = std.log.scoped(.renderer);
 
