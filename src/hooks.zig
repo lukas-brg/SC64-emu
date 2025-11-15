@@ -4,8 +4,8 @@ const runtime_info = @import("runtime_info.zig");
 
 const MAX_HOOKS = 128;
 
-var pending_hooks: [MAX_HOOKS]Hook = undefined;
-var pending_hooks_count: usize = 0;
+var active_hooks: [MAX_HOOKS]Hook = undefined;
+var hooks_count: usize = 0;
 
 pub const HookTrigger = union(enum) {
     PC: u16,
@@ -20,15 +20,15 @@ pub const Hook = struct {
 };
 
 pub fn registerHook(hook: Hook) !void {
-    if (pending_hooks_count == MAX_HOOKS) return error.MaxHooksLimitReached;
-    pending_hooks[pending_hooks_count] = hook;
-    pending_hooks_count += 1;
+    if (hooks_count == MAX_HOOKS) return error.MaxHooksLimitReached;
+    active_hooks[hooks_count] = hook;
+    hooks_count += 1;
 }
 
 pub fn evalHooks(emu: *Emulator) void {
     var i: usize = 0;
-    while (i < pending_hooks_count) {
-        const hook = &pending_hooks[i];
+    while (i < hooks_count) {
+        const hook = &active_hooks[i];
 
         const does_trigger = switch (hook.trigger) {
             .in_n_cycles => |*cycles_left| blk: {
@@ -46,8 +46,8 @@ pub fn evalHooks(emu: *Emulator) void {
 
         if (does_trigger) {
             hook.callback(hook.trigger);
-            pending_hooks[i] = pending_hooks[pending_hooks_count - 1];
-            pending_hooks_count -= 1;
+            active_hooks[i] = active_hooks[hooks_count - 1];
+            hooks_count -= 1;
             continue;
         }
 

@@ -22,8 +22,6 @@ const charset = @import("charset.zig");
 const SCREEN_ROWS: u8 = 25;
 const SCREEN_COLS: u8 = 40;
 
-
-
 pub const Keyboard = struct {
     // Maybe make a interface for the cia1 connected device and let this be one implementation of it.
     keyboard_matrix: [8]u8,
@@ -33,9 +31,12 @@ pub const Keyboard = struct {
     cpu: *c.CPU,
 
     pub fn init(bus: *_bus.Bus, cpu: *c.CPU) Keyboard {
-        return Keyboard{ .keyboard_matrix = [8]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, .bus = bus, .cpu = cpu };
+        return Keyboard{
+            .keyboard_matrix = [8]u8{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
+            .bus = bus,
+            .cpu = cpu,
+        };
     }
-
 
     pub fn getClipboardText() ?[]const u8 {
         const text = raylib.GetClipboardText();
@@ -57,44 +58,43 @@ pub const Keyboard = struct {
     }
 
     fn handlePaste(self: *Keyboard) bool {
-         const clip: [*c]const u8 = @ptrCast(raylib.GetClipboardText());
-            if (clip != null) {
-                const len = std.mem.len(clip);
-                const slice = clip[0..len];
-                const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
-                const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
+        const clip: [*c]const u8 = @ptrCast(raylib.GetClipboardText());
+        if (clip != null) {
+            const len = std.mem.len(clip);
+            const slice = clip[0..len];
+            const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
+            const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
 
-                var effective_paste_len: usize = 0;
-                var current_row = cursor_row;
-                var current_col = cursor_col;
-                for (slice) |char| {
-                    const screencode = charset.asciiToScreencode(char) orelse 0x20;
-                    switch (char) {
-                        '\n' => {
-                            current_row += 1;
-                            current_col = 0;
-                            std.debug.print("new line cursor row: {} \n", .{ current_row });
-                        },
-                        else => {
-                            self.bus.writeScreenMem(gridPosToScreenMemOffset(current_row, current_col) , screencode);
-                            current_row += (current_col + 1) / SCREEN_COLS;
-                            current_col = (current_col + 1) % SCREEN_COLS;
-                            effective_paste_len += 1;
-                            std.debug.print("char {c} screencode {x:0>2} cursor col: {} \n", .{ char, screencode, current_col });
-                        }   
-                    }
-                    
+            var effective_paste_len: usize = 0;
+            var current_row = cursor_row;
+            var current_col = cursor_col;
+            for (slice) |char| {
+                const screencode = charset.asciiToScreencode(char) orelse 0x20;
+                switch (char) {
+                    '\n' => {
+                        current_row += 1;
+                        current_col = 0;
+                        std.debug.print("new line cursor row: {} \n", .{current_row});
+                    },
+                    else => {
+                        self.bus.writeScreenMem(gridPosToScreenMemOffset(current_row, current_col), screencode);
+                        current_row += (current_col + 1) / SCREEN_COLS;
+                        current_col = (current_col + 1) % SCREEN_COLS;
+                        effective_paste_len += 1;
+                        std.debug.print("char {c} screencode {x:0>2} cursor col: {} \n", .{ char, screencode, current_col });
+                    },
                 }
-                std.debug.print("writing cursor pos {} {}", .{current_row, cursor_col});
-                self.bus.write(MemoryMap.cursor_row, current_row);
-                self.bus.ram[214] = current_row;
-                self.bus.write(0xC9, current_row);
-                self.bus.writeRam(MemoryMap.cursor_col, current_col);
-                self.last_paste_at_cycle = runtime_info.current_cycle;
-                return true;
             }
-            
-            return false;
+            std.debug.print("writing cursor pos {} {}", .{ current_row, cursor_col });
+            self.bus.write(MemoryMap.cursor_row, current_row);
+            self.bus.ram[214] = current_row;
+            self.bus.write(0xC9, current_row);
+            self.bus.writeRam(MemoryMap.cursor_col, current_col);
+            self.last_paste_at_cycle = runtime_info.current_cycle;
+            return true;
+        }
+
+        return false;
     }
 
     fn handleKeyReleases(self: *Keyboard) void {
@@ -114,14 +114,12 @@ pub const Keyboard = struct {
         }
     }
 
-
     pub fn update(self: *Keyboard) void {
-        
         self.handleKeyReleases();
 
         if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and runtime_info.current_cycle - self.last_paste_at_cycle >= 800000) {
-           const did_paste = self.handlePaste();
-           if (did_paste) return;
+            const did_paste = self.handlePaste();
+            if (did_paste) return;
         }
 
         // Handle printable keys/chars in a host layout agnostic way
