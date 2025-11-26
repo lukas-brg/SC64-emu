@@ -98,7 +98,7 @@ pub const Emulator = struct {
         self.bus.write(0, 0x2F); // direction register
         self.bus.write(1, 0x37); // processor port
 
-        kb_buf.init(self.bus.ram[MemoryMap.kb_buf_start..MemoryMap.kb_buf_end+1]);
+        kb_buf.init(self.bus.ram[MemoryMap.kb_buf_start..MemoryMap.kb_buf_end+1], self.bus);
         self.cpu.reset();
         try self.initGraphics();
         self.cpu.SP = 0xFF;
@@ -111,7 +111,7 @@ pub const Emulator = struct {
 
         const allocator = gpa.allocator();
         const rom_data = try loadFileData("data/basic.bin", allocator);
-        @memcpy(self.bus.basic_rom[0..], rom_data);
+        @memcpy(self.bus.basic_rom[0..], rom_data); 
         allocator.free(rom_data);
         log_emu.info("Loaded BASIC rom", .{});
     }

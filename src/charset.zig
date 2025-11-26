@@ -1,10 +1,12 @@
-pub fn asciiToPetscii(char: u8) u8 {
-    if (char >= 'a' and char <= 'z') {
-        return char - 'a' + 0x41;
-    } else if (char >= 'A' and char <= 'Z') {
-        return char - 'A' + 0xc1;
-    }
-    return char;
+pub fn asciiToPetscii(char: u8) ?u8 {
+    return switch (char) {
+        '\n' => 0x0d,
+        '\r' => 0x0a,
+        '`' => 0x27,
+        'a'...'z' => (char - 'a') + 0x41,
+        'A'...'Z' => (char - 'A') + 0xc1,
+        else => null
+    };
 }
 
 pub fn petsciiToScreencode(code: u8) u8 {

@@ -105,10 +105,11 @@ pub const CPU = struct {
 
     pub fn reset(self: *CPU) void {
         self.PC = self.bus.read16(RESET_VECTOR);
+        self.phase = .HALT;
         log_cpu.debug("CPU Reset. Loaded PC from reset vector: {X:0>4}", .{self.PC});
     }
 
-    fn triggerIrq(self: *CPU) void {
+    fn handleIrq(self: *CPU) void {
         self.push16(self.PC);
         var status = self.status;
         status.break_flag = 0;
@@ -187,7 +188,7 @@ pub const CPU = struct {
                 self.phase = .FETCH;
                 if (@atomicLoad(bool, &self.irq_pending, .unordered)) {
                     @atomicStore(bool, &self.irq_pending, false, .unordered);
-                    self.triggerIrq();
+                    self.handleIrq();
                 }
                 self.fetch();
                 self.instruction_remaining_cycles = self.current_instruction.?.cycles;

@@ -16,7 +16,7 @@ const keydown_queue = @import("keydown_queue.zig");
 
 const MemoryMap = @import("memory_map.zig");
 const KeyDownEvent = @import("keydown_event.zig").KeyDownEvent;
-
+const kb_buf = @import("keyboard_buf.zig");
 const charset = @import("charset.zig");
 
 const SCREEN_ROWS: u8 = 25;
@@ -62,35 +62,36 @@ pub const Keyboard = struct {
         if (clip != null) {
             const len = std.mem.len(clip);
             const slice = clip[0..len];
-            const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
-            const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
-
-            var effective_paste_len: usize = 0;
-            var current_row = cursor_row;
-            var current_col = cursor_col;
-            for (slice) |char| {
-                const screencode = charset.asciiToScreencode(char) orelse 0x20;
-                switch (char) {
-                    '\n' => {
-                        current_row += 1;
-                        current_col = 0;
-                        std.debug.print("new line cursor row: {} \n", .{current_row});
-                    },
-                    else => {
-                        self.bus.writeScreenMem(gridPosToScreenMemOffset(current_row, current_col), screencode);
-                        current_row += (current_col + 1) / SCREEN_COLS;
-                        current_col = (current_col + 1) % SCREEN_COLS;
-                        effective_paste_len += 1;
-                        std.debug.print("char {c} screencode {x:0>2} cursor col: {} \n", .{ char, screencode, current_col });
-                    },
-                }
-            }
-            std.debug.print("writing cursor pos {} {}", .{ current_row, cursor_col });
-            self.bus.write(MemoryMap.cursor_row, current_row);
-            self.bus.ram[214] = current_row;
-            self.bus.write(0xC9, current_row);
-            self.bus.writeRam(MemoryMap.cursor_col, current_col);
+            std.debug.print("paste  {s}\n", .{slice});
+            // const cursor_row = self.bus.readRam(MemoryMap.cursor_row);
+            // const cursor_col = self.bus.readRam(MemoryMap.cursor_col);
+            // var effective_paste_len: usize = 0;
+            // var current_row = cursor_row;
+            // var current_col = cursor_col;
+            // for (slice) |char| {
+            //     const screencode = charset.asciiToScreencode(char) orelse 0x20;
+            //     switch (char) {
+            //         '\n' => {
+            //             current_row += 1;
+            //             current_col = 0;
+            //             std.debug.print("new line cursor row: {} \n", .{current_row});
+            //         },
+            //         else => {
+            //             self.bus.writeScreenMem(gridPosToScreenMemOffset(current_row, current_col), screencode);
+            //             current_row += (current_col + 1) / SCREEN_COLS;
+            //             current_col = (current_col + 1) % SCREEN_COLS;
+            //             effective_paste_len += 1;
+            //             std.debug.print("char {c} screencode {x:0>2} cursor col: {} \n", .{ char, screencode, current_col });
+            //         },
+            //     }
+            // }
+            // std.debug.print("writing cursor pos {} {}", .{ current_row, cursor_col });
+            // self.bus.write(MemoryMap.cursor_row, current_row);
+            // self.bus.ram[214] = current_row;
+            // self.bus.write(0xC9, current_row);
+            // self.bus.writeRam(MemoryMap.cursor_col, current_col);
             self.last_paste_at_cycle = machine_state.current_cycle;
+            kb_buf.insertStr(slice);
             return true;
         }
 
@@ -117,7 +118,7 @@ pub const Keyboard = struct {
     pub fn update(self: *Keyboard) void {
         self.handleKeyReleases();
 
-        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and machine_state.current_cycle - self.last_paste_at_cycle >= 800000) {
+        if (raylib.IsKeyDown(raylib.KEY_LEFT_CONTROL) and raylib.IsKeyDown(raylib.KEY_V) and machine_state.current_cycle - self.last_paste_at_cycle >= 250_000) {
             const did_paste = self.handlePaste();
             if (did_paste) return;
         }
